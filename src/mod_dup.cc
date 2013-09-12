@@ -82,6 +82,8 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
 }
 
 /// @brief the output filter callback
+///        Whenever a pns response is send to client, the filter looks at the
+///        state of the context to transform the ISE to the good one
 /// @param pFilter
 /// @param pBrigade
 /// @param pMode
@@ -304,6 +306,12 @@ setHeaderSubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const 
     return setSubstitution(pParams, pCfg, tFilterBase::HEADER, pField, pMatch, pReplace);
 }
 
+// We need to create a few specialized versions of setSubstitution because we cannot pass more than 3 args to Apache conf commands
+// This can be achieved with templates but it requires a more recent version of G++
+const char*
+setBodySubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
+    return setSubstitution(pParams, pCfg, tFilterBase::BODY, pField, pMatch, pReplace);
+}
 
 /**
  * @brief Activate duplication
@@ -436,6 +444,11 @@ command_rec gCmds[] = {
 		0,
 		ACCESS_CONF,
 		"Substitute part of the field in 1st argument matching the regexp in 2nd argument by the 3rd argument on requests before duplicating them. Substitutions are applied in the order they are defined in."),
+	AP_INIT_TAKE3("DupBodySubstitute",
+        reinterpret_cast<const char *(*)()>(&setBodySubstitution),
+        0,
+        ACCESS_CONF,
+        "Substitute part of the field in 1st argument matching the regexp in 2nd argument by the 3rd argument on requests before duplicating them. Substitutions are applied in the order they are defined in."),
 	AP_INIT_TAKE3("DupFilter",
 		reinterpret_cast<const char *(*)()>(&setFilter),
 		0,
