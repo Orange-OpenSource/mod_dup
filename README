@@ -51,7 +51,6 @@ Build time
 ----------
 
 	cmake
-	debhelper (>= 5.0.0)
 	libcurl4-openssl-dev
 	libboost-thread-dev
 	libboost-regex1.40-dev
