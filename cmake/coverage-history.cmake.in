@@ -1,0 +1,85 @@
+#-----------------------------------------------------------------------------
+# useful programs
+#-----------------------------------------------------------------------------
+find_program(LCOV lcov)
+find_program(SED sed)
+find_program(SORT sort)
+find_program(AWK awk)
+find_program(HEAD head)
+find_program(TAIL tail)
+find_program(JOIN join)
+
+#-----------------------------------------------------------------------------
+# history files
+#-----------------------------------------------------------------------------
+set(COVERAGE_HISTORY_FILE @COVERDIR@/all.history.csv)
+exec_program(date ARGS "+%F" OUTPUT_VARIABLE CURRENT_DATE)
+set(GEN_COVERAGE_HISTORY_FILE ${COVERAGE_HISTORY_FILE}.${CURRENT_DATE})
+
+#-----------------------------------------------------------------------------
+# coverage-gen
+#-----------------------------------------------------------------------------
+set(RELEASE_TEMP_TXT @TEMP_DIR@/release.tmp.txt)
+execute_process(
+    COMMAND ${LCOV} --list @COVERAGE_INFO_FILE@
+    COMMAND ${SED} -e s?@CMAKE_SOURCE_DIR@/src/??
+    COMMAND ${SORT}
+    COMMAND ${AWK} "{printf(\"%s%.2f\\n\",$1,100*$2/$4)}"
+    OUTPUT_VARIABLE RELEASE_TEMP_VAR)
+file(WRITE ${RELEASE_TEMP_TXT} ${RELEASE_TEMP_VAR})
+message(STATUS "stat [OK]")
+
+#-----------------------------------------------------------------------------
+# coverage-history-init
+#-----------------------------------------------------------------------------
+file(WRITE ${COVERAGE_HISTORY_FILE} "[File]:${CURRENT_DATE}\n")
+file(APPEND ${COVERAGE_HISTORY_FILE} "[File]:@PROJECT_VERSION@\n")
+file(APPEND ${COVERAGE_HISTORY_FILE} ${RELEASE_TEMP_VAR})
+
+#-----------------------------------------------------------------------------
+# coverage-history-prepare
+#-----------------------------------------------------------------------------
+execute_process(
+    COMMAND ${HEAD} -1 ${COVERAGE_HISTORY_FILE}
+    COMMAND ${SED} -e "s?[File]:??"
+    OUTPUT_VARIABLE initline)
+set(HISTORY_TMP_CSV @TEMP_DIR@/history.tmp.csv)
+set(COMMON_TMP_CSV @TEMP_DIR@/common.tmp.csv)
+execute_process(
+    COMMAND ${TAIL} -n +3 ${COVERAGE_HISTORY_FILE} 
+    OUTPUT_FILE ${HISTORY_TMP_CSV})
+execute_process(
+    COMMAND ${JOIN} -j1 -t ":" ${HISTORY_TMP_CSV} ${RELEASE_TEMP_TXT} 
+    OUTPUT_FILE ${COMMON_TMP_CSV})
+set(DELETED_TMP_CSV @TEMP_DIR@/deleted.tmp.csv)
+execute_process(
+    COMMAND ${JOIN} -j1 -v1 -t ":" ${HISTORY_TMP_CSV} ${RELEASE_TEMP_TXT}
+	COMMAND ${AWK} "{print $0\":-1\"}"
+    OUTPUT_FILE ${DELETED_TMP_CSV})
+set(NEW_TMP_CSV @TEMP_DIR@/new.tmp.csv)
+execute_process(
+    COMMAND ${JOIN} -j1 -v2 -t ":" ${HISTORY_TMP_CSV} ${RELEASE_TEMP_TXT}
+    COMMAND ${AWK} "BEGIN{FS=\":\"}{print $1 \"@initline@:\" $2}"
+    OUTPUT_FILE ${NEW_TMP_CSV})
+message(STATUS "prepare [OK]")
+
+#-----------------------------------------------------------------------------
+# coverage-history-merge
+#-----------------------------------------------------------------------------
+execute_process(
+    COMMAND ${HEAD} -1 ${COVERAGE_HISTORY_FILE}
+    COMMAND ${AWK} "{print $1\":${CURRENT_DATE}\"}"
+    OUTPUT_FILE ${GEN_COVERAGE_HISTORY_FILE})
+execute_process(
+    COMMAND ${HEAD} -2 ${COVERAGE_HISTORY_FILE}
+    COMMAND ${TAIL} -1
+    COMMAND ${AWK} "{print $1\":@PROJECT_VERSION@\"}"
+    OUTPUT_VARIABLE TEMP_OUTPUT)
+file(APPEND ${GEN_COVERAGE_HISTORY_FILE} ${TEMP_OUTPUT})
+execute_process(
+    COMMAND ${SORT} ${COMMON_TMP_CSV} ${DELETED_TMP_CSV}  ${NEW_TMP_CSV}
+    OUTPUT_VARIABLE TEMP_OUTPUT)
+file(APPEND ${GEN_COVERAGE_HISTORY_FILE} ${TEMP_OUTPUT})
+message(STATUS "merge [OK]")
+message(STATUS "history [OK]")
+

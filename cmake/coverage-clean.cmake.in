@@ -1,0 +1,17 @@
+execute_process(
+    COMMAND rm -rf @COVERDIR@/*
+    COMMAND rm -rf @TEMP_DIR@/*)
+message(STATUS "rm -rf [OK]")
+
+file(GLOB_RECURSE GCDA_LIST ${CMAKE_BINARY_DIR}/ *.gcda)
+if(NOT "${GCDA_LIST}" STREQUAL "")
+    file(REMOVE ${GCDA_LIST})
+endif()
+message(STATUS "clean gcda [OK]")
+
+file(GLOB_RECURSE INFO_LIST ${CMAKE_BINARY_DIR}/*.info)
+if(NOT "${INFO_LIST}" STREQUAL "")
+    file(REMOVE ${INFO_LIST})
+endif()
+message(STATUS "clean info [OK]")
+

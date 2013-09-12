@@ -1,0 +1,24 @@
+set(LCOV_PARAMS "")
+
+find_program(LCOV lcov)
+if(NOT LCOV-NOTFOUND)
+  exec_program(mkdir ARGS -p @COVERDIR@)
+  exec_program( ${LCOV} ARGS --test-name "@CMAKE_PROJECT_NAME@" --capture --output-file @COVERAGE_INFO_FILE@ --directory @COVERAGE_TOP_DIR@ )
+  exec_program(${LCOV} ARGS --output-file @COVERAGE_INFO_FILE@ --remove @COVERAGE_INFO_FILE@ \"*unit*\")                                                                                          
+  exec_program(${LCOV} ARGS --output-file @COVERAGE_INFO_FILE@ --remove @COVERAGE_INFO_FILE@ \"*include*\") 
+# Remove bad function coverage of multiple constructors and destructors of g++/gocv
+  exec_program(grep ARGS -v -E 'D0|D2|C2' @COVERAGE_INFO_FILE@ > @COVERAGE_INFO_FILE@2)
+
+  message(STATUS "coverage data [OK]")
+
+    find_program(GENHTML genhtml)
+    find_program(CFILT c++filt)
+    if(NOT GENHTML-NOTFOUND)
+      exec_program(${GENHTML} ARGS --show-details --legend --title \"@PROJECT_VERSION@\" --output-directory @COVERAGE_HTML_DIR@ @COVERAGE_INFO_FILE@2)
+      message(STATUS "report [OK]")
+    else()
+        message(STATUS "ERROR : genhtml not found")
+    endif()
+else()
+    message(STATUS "ERROR : lcov not found")
+endif()
