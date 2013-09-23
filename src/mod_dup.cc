@@ -72,7 +72,7 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
             const char* lReqPart = NULL;
             apr_size_t lLength = 0;
             apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
-            if ((lStatus != APR_SUCCESS) || (lLength < 0) || (lReqPart == NULL)) {
+            if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
                 continue;
             }
             pBH->body += std::string(lReqPart, lLength);
