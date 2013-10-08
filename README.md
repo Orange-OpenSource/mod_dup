@@ -58,7 +58,6 @@ Build time
 	libapr1-dev
 	libaprutil1-dev
 	apache2-threaded-dev OR apache2-prefork-dev
-	python-pycurl
 	gcc (>= 4.4.3)
 
 Run time
