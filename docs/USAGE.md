@@ -1,20 +1,14 @@
 Overview
 ========
 
-Duplication
------------
-
-mod_dup duplicates Apache requests.
-
-Filters and substitutions
--------------------------
-
-Only requests which match specified filters are duplicated. Before duplication, all defined substitutions are applied to the incoming request.
-
-Threading
----------
-
-mod_dup adapts to the amount of incoming by adjusting its number of threads to minimize resource usage.
+mod_dup duplicates Apache requests (POST, GET or both).
+Only requests which match specified filters are duplicated.
+Before duplication, all defined substitutions are applied to the incoming request.
+To minimize resource usage, mod_dup adapts to the amount of incoming by adjusting its number of threads.
+If maximum thresholds are reached, requests are dropped.
+In other words, mod_dup is built to guarantee a low system impact by sacrifizing the reliability of duplications.
+However, by using a high number of maximum threads, request dropping can be avoided and system impact raised.
+mod_dup periodically emits log messages containing metrics such as the number of dropped requests.
 
 Configuration
 =============
