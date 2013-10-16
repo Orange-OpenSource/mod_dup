@@ -1,0 +1,29 @@
+DupDestination "localhost:8043"
+DupQueue 1 1000
+DupThreads 1 40
+DupTimeout 300
+
+<Location /spp/main>
+	# Activates mod_dup on this location
+    SetInputFilter Dup
+
+	# Tells mod_dup to intercept and duplicate the HTTP Body
+    DupPayload True
+     
+    # Filter matches if the reg exp matches the content of field GetData in a GET request
+    DupFilter HEADER "GetData" "\\<(someword|Something else)\\>"
+
+    # Filter matches if the reg exp matches the content of field PostData in a POST request
+    DupFilter BODY "PostData" "\\<(a|b|C)\\>"
+
+    # Filter matches if the reg exp matches the content of field AnyData in any request
+    DupFilter ALL "AnyData" "\\<(a|b|C)\\>"
+    
+    # DupSubstitute <field> <regexp> <subst> tells mod_tee to replace the matches of <regexp> with <subst> in the field <field>.
+    # Substitutions are all executed in the order they are defined in
+    DupSubstitute "GetData" "[Ss]ome" "any"
+    DupBodySubstitute "PostData" "(.*)" "quoted: '$&'"
+    
+    Order deny,allow
+    Allow from all
+</Location>

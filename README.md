@@ -10,6 +10,8 @@ Documentation
 
 To generate the technical documentation of the code using doxygen, see documentation in the Build section.
 
+For usage and configuration documentation, see docs/USAGE.md
+
 Build
 =====
 
