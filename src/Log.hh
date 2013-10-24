@@ -42,7 +42,7 @@ public:
      * logs a debug with message parameters <...>
      * pMsg: the message
      */
-    static void debug(int pCode, const char* pMsg, ...) __attribute__ ((format (printf, 2, 3)));
+    static void debug(const char* pMsg, ...) __attribute__ ((format (printf, 1, 2)));
     /***
      * logs an info with message parameters <...>
      * pMsg: the message

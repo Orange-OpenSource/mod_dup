@@ -211,9 +211,7 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
         for (std::multimap<std::string, tFilter>::iterator it = lFilterIter.first; it != lFilterIter.second; ++it) {
             if ((it->second.mScope & scope) &&                                  // Scope check
                 boost::regex_search(lKeyVal.second, it->second.mRegex)) {        // Regex match
-#ifdef _DEBUG
-                Log::debug(101, "Key filter matched: %s | %s", lKeyVal.second.c_str(), it->second.mRegex.str.c_str());
-#endif
+                Log::debug("Key filter matched: %s | %s", lKeyVal.second.c_str(), it->second.mRegex.str().c_str());
                 return true;
             }
         }
@@ -267,18 +265,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
         // Header application
         if (raw.mScope & tFilterBase::HEADER) {
             if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-#ifdef DEBUG
-                Log::debug(101, "Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
-#endif
+                Log::debug("Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
                 return true;
             }
         }
         // Body application
         if (raw.mScope & tFilterBase::BODY) {
             if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-#ifdef DEBUG
-                Log::debug(101, "Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
-#endif
+                Log::debug("Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
                 return true;
             }
         }
@@ -305,14 +299,14 @@ RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
         // Key found in the subs?
         if (lSubstIter != pSubs.end()) {
             BOOST_FOREACH(const tSubstitute &lSubst, lSubstIter->second) {
-                Log::debug(101, "===>> Key substitute: %d | lVal:%s | lSubst:%s | Rep:%s", (int) lSubst.mScope, lVal.c_str(),
+                Log::debug("Key substitute: %d | lVal:%s | lSubst:%s | Rep:%s", (int) lSubst.mScope, lVal.c_str(),
                            lSubst.mRegex.str().c_str(), lSubst.mReplacement.c_str());
                 if (!(scope & lSubst.mScope))
                     continue;
 
                 lVal = boost::regex_replace(lVal, lSubst.mRegex, lSubst.mReplacement, boost::match_default | boost::format_all);
                 lDidSubstitute = true;
-                Log::debug(101, "===>> Key substitute res: lVal:%s ", lVal.c_str());
+                Log::debug("Key substitute res: lVal:%s ", lVal.c_str());
 
             }
         }
@@ -403,15 +397,11 @@ RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pReq
 
     // Tests if at least one acitve filter matches
     if (!argsMatchFilter(pRequest, lCommands, lParsedArgs)) {
-#ifdef DEBUG
-	Log::debug(101, "===>> No args match filter");
-#endif
+		Log::debug("No args match filter");
         return false;
     }
 
-#ifdef DEBUG
-    Log::debug(101, "===>> Filter match");
-#endif
+    Log::debug("Filter match");
 
     // We have a match, perform substitutions
     substituteRequest(pRequest, lCommands, lParsedArgs);
@@ -425,7 +415,7 @@ RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pReq
 void
 RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
 {
-    Log::debug(101, "New worker thread started");
+    Log::debug("New worker thread started");
 
     if (mDestination.empty()) {
         Log::error(401, "Configuration error. No duplication destination set.");
@@ -446,7 +436,7 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
         RequestInfo lQueueItem = pQueue.pop();
         if (lQueueItem.isPoison()) {
             // Master tells us to stop
-            Log::debug(102, "Received poison pill. Exiting.");
+            Log::debug("Received poison pill. Exiting.");
             break;
         }
         if (processRequest(lQueueItem.mConfPath, lQueueItem)) {
@@ -455,9 +445,8 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
             curl_easy_setopt(lCurl, CURLOPT_URL, request.c_str());
             struct curl_slist *slist = NULL;
             if (lQueueItem.hasBody()) {
-#ifdef DEBUG
-                Log::debug(403, "Before post: %s", boost::lexical_cast<std::string>(lQueueItem.mBody.size()).c_str());
-#endif
+                Log::debug("Before post: %s", boost::lexical_cast<std::string>(lQueueItem.mBody.size()).c_str());
+
                 slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
                 // Avoid Expect: 100 continue
                 slist = curl_slist_append(slist, "Expect:");
@@ -472,9 +461,9 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
                 curl_easy_setopt(lCurl, CURLOPT_HTTPGET, 1);
                 curl_easy_setopt(lCurl, CURLOPT_HTTPHEADER, NULL);
             }
-#ifdef DEBUG
-            Log::debug(403, "Duplicating: %s", request.c_str());
-#endif
+
+            Log::debug("Duplicating: %s", request.c_str());
+
             int err = curl_easy_perform(lCurl);
             if (slist)
                 curl_slist_free_all(slist);

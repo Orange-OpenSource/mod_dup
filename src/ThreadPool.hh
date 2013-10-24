@@ -87,7 +87,7 @@ private:
 	 * @brief Add a poison pill to the front of queue, to kill the next thread reading from it
 	 */
 	void poisonThread() {
-		Log::debug(103, "Dropping a poison pill.");
+		Log::debug("Dropping a poison pill.");
 		mQueue.push_front(mPoisonItem);
 		mBeingKilled++;
 	}
@@ -101,7 +101,7 @@ private:
 		std::list<boost::thread *>::iterator it = mThreads.begin();
 		while (it != mThreads.end()) {
 			if ((*it)->timed_join(nowait)) {
-				Log::debug(104, "Removing a terminated thread from pool.");
+				Log::debug("Removing a terminated thread from pool.");
 				delete *it;
 				it = mThreads.erase(it);
 				mBeingKilled--;
@@ -248,7 +248,7 @@ public:
 		mRunning = true;
 		mQueue.setDropSize(mMaxQueued * mMaxThreads);
 
-		Log::debug(105, "Started thread pool %p", this);
+		Log::debug("Started thread pool %p", this);
 		for (unsigned i=0; i<mMinThreads; ++i) {
 			newThread();
 		}

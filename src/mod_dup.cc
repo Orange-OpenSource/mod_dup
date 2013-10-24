@@ -76,10 +76,9 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
             if ( APR_BUCKET_IS_EOS(b) ) {
 #endif
                 pBH->sent = 1;
-#ifdef DEBUG
-                Log::debug(1, "====>>>: PUSHING A REQUEST, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
-                Log::debug(1, "====>>>: Uri:%s || dir name:%s", pRequest->uri, (*tConf)->dirName);
-#endif
+
+                Log::debug("Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
+                Log::debug("Uri:%s, dir name:%s", pRequest->uri, (*tConf)->dirName);
                 gThreadPool->push(RequestInfo((*tConf)->dirName, pRequest->uri, pRequest->args ? pRequest->args : "", &pBH->body));
                 delete pBH;
                 pF->ctx = (void *)1;

@@ -35,7 +35,7 @@ void TestLog::Log()
     Log::close();
     Log::init();
 
-    Log::debug(1,"Test Message %s", "argument");
+    Log::debug("Test Message %s", "argument");
     Log::info(2,"Test Message %s", "argument");
     Log::notice(3,"Test Message %s", "argument");
     Log::warn(4,"Test Message %s", "argument");

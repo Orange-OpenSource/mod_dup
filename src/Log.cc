@@ -115,9 +115,11 @@ const char * Log::stringLevel(int pLevel) {
  * logs a debug with message parameters <...>
  * pMsg: the message
  */
-void Log::debug(int pCode, const char* pMsg, ...)
+void Log::debug(const char* pMsg, ...)
 {
-    VLOG((LOG_DEBUG|gInstance->mFacility), pCode, pMsg);
+#ifdef DEBUG
+    VLOG((LOG_DEBUG|gInstance->mFacility), 0, pMsg);
+#endif
 }
 /**
  * logs an info with message parameters <...>
