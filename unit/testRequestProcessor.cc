@@ -68,12 +68,6 @@ void TestRequestProcessor::testFilterAndSubstitution()
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("INFO=myfnfo"));
 }
 
-void TestRequestProcessor::testUrlEncodeDecode()
-{
-    CPPUNIT_ASSERT_EQUAL(std::string(" "), urlDecode("%20"));
-    CPPUNIT_ASSERT_EQUAL(std::string("%fk"), urlDecode("%fk"));
-}
-
 void TestRequestProcessor::testSubstitution()
 {
     RequestProcessor proc;

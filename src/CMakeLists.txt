@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 2.8)
 
 include(../cmake/Include.cmake)
 
-file(GLOB mod_dup_SOURCE_FILES mod_dup.cc Log.cc RequestProcessor.cc)
+file(GLOB mod_dup_SOURCE_FILES mod_dup.cc Log.cc RequestProcessor.cc RequestInfo.cc UrlCodec.cc)
 
 # Compile as library
 add_library(mod_dup MODULE ${mod_dup_SOURCE_FILES})

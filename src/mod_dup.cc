@@ -192,6 +192,22 @@ setName(cmd_parms* pParams, void* pCfg, const char* pName) {
 	return NULL;
 }
 
+/**
+ * @brief Set the url enc/decoding style
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pUrlCodec the url enc/decoding style to use
+ * @return NULL if parameters are valid, otherwise a string describing the error
+ */
+const char*
+setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
+	if (!pUrlCodec || strlen(pUrlCodec) == 0) {
+		return "Missing url codec style";
+	}
+	gProcessor->setUrlCodec(pUrlCodec);
+	return NULL;
+}
+
 const char*
 setPayload(cmd_parms* pParams, void* pCfg, const char* pDestination) {
 	const char *lErrorMsg = setActive(pParams, pCfg);
@@ -441,6 +457,11 @@ command_rec gCmds[] = {
 		0,
 		OR_ALL,
 		"Set the program name for the stats log messages"),
+	AP_INIT_TAKE1("DupUrlCodec",
+		reinterpret_cast<const char *(*)()>(&setUrlCodec),
+		0,
+		OR_ALL,
+		"Set the url enc/decoding style for url arguments (default or apache)"),
 	AP_INIT_TAKE1("DupTimeout",
 		reinterpret_cast<const char *(*)()>(&setTimeout),
 		0,

@@ -31,36 +31,6 @@ namespace DupModule {
 const char * gUserAgent = "mod-dup";
 
 /**
- * @brief Constructs the object using the three strings.
- * @param pConfPath The location (in the conf) which matched this query
- * @param pPath The path part of the request
- * @param pConfPath The parameters part of the query (without leading ?)
- */
-    RequestInfo::RequestInfo(const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *pBody) :
-		mPoison(false),
-		mConfPath(pConfPath),
-		mPath(pPath),
-		mArgs(pArgs){
-        if (pBody)
-            mBody = *pBody;
-}
-
-/**
- * @brief Constructs a poisonous object causing the processor to stop when read
- */
-RequestInfo::RequestInfo() :
-		mPoison(true) {}
-
-/**
- * @brief Returns wether the the request is poisonous
- * @return true if poisonous, false otherwhise
- */
-bool
-RequestInfo::isPoison() {
-	return mPoison;
-}
-
-/**
  * @brief Set the destination server and port
  * @param pDestination the destination in &lt;host>[:&lt;port>] format
  */
@@ -147,36 +117,6 @@ RequestProcessor::addRawSubstitution(const std::string &pPath, const std::string
 }
 
 /**
- * @brief Helper function to decode queries
- * @param pIn string to be decoded
- * @return decoded string
- */
-const std::string
-urlDecode(const std::string &pIn) {
-	char *lBuffer = new char[pIn.size()+1];
-	strncpy(lBuffer, pIn.c_str(), pIn.size()+1);
-	if (ap_unescape_url(lBuffer) == HTTP_BAD_REQUEST) {
-		Log::warn(302, "Bad escape values in request: %s", lBuffer);
-	}
-	std::string lOut(lBuffer);
-	delete[] lBuffer;
-
-	return lOut;
-}
-
-/**
- * @brief Helper function to encode queries
- * @param pIn string to be encoded
- * @return encoded string
- */
-const std::string
-urlEncode(apr_pool_t *pPool, const std::string &pIn) {
-	// ap_escape_path_segment returns a char * which is allocated in the apache pool
-	// No need to free it, as apache will destroy the whole pool
-	return std::string(ap_escape_path_segment(pPool, pIn.c_str()));
-}
-
-/**
  * @brief Parses arguments into key valye pairs. Also url-decodes values and converts keys to upper case.
  * @param pParsedArgs the list which should be filled with the key value pairs
  * @param pArgs the parameters part of the query
@@ -194,7 +134,7 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
         } else {
             std::string lKey = lToken.substr(0, lEqualPos);
             boost::to_upper(lKey);
-            std::string lVal = urlDecode(lToken.substr(lEqualPos+1, std::string::npos));
+            std::string lVal = mUrlCodec->decode(lToken.substr(lEqualPos+1, std::string::npos));
             pParsedArgs.push_back(tKeyVal(lKey, lVal));
         }
     }
@@ -313,7 +253,7 @@ RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
         if (lVal.empty()) {
             lNewArgs.push_back(lKeyVal.first);
         } else {
-            lNewArgs.push_back(lKeyVal.first + "=" + urlEncode(lPool, lVal));
+            lNewArgs.push_back(lKeyVal.first + "=" + mUrlCodec->encode(lPool, lVal));
         }
     }
     if (lDidSubstitute) {
@@ -406,6 +346,12 @@ RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pReq
     // We have a match, perform substitutions
     substituteRequest(pRequest, lCommands, lParsedArgs);
     return true;
+}
+
+void
+RequestProcessor::setUrlCodec(const std::string &pUrlCodec)
+{
+	mUrlCodec.reset(getUrlCodec(pUrlCodec));
 }
 
 /**

@@ -3,9 +3,11 @@ DupQueue 1 1000
 DupThreads 1 40
 DupTimeout 300
 
-<Location /spp/main>
+<Location />
 	# Activates mod_dup on this location
     SetInputFilter Dup
+
+	DupUrlCodec apache
 
 	# Tells mod_dup to intercept and duplicate the HTTP Body
     DupPayload True

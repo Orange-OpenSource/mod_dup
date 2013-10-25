@@ -19,61 +19,19 @@
 #pragma once
 
 #include <boost/regex.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <string>
 #include <map>
 #include <apr_pools.h>
 
 #include "MultiThreadQueue.hh"
+#include "RequestInfo.hh"
+#include "UrlCodec.hh"
 
 
 namespace DupModule {
 
     typedef std::pair<std::string, std::string> tKeyVal;
-
-    /**
-     * @brief Contains information about the incoming request.
-     */
-    class RequestInfo {
-    private:
-	/** @brief True if the request processor should stop ater seeing this object. */
-	bool mPoison;
-
-    public:
-	/** @brief The location (in the conf) which matched this query. */
-	std::string mConfPath;
-	/** @brief The path part of the request. */
-	std::string mPath;
-	/** @brief The parameters part of the query (without leading ?). */
-	std::string mArgs;
-	/** @brief The body part of the query */
-	std::string mBody;
-
-	/**
-	 * @brief Constructs the object using the three strings.
-	 * @param pConfPath The location (in the conf) which matched this query
-	 * @param pPath The path part of the request
-	 * @param pConfPath The parameters part of the query (without leading ?)
-	 */
-        RequestInfo(const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *body = 0);
-
-	/**
-	 * @brief Constructs a poisonous object causing the processor to stop when read
-	 */
-	RequestInfo();
-
-        /**
-         * returns true if the request has a body
-         */
-        bool hasBody() const;
-
-	/**
-	 * @brief Returns wether the the request is poisonous
-	 * @return true if poisonous, false otherwhise
-	 */
-	bool isPoison();
-    };
-
-    static const RequestInfo POISON_REQUEST;
 
     /**
      * Base class for filters and substitutions
@@ -165,12 +123,17 @@ namespace DupModule {
 	volatile unsigned int mTimeoutCount;
         /** @brief The number of requests duplicated */
         volatile unsigned int mDuplicatedCount;
+		/** @brief The url codec */
+		boost::scoped_ptr<const IUrlCodec> mUrlCodec;
+		
 
     public:
 	/**
 	 * @brief Constructs a RequestProcessor
 	 */
-	RequestProcessor() : mTimeout(0), mTimeoutCount(0), mDuplicatedCount(0) {}
+	RequestProcessor() : mTimeout(0), mTimeoutCount(0), mDuplicatedCount(0) {
+		setUrlCodec();
+	}
 
 	/**
 	 * @brief Set the destination server and port
@@ -199,6 +162,13 @@ namespace DupModule {
          */
         const unsigned int
         getDuplicatedCount();
+
+		/**
+		 * @brief Set the url codec
+		 * @param pUrlCodec the codec to use
+		 */
+		void
+		setUrlCodec(const std::string &pUrlCodec="default");
 
         /**
          * @brief Add a filter for all requests on a given path
@@ -287,21 +257,4 @@ namespace DupModule {
                       tFilterBase::eFilterScope scope,
                       std::string &result);
     };
-
-    /**
-     * @brief Helper function to decode queries
-     * @param pIn string to be decoded
-     * @return decoded string
-     */
-    const std::string
-    urlDecode(const std::string &pIn);
-
-    /**
-     * @brief Helper function to encode queries
-     * @param pIn string to be encoded
-     * @return encoded string
-     */
-    const std::string
-    urlEncode(apr_pool_t *pPool, const std::string &pIn);
-
 }

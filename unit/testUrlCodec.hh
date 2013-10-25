@@ -24,29 +24,18 @@
 using namespace CPPUNIT_NS;
 #endif
 
-class TestRequestProcessor :
+class TestUrlCodec :
     public TestFixture
 {
 
-    CPPUNIT_TEST_SUITE(TestRequestProcessor);
-    CPPUNIT_TEST(init);
-    CPPUNIT_TEST(testParseArgs);
-    CPPUNIT_TEST(testFilter);
-    CPPUNIT_TEST(testSubstitution);
-    CPPUNIT_TEST(testFilterAndSubstitution);
-    CPPUNIT_TEST(testRun);
-    CPPUNIT_TEST(testFilterBasic);
-    CPPUNIT_TEST(testRawSubstitution);
+    CPPUNIT_TEST_SUITE(TestUrlCodec);
+    CPPUNIT_TEST(testUrlCodec);
+    CPPUNIT_TEST(testApacheCodec);
+    CPPUNIT_TEST(testDefaultCodec);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    void init();
-    void testUrlEncodeDecode();
-    void testFilter();
-    void testSubstitution();
-    void testFilterAndSubstitution();
-    void testParseArgs();
-    void testRun();
-    void testFilterBasic();
-    void testRawSubstitution();
+    void testUrlCodec();
+	void testApacheCodec();
+	void testDefaultCodec();
 };
