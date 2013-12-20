@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -28,6 +28,7 @@
 #include <curl/curl.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <exception>
 #include <set>
 
 #include "mod_dup.hh"
@@ -41,6 +42,26 @@ namespace DupModule {
 const char *gName = "Dup";
 
 #define INVALID_SCOPE_VALUE "Invalid Filter value (ALL, BODY, HEADER)."
+
+DuplicationType::eDuplicationType DuplicationType::stringToEnum(const char *value) {
+    if (!strcmp(value, c_HEADER_ONLY)) {
+        return DuplicationType::HEADER_ONLY;
+    }
+    if (!strcmp(value, c_COMPLETE_REQUEST)) {
+        return DuplicationType::COMPLETE_REQUEST;
+    }
+    if (!strcmp(value, c_REQUEST_WITH_ANSWER)) {
+        return DuplicationType::REQUEST_WITH_ANSWER;
+    }
+    throw std::exception();
+}
+
+DupConf::DupConf()
+    : currentScope(tFilterBase::HEADER)
+    , currentDuplicationType(DuplicationType::HEADER_ONLY) {
+
+}
+
 
 RequestProcessor *gProcessor;
 ThreadPool<RequestInfo> *gThreadPool;
@@ -209,13 +230,17 @@ setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
 }
 
 const char*
-setPayload(cmd_parms* pParams, void* pCfg, const char* pDestination) {
-	const char *lErrorMsg = setActive(pParams, pCfg);
-	if (lErrorMsg) {
-            return lErrorMsg;
-	}
+setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
     struct DupConf *tC = *reinterpret_cast<DupConf **>(pCfg);
-    tC->payload = 1;
+    try {
+        tC->currentDuplicationType = DuplicationType::stringToEnum(pDupType);
+    } catch (std::exception e) {
+        return DuplicationType::c_ERROR_ON_STRING_VALUE;
+    }
     return NULL;
 }
 
@@ -507,11 +532,11 @@ command_rec gCmds[] = {
 		"Filter incoming request fields before duplicating them."
 		"1st Arg: BODY HEAD ALL, data to match with the regex"
 		"Simply performs a match with the specified REGEX."),
-	AP_INIT_TAKE1("DupPayload",
-		reinterpret_cast<const char *(*)()>(&setPayload),
+	AP_INIT_TAKE1("DupDuplicationType",
+		reinterpret_cast<const char *(*)()>(&setDuplicationType),
 		0,
 		ACCESS_CONF,
-		"Store the body part of the request"),
+		"Sets the duplication type that will used for all the following filters declarations"),
 	AP_INIT_NO_ARGS("Dup",
 		reinterpret_cast<const char *(*)()>(&setActive),
 		0,

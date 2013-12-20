@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -36,14 +36,44 @@
 
 namespace DupModule {
 
+/*
+ * Different duplication modes supported by mod_dup
+ */
+namespace DuplicationType {
+
+    enum eDuplicationType {
+        HEADER_ONLY,
+        COMPLETE_REQUEST,
+        REQUEST_WITH_ANSWER,
+    };
+
+    /*
+     * Converts the string representation of a DuplicationType into the enum value
+     */
+    eDuplicationType stringToEnum(const char *value);
+
+    const char* c_HEADER_ONLY =                 "HEADER_ONLY";
+    const char* c_COMPLETE_REQUEST =            "COMPLETE_REQUEST";
+    const char* c_REQUEST_WITH_ANSWER =         "REQUEST_WITH_ANSWER";
+    const char* c_ERROR_ON_STRING_VALUE =       "Invalid Duplication Type Value. Supported Values: HEADER_ONLY | COMPLETE_REQUEST | REQUEST_WITH_ANSWER" ;
+};
+
 
 /**
  * A structure that holds the configuration specific to the location
  */
 struct DupConf {
-    char        *dirName;
-    int         payload;
+
+    DupConf();
+
+
+    tFilterBase::eFilterScope           currentScope;
+    DuplicationType::eDuplicationType   currentDuplicationType;
+
+
+    char                                *dirName;
 };
+
 
 /**
  * @brief Initialize our the processor and thread pool pre-config
