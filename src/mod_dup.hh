@@ -42,9 +42,9 @@ namespace DupModule {
 namespace DuplicationType {
 
     enum eDuplicationType {
-        HEADER_ONLY,
-        COMPLETE_REQUEST,
-        REQUEST_WITH_ANSWER,
+        HEADER_ONLY,            // Duplication only the HTTP HEADER of matching requests
+        COMPLETE_REQUEST,       // Duplication HTTP HEADER AND BODY of matching requests
+        REQUEST_WITH_ANSWER,    // Duplication HTTP REQUEST AND ANSWER of matching requests
     };
 
     /*
