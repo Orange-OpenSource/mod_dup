@@ -39,26 +39,37 @@ namespace alg = boost::algorithm;
 
 namespace DupModule {
 
+
 const char *gName = "Dup";
 
-#define INVALID_SCOPE_VALUE "Invalid Filter value (ALL, BODY, HEADER)."
 
-DuplicationType::eDuplicationType DuplicationType::stringToEnum(const char *value) {
-    if (!strcmp(value, c_HEADER_ONLY)) {
-        return DuplicationType::HEADER_ONLY;
+namespace DuplicationType {
+
+    const char* c_HEADER_ONLY =                 "HEADER_ONLY";
+    const char* c_COMPLETE_REQUEST =            "COMPLETE_REQUEST";
+    const char* c_REQUEST_WITH_ANSWER =         "REQUEST_WITH_ANSWER";
+    const char* c_ERROR_ON_STRING_VALUE =       "Invalid Duplication Type Value. Supported Values: HEADER_ONLY | COMPLETE_REQUEST | REQUEST_WITH_ANSWER" ;
+
+    eDuplicationType stringToEnum(const char *value) {
+        if (!strcmp(value, c_HEADER_ONLY)) {
+            return HEADER_ONLY;
+        }
+        if (!strcmp(value, c_COMPLETE_REQUEST)) {
+            return COMPLETE_REQUEST;
+        }
+        if (!strcmp(value, c_REQUEST_WITH_ANSWER)) {
+            return REQUEST_WITH_ANSWER;
+        }
+        throw std::exception();
     }
-    if (!strcmp(value, c_COMPLETE_REQUEST)) {
-        return DuplicationType::COMPLETE_REQUEST;
-    }
-    if (!strcmp(value, c_REQUEST_WITH_ANSWER)) {
-        return DuplicationType::REQUEST_WITH_ANSWER;
-    }
-    throw std::exception();
+
 }
 
+
 DupConf::DupConf()
-    : currentScope(tFilterBase::HEADER)
-    , currentDuplicationType(DuplicationType::HEADER_ONLY) {
+    : currentApplicationScope(ApplicationScope::HEADER)
+    , currentDuplicationType(DuplicationType::HEADER_ONLY)
+    , dirName(NULL) {
 
 }
 
@@ -245,6 +256,22 @@ setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
 }
 
 const char*
+setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
+    struct DupConf *tC = *reinterpret_cast<DupConf **>(pCfg);
+    try {
+        tC->currentApplicationScope = tFilterBase::GetScopeFromString(pAppScope);
+    } catch (std::exception e) {
+        return ApplicationScope::c_ERROR_ON_STRING_VALUE;
+    }
+    return NULL;
+}
+
+
+const char*
 setRawSubstitute(cmd_parms* pParams, void* pCfg,
                  const char* pType,
                  const char* pMatch, const char* pReplace){
@@ -344,31 +371,19 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setSubstitution(cmd_parms* pParams, void* pCfg, tFilterBase::eFilterScope pScope, const char *pField, const char* pMatch, const char* pReplace) {
+setSubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
     const char *lErrorMsg = setActive(pParams, pCfg);
+    struct DupConf *conf = static_cast<DupConf *>(pCfg);
+
     if (lErrorMsg) {
         return lErrorMsg;
     }
     try {
-        gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, pScope);
+        gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, conf->currentApplicationScope);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
     }
     return NULL;
-}
-
-// We need to create a few specialized versions of setSubstitution because we cannot pass more than 3 args to Apache conf commands
-// This can be achieved with templates but it requires a more recent version of G++
-const char*
-setHeaderSubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
-    return setSubstitution(pParams, pCfg, tFilterBase::HEADER, pField, pMatch, pReplace);
-}
-
-// We need to create a few specialized versions of setSubstitution because we cannot pass more than 3 args to Apache conf commands
-// This can be achieved with templates but it requires a more recent version of G++
-const char*
-setBodySubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
-    return setSubstitution(pParams, pCfg, tFilterBase::BODY, pField, pMatch, pReplace);
 }
 
 /**
@@ -386,6 +401,7 @@ setActive(cmd_parms* pParams, void* pCfg) {
     // No dup conf struct initialized
     if (!*lConf) {
         *lConf = (DupConf *) apr_pcalloc(pParams->pool, sizeof(**lConf));
+        *lConf = new (*lConf) DupConf();
     }
     // No dir name initialized
     if (!((*lConf)->dirName)) {
@@ -404,35 +420,35 @@ setActive(cmd_parms* pParams, void* pCfg) {
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setFilter(cmd_parms* pParams, void* pCfg, const char *pType, const char *pField, const char* pFilter) {
-	const char *lErrorMsg = setActive(pParams, pCfg);
-	if (lErrorMsg) {
-            return lErrorMsg;
-	}
-	try {
-            gProcessor->addFilter(pParams->path, pField, pFilter, tFilterBase::GetScopeFromString(pType));
-	} catch (boost::bad_expression) {
-		return "Invalid regular expression in filter definition.";
-	} catch (std::exception) {
-            return INVALID_SCOPE_VALUE;
-        }
-	return NULL;
+setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    struct DupConf *conf = static_cast<DupConf *>(pCfg);
+
+    assert(conf);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
+    try {
+        gProcessor->addFilter(pParams->path, pField, pFilter, conf->currentApplicationScope);
+    } catch (boost::bad_expression) {
+        return "Invalid regular expression in filter definition.";
+    }
+    return NULL;
 }
 
 
 const char*
-setRawFilter(cmd_parms* pParams, void* pCfg, const char *pType, const char* pExpression) {
+setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
+    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
         return lErrorMsg;
     }
     try {
-        gProcessor->addRawFilter(pParams->path, pExpression, tFilterBase::GetScopeFromString(pType));
+        gProcessor->addRawFilter(pParams->path, pExpression, conf->currentApplicationScope);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in filter definition.";
-    }
-    catch (std::exception) {
-        return INVALID_SCOPE_VALUE;
     }
     return NULL;
 }
@@ -502,16 +518,11 @@ command_rec gCmds[] = {
 		0,
 		OR_ALL,
 		"Set the minimum and maximum queue size for each thread pool."),
-	AP_INIT_TAKE3("DupSubstitute",
-		reinterpret_cast<const char *(*)()>(&setHeaderSubstitution),
-		0,
-		ACCESS_CONF,
-		"Substitute part of the field in 1st argument matching the regexp in 2nd argument by the 3rd argument on requests before duplicating them. Substitutions are applied in the order they are defined in."),
-	AP_INIT_TAKE3("DupBodySubstitute",
-        reinterpret_cast<const char *(*)()>(&setBodySubstitution),
-        0,
-        ACCESS_CONF,
-        "Substitute part of the field in 1st argument matching the regexp in 2nd argument by the 3rd argument on requests before duplicating them. Substitutions are applied in the order they are defined in."),
+	AP_INIT_TAKE1("DupApplicationScope",
+                reinterpret_cast<const char *(*)()>(&setApplicationScope),
+                0,
+                ACCESS_CONF,
+                "Sets the application scope of the filters and subsitution rules that follow this declaration"),
 	AP_INIT_TAKE3("DupFilter",
 		reinterpret_cast<const char *(*)()>(&setFilter),
 		0,

@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -168,28 +168,23 @@ void TestModDup::testConfig()
         CPPUNIT_ASSERT(!setQueue(NULL, NULL, "0", "0"));
         CPPUNIT_ASSERT(setQueue(NULL, NULL, "-1", "2"));
 
-    cmd_parms * lParms = getParms();
+        cmd_parms * lParms = getParms();
         lParms->path = new char[10];
         strcpy(lParms->path, "/spp/main");
-    // Pointer to a boolean meant to activate the module on a given path
+        // Pointer to a boolean meant to activate the module on a given path
         DupConf *lDoHandle = new DupConf();
-        memset(lDoHandle, 0, sizeof(*lDoHandle));
-        CPPUNIT_ASSERT(!setSubstitution(lParms, (void *)lDoHandle, tFilterBase::eFilterScope::HEADER, "toto", "toto", "titi"));
-        CPPUNIT_ASSERT(lDoHandle);
+        //        memset(lDoHandle, 0, sizeof(*lDoHandle));
+        CPPUNIT_ASSERT(!setSubstitution(lParms, (void *)&lDoHandle, "toto", "toto", "titi"));
+
         // Invalid regexp
-        CPPUNIT_ASSERT(setSubstitution(lParms, (void *) lDoHandle, tFilterBase::eFilterScope::HEADER, "toto", "*t(oto", "titi"));
+        CPPUNIT_ASSERT(setSubstitution(lParms, (void *)&lDoHandle, "toto", "*t(oto", "titi"));
 
-        memset(lDoHandle, 0, sizeof(*lDoHandle));
+        CPPUNIT_ASSERT(!setFilter(lParms, (void *)&lDoHandle, "titi", "toto"));
 
-        CPPUNIT_ASSERT(!setFilter(lParms, (void *)lDoHandle, "HEADER", "titi", "toto"));
-        CPPUNIT_ASSERT(lDoHandle);
         // Invalid regexp
-        CPPUNIT_ASSERT(setFilter(lParms, (void *)lDoHandle, "HEADER", "titi", "*toto"));
+        CPPUNIT_ASSERT(setFilter(lParms, (void *)&lDoHandle, "titi", "*toto"));
 
-        memset(lDoHandle, 0, sizeof(*lDoHandle));
-
-        CPPUNIT_ASSERT(!setActive(lParms, lDoHandle));
-        CPPUNIT_ASSERT(lDoHandle);
+        CPPUNIT_ASSERT(!setActive(lParms, &lDoHandle));
 
         delete lParms->path;
 }

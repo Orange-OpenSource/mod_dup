@@ -52,10 +52,10 @@ namespace DuplicationType {
      */
     eDuplicationType stringToEnum(const char *value);
 
-    const char* c_HEADER_ONLY =                 "HEADER_ONLY";
-    const char* c_COMPLETE_REQUEST =            "COMPLETE_REQUEST";
-    const char* c_REQUEST_WITH_ANSWER =         "REQUEST_WITH_ANSWER";
-    const char* c_ERROR_ON_STRING_VALUE =       "Invalid Duplication Type Value. Supported Values: HEADER_ONLY | COMPLETE_REQUEST | REQUEST_WITH_ANSWER" ;
+    extern const char* c_HEADER_ONLY;
+    extern const char* c_COMPLETE_REQUEST;
+    extern const char* c_REQUEST_WITH_ANSWER;
+    extern const char* c_ERROR_ON_STRING_VALUE;
 };
 
 
@@ -67,7 +67,7 @@ struct DupConf {
     DupConf();
 
 
-    tFilterBase::eFilterScope           currentScope;
+    tFilterBase::eFilterScope           currentApplicationScope;
     DuplicationType::eDuplicationType   currentDuplicationType;
 
 
@@ -153,19 +153,7 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax);
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setSubstitution(cmd_parms* pParams, void* pCfg, tFilterBase::eFilterScope pScope, const char *pField, const char* pMatch, const char* pReplace);
-
-const char*
-setHeaderSubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace);
-
-/**
- * @brief Activate duplication
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @return NULL
- */
-const char*
-setActive(cmd_parms* pParams, void* pCfg);
+setSubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace);
 
 /**
  * @brief Add a filter definition
@@ -176,7 +164,16 @@ setActive(cmd_parms* pParams, void* pCfg);
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setFilter(cmd_parms* pParams, void* pCfg, const char *pType, const char *pField, const char* pFilter);
+setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter);
+
+/**
+ * @brief Activate duplication
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @return NULL
+ */
+const char*
+setActive(cmd_parms* pParams, void* pCfg);
 
 /**
  * @brief Clean up before the child exits

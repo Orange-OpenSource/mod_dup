@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -57,8 +57,8 @@ void TestRequestProcessor::testFilterAndSubstitution()
     std::string query;
 
     // Filter
-    proc.addFilter("/toto", "INFO", "[my]+", tFilterBase::ALL);
-    proc.addRawFilter("/toto", "[my]+", tFilterBase::ALL);
+    proc.addFilter("/toto", "INFO", "[my]+", ApplicationScope::ALL);
+    proc.addRawFilter("/toto", "[my]+", ApplicationScope::ALL);
     proc.addSubstitution("/toto", "INFO", "[i]", "f", tFilterBase::eFilterScope::HEADER);
 
     query = "titi=tata&tutu";
@@ -159,7 +159,7 @@ void TestRequestProcessor::testFilterBasic()
     {
         // Simple Filter MATCH
         RequestProcessor proc;
-        proc.addFilter("/toto", "INFO", "[my]+", tFilterBase::ALL);
+        proc.addFilter("/toto", "INFO", "[my]+", ApplicationScope::ALL);
         RequestInfo ri = RequestInfo("/toto", "/toto/pws/titi/", "INFO=myinfo");
         CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
     }
@@ -167,7 +167,7 @@ void TestRequestProcessor::testFilterBasic()
     {
         // Simple Filter NO MATCH
         RequestProcessor proc;
-        proc.addFilter("/toto", "INFO", "KIDO", tFilterBase::ALL);
+        proc.addFilter("/toto", "INFO", "KIDO", ApplicationScope::ALL);
         RequestInfo ri = RequestInfo("/toto", "/toto/pws/titi/", "INFO=myinfo");
         CPPUNIT_ASSERT(!proc.processRequest("/toto", ri));
     }
@@ -175,7 +175,7 @@ void TestRequestProcessor::testFilterBasic()
     {
         // Filter applied on body only NO MATCH
         RequestProcessor proc;
-        proc.addFilter("/toto", "INFO", "my", tFilterBase::BODY);
+        proc.addFilter("/toto", "INFO", "my", ApplicationScope::BODY);
         RequestInfo ri = RequestInfo("/toto", "/toto/pws/titi/", "INFO=myinfo");
         CPPUNIT_ASSERT(!proc.processRequest("/toto", ri));
     }
@@ -183,7 +183,7 @@ void TestRequestProcessor::testFilterBasic()
     {
         // Filter applied on body only MATCH
         RequestProcessor proc;
-        proc.addFilter("/bb", "BODY", "hello", tFilterBase::BODY);
+        proc.addFilter("/bb", "BODY", "hello", ApplicationScope::BODY);
         std::string body = "BODY=hello";
         RequestInfo ri = RequestInfo("/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
         CPPUNIT_ASSERT(proc.processRequest("/bb", ri));
@@ -197,7 +197,7 @@ void TestRequestProcessor::testFilter()
 {
     RequestProcessor proc;
 
-    // // // proc.addFilter("/toto", "INFO", "[my]+", tFilterBase::ALL);
+    // // // proc.addFilter("/toto", "INFO", "[my]+", ApplicationScope::ALL);
     // // // RequestInfo ri = RequestInfo("/toto", "/toto/pws/titi/", "INFO=myinfo");
     // // // CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
 
@@ -217,7 +217,7 @@ void TestRequestProcessor::testFilter()
     CPPUNIT_ASSERT_EQUAL(std::string(""), ri.mArgs);
 
     // Filter
-    proc.addFilter("/toto", "titi", "^ta", tFilterBase::HEADER);
+    proc.addFilter("/toto", "titi", "^ta", ApplicationScope::HEADER);
     query = "titi=tata&tutu";
     ri = RequestInfo("/toto", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
@@ -251,7 +251,7 @@ void TestRequestProcessor::testFilter()
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("tata&tutu"));
 
     // Two filters on same path - either of them has to match
-    proc.addFilter("/toto", "titi", "[tu]{2,15}", tFilterBase::HEADER);
+    proc.addFilter("/toto", "titi", "[tu]{2,15}", ApplicationScope::HEADER);
     query = "titi=tata&tutu";
     ri = RequestInfo("/toto", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
@@ -268,7 +268,7 @@ void TestRequestProcessor::testFilter()
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("titi=t"));
 
     // Two filters on different paths
-    proc.addFilter("/some/path", "x", "^.{3,5}$", tFilterBase::HEADER);
+    proc.addFilter("/some/path", "x", "^.{3,5}$", ApplicationScope::HEADER);
     query = "x=1234";
     ri = RequestInfo("/some/path", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest("/some/path", ri));
@@ -297,7 +297,7 @@ void TestRequestProcessor::testFilter()
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("ti=tu"));
 
     // // Filter escaped characters
-    proc.addFilter("/escaped", "y", "^ ", tFilterBase::HEADER);
+    proc.addFilter("/escaped", "y", "^ ", ApplicationScope::HEADER);
     query = "y=%20";
     ri = RequestInfo("/escaped", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest("/escaped", ri));
@@ -364,7 +364,7 @@ void TestRequestProcessor::testRawSubstitution()
         std::string body = "mybody1test";
         RequestInfo ri = RequestInfo("/toto", "/toto/titi/", query, &body);
 
-        proc.addRawSubstitution("/toto", "1", "2", tFilterBase::eFilterScope::ALL);
+        proc.addRawSubstitution("/toto", "1", "2", ApplicationScope::ALL);
         CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(std::string("mybody2test"), ri.mBody);
@@ -379,8 +379,8 @@ void TestRequestProcessor::testRawSubstitution()
         std::string body = "mybody1test";
         RequestInfo ri = RequestInfo("/toto", "/toto/titi/", query, &body);
 
-        proc.addRawSubstitution("/toto", "1", "2", tFilterBase::eFilterScope::HEADER);
-        proc.addRawSubstitution("/toto", "1", "3", tFilterBase::eFilterScope::BODY);
+        proc.addRawSubstitution("/toto", "1", "2", ApplicationScope::HEADER);
+        proc.addRawSubstitution("/toto", "1", "3", ApplicationScope::BODY);
         CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(std::string("mybody3test"), ri.mBody);

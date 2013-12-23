@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -33,21 +33,27 @@ namespace DupModule {
 
     typedef std::pair<std::string, std::string> tKeyVal;
 
-    /**
-     * Base class for filters and substitutions
-     */
-    struct tFilterBase{
+    namespace ApplicationScope {
 
         /**
          * Scopes that a filter/sub can have
          */
-        enum eFilterScope{
+        enum eApplicationScope{
             ALL = 0x3,
             HEADER = 0x1,
             BODY = 0x2,
         };
 
-        typedef enum eFilterScope eFilterScope;
+        extern const char* c_ERROR_ON_STRING_VALUE;
+    };
+
+    /**
+     * Base class for filters and substitutions
+     */
+    struct tFilterBase{
+
+
+        typedef ApplicationScope::eApplicationScope eFilterScope;
 
         tFilterBase(const std::string &regex, eFilterScope scope);
 
@@ -125,7 +131,7 @@ namespace DupModule {
         volatile unsigned int mDuplicatedCount;
 		/** @brief The url codec */
 		boost::scoped_ptr<const IUrlCodec> mUrlCodec;
-		
+
 
     public:
 	/**

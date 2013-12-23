@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -28,6 +28,10 @@
 
 namespace DupModule {
 
+namespace ApplicationScope {
+      const char* c_ERROR_ON_STRING_VALUE = "Invalid ApplicationScope Value. Supported Values: ALL | HEADER | BODY" ;
+}
+
 const char * gUserAgent = "mod-dup";
 
 /**
@@ -36,7 +40,7 @@ const char * gUserAgent = "mod-dup";
  */
 void
 RequestProcessor::setDestination(const std::string &pDestination) {
-	mDestination = pDestination;
+    mDestination = pDestination;
 }
 
 /**
@@ -45,7 +49,7 @@ RequestProcessor::setDestination(const std::string &pDestination) {
  */
 void
 RequestProcessor::setTimeout(const unsigned int &pTimeout) {
-	mTimeout = pTimeout;
+    mTimeout = pTimeout;
 }
 
 bool
@@ -181,14 +185,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
     bool keyFilterOnBody = false;
     typedef std::pair<const std::string, tFilter> value_type;
     BOOST_FOREACH(value_type &f, pFilters) {
-        if (f.second.mScope & tFilterBase::BODY)
+        if (f.second.mScope & ApplicationScope::BODY)
             keyFilterOnBody = true;
-        if (f.second.mScope & tFilterBase::HEADER)
+        if (f.second.mScope & ApplicationScope::HEADER)
             keyFilterOnHeader = true;
      }
 
     // Key filters on header
-    if (keyFilterOnHeader && keyFilterMatch(pFilters, pHeaderParsedArgs, tFilterBase::HEADER)){
+    if (keyFilterOnHeader && keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER)){
         return true;
     }
 
@@ -196,21 +200,21 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
     if (keyFilterOnBody){
         std::list<tKeyVal> lParsedArgs;
         parseArgs(lParsedArgs, pRequest.mBody);
-        if (keyFilterMatch(pFilters, lParsedArgs, tFilterBase::BODY))
+        if (keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY))
             return true;
     }
 
     // Raw filters matching
     BOOST_FOREACH (tFilter &raw, pCommands.mRawFilters) {
         // Header application
-        if (raw.mScope & tFilterBase::HEADER) {
+        if (raw.mScope & ApplicationScope::HEADER) {
             if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
                 Log::debug("Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
                 return true;
             }
         }
         // Body application
-        if (raw.mScope & tFilterBase::BODY) {
+        if (raw.mScope & ApplicationScope::BODY) {
             if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
                 Log::debug("Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
                 return true;
@@ -273,9 +277,9 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
     typedef std::pair<const std::string, std::list<tSubstitute> > value_type;
     BOOST_FOREACH(value_type &f, pCommands.mSubstitutions) {
         BOOST_FOREACH(tSubstitute &s, f.second) {
-            if (s.mScope & tFilterBase::BODY)
+            if (s.mScope & ApplicationScope::BODY)
                 keySubOnBody = true;
-            if (s.mScope & tFilterBase::HEADER)
+            if (s.mScope & ApplicationScope::HEADER)
                 keySubOnHeader = true;
         }
      }
@@ -286,7 +290,7 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
         // On the header
         lDidSubstitute = keySubstitute(pCommands.mSubstitutions,
                                        pHeaderParsedArgs,
-                                       tFilterBase::HEADER,
+                                       ApplicationScope::HEADER,
                                        pRequest.mArgs);
     }
     if (keySubOnBody) {
@@ -295,15 +299,15 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
         parseArgs(lParsedArgs, pRequest.mBody);
         lDidSubstitute |= keySubstitute(pCommands.mSubstitutions,
                                        lParsedArgs,
-                                       tFilterBase::BODY,
+                                       ApplicationScope::BODY,
                                        pRequest.mBody);
     }
     // Run the raw substitutions
     BOOST_FOREACH(tSubstitute &s, pCommands.mRawSubstitutions) {
-        if (s.mScope & tFilterBase::BODY) {
+        if (s.mScope & ApplicationScope::BODY) {
             pRequest.mBody = boost::regex_replace(pRequest.mBody, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
-        if (s.mScope & tFilterBase::HEADER) {
+        if (s.mScope & ApplicationScope::HEADER) {
             pRequest.mArgs = boost::regex_replace(pRequest.mArgs, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
         lDidSubstitute = true;
@@ -434,11 +438,11 @@ tFilter::tFilter(const std::string &regex, eFilterScope scope)
 
 tFilterBase::eFilterScope tFilterBase::GetScopeFromString(const char *str) {
     if (!strcmp(str, "ALL"))
-        return ALL;
+        return ApplicationScope::ALL;
     if (!strcmp(str, "HEADER"))
-        return HEADER;
+        return ApplicationScope::HEADER;
     if (!strcmp(str, "BODY"))
-        return BODY;
+        return ApplicationScope::BODY;
     throw std::exception();
 }
 
