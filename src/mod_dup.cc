@@ -86,6 +86,7 @@ struct BodyHandler {
 #define GET_CONF_FROM_REQUEST(request) reinterpret_cast<DupConf **>(ap_get_module_config(request->per_dir_config, &dup_module))
 apr_status_t
 analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
+    Log::debug("Analyse request");
     request_rec *pRequest = pF->r;
     if (pRequest) {
 	struct DupConf **tConf = GET_CONF_FROM_REQUEST(pRequest);
@@ -154,6 +155,7 @@ filterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_
 static apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
+    Log::debug("\n*****output filter call*****\n");
 }
 
 /**
