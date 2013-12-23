@@ -3,7 +3,7 @@ DupQueue 1 1000
 DupThreads 1 40
 DupTimeout 300
 
-<Location />
+<Location /dup>
 	# Activates mod_dup on this location
     SetInputFilter Dup
 
@@ -17,7 +17,7 @@ DupTimeout 300
     DupFilter "PostData" "\\<(a|b|C)\\>"
 
     DupApplicationScope ALL
-    DupDuplicationType RESPONSE
+    DupDuplicationType REQUEST_WITH_ANSWER
     # Filter matches if the reg exp matches the content of field AnyData in any request
     DupFilter "AnyData" "\\<(a|b|C)\\>"
 

@@ -153,7 +153,7 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax);
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setSubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace);
+setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace);
 
 /**
  * @brief Add a filter definition
@@ -188,6 +188,26 @@ cleanUp(void *);
  */
 void
 childInit(apr_pool_t *pPool, server_rec *pServer);
+
+/*
+ * Defines the duplication type for the elts defined after this statement
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pDupType the string representing the duplication type
+ */
+const char*
+setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType);
+
+
+/*
+ * Defines the application scope for the elts defined after this statement
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pDupType the string representing the application scope
+ */
+const char*
+setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope);
+
 
 /**
  * @brief register hooks in apache

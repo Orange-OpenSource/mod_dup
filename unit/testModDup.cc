@@ -174,10 +174,10 @@ void TestModDup::testConfig()
         // Pointer to a boolean meant to activate the module on a given path
         DupConf *lDoHandle = new DupConf();
         //        memset(lDoHandle, 0, sizeof(*lDoHandle));
-        CPPUNIT_ASSERT(!setSubstitution(lParms, (void *)&lDoHandle, "toto", "toto", "titi"));
+        CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)&lDoHandle, "toto", "toto", "titi"));
 
         // Invalid regexp
-        CPPUNIT_ASSERT(setSubstitution(lParms, (void *)&lDoHandle, "toto", "*t(oto", "titi"));
+        CPPUNIT_ASSERT(setSubstitute(lParms, (void *)&lDoHandle, "toto", "*t(oto", "titi"));
 
         CPPUNIT_ASSERT(!setFilter(lParms, (void *)&lDoHandle, "titi", "toto"));
 
@@ -187,4 +187,40 @@ void TestModDup::testConfig()
         CPPUNIT_ASSERT(!setActive(lParms, &lDoHandle));
 
         delete lParms->path;
+}
+
+void TestModDup::testScope()
+{
+        cmd_parms * lParms = getParms();
+        lParms->path = new char[10];
+        strcpy(lParms->path, "/spp/main");
+        DupConf *conf = new DupConf();
+
+        // Default value
+        CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->currentApplicationScope);
+
+        // Switching to ALL
+        CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)&conf, "ALL"));
+        CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->currentApplicationScope);
+
+        // Incorrect value
+        CPPUNIT_ASSERT(setApplicationScope(lParms, (void *)&conf, "incorrect_vALUE"));
+}
+
+void TestModDup::testDuplicationType()
+{
+        cmd_parms * lParms = getParms();
+        lParms->path = new char[10];
+        strcpy(lParms->path, "/spp/main");
+        DupConf *conf = new DupConf();
+
+        // Default value
+        CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, conf->currentApplicationScope);
+
+        // Switching to COMPLETE_REQUEST
+        CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)&conf, "COMPLETE_REQUEST"));
+        CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, conf->currentDuplicationType);
+
+        // Incorrect value
+        CPPUNIT_ASSERT(setDuplicationType(lParms, (void *)&conf, "incorrect_vALUE"));
 }

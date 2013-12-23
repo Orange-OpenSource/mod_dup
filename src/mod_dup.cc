@@ -371,7 +371,7 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setSubstitution(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
+setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
     const char *lErrorMsg = setActive(pParams, pCfg);
     struct DupConf *conf = static_cast<DupConf *>(pCfg);
 
@@ -523,26 +523,31 @@ command_rec gCmds[] = {
                 0,
                 ACCESS_CONF,
                 "Sets the application scope of the filters and subsitution rules that follow this declaration"),
-	AP_INIT_TAKE3("DupFilter",
+	AP_INIT_TAKE2("DupFilter",
 		reinterpret_cast<const char *(*)()>(&setFilter),
 		0,
 		ACCESS_CONF,
 		"Filter incoming request fields before duplicating them. "
 		"If one or more filters are specified, at least one of them has to match."),
-	AP_INIT_TAKE2("DupRawFilter",
+	AP_INIT_TAKE1("DupRawFilter",
 		reinterpret_cast<const char *(*)()>(&setRawFilter),
 		0,
 		ACCESS_CONF,
 		"Filter incoming request fields before duplicating them."
 		"1st Arg: BODY HEAD ALL, data to match with the regex"
 		"Simply performs a match with the specified REGEX."),
-	AP_INIT_TAKE3("DupRawSubstitute",
+	AP_INIT_TAKE2("DupRawSubstitute",
 		reinterpret_cast<const char *(*)()>(&setRawSubstitute),
 		0,
 		ACCESS_CONF,
 		"Filter incoming request fields before duplicating them."
 		"1st Arg: BODY HEAD ALL, data to match with the regex"
 		"Simply performs a match with the specified REGEX."),
+	AP_INIT_TAKE3("DupSubstitute",
+		reinterpret_cast<const char *(*)()>(&setSubstitute),
+		0,
+		ACCESS_CONF,
+		""),
 	AP_INIT_TAKE1("DupDuplicationType",
 		reinterpret_cast<const char *(*)()>(&setDuplicationType),
 		0,

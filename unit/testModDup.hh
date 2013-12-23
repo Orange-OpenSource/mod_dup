@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -39,13 +39,17 @@ class TestModDup :
     CPPUNIT_TEST(testInit);
     CPPUNIT_TEST(testConfig);
     CPPUNIT_TEST(testRequestHandler);
+    CPPUNIT_TEST(testScope);
+    CPPUNIT_TEST(testDuplicationType);
     CPPUNIT_TEST(testInitAndCleanUp);
     CPPUNIT_TEST_SUITE_END();
 
 public:
 	cmd_parms* getParms();
 	void testInit();
+	void testInitAndCleanUp();
 	void testConfig();
 	void testRequestHandler();
-	void testInitAndCleanUp();
+	void testScope();
+	void testDuplicationType();
 };
