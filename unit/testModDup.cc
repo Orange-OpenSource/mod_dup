@@ -215,7 +215,7 @@ void TestModDup::testDuplicationType()
         DupConf *conf = new DupConf();
 
         // Default value
-        CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, conf->currentApplicationScope);
+        CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, conf->currentDuplicationType);
 
         // Switching to COMPLETE_REQUEST
         CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)&conf, "COMPLETE_REQUEST"));

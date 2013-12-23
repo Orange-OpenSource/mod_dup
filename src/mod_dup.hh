@@ -67,7 +67,7 @@ struct DupConf {
     DupConf();
 
 
-    tFilterBase::eFilterScope           currentApplicationScope;
+    ApplicationScope::eApplicationScope  currentApplicationScope;
     DuplicationType::eDuplicationType   currentDuplicationType;
 
 

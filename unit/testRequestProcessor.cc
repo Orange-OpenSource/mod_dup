@@ -59,7 +59,7 @@ void TestRequestProcessor::testFilterAndSubstitution()
     // Filter
     proc.addFilter("/toto", "INFO", "[my]+", ApplicationScope::ALL);
     proc.addRawFilter("/toto", "[my]+", ApplicationScope::ALL);
-    proc.addSubstitution("/toto", "INFO", "[i]", "f", tFilterBase::eFilterScope::HEADER);
+    proc.addSubstitution("/toto", "INFO", "[i]", "f", ApplicationScope::HEADER);
 
     query = "titi=tata&tutu";
 
@@ -73,7 +73,7 @@ void TestRequestProcessor::testSubstitution()
     RequestProcessor proc;
     std::string query;
 
-    proc.addSubstitution("/toto", "titi", "[ae]", "-", tFilterBase::eFilterScope::HEADER);
+    proc.addSubstitution("/toto", "titi", "[ae]", "-", ApplicationScope::HEADER);
 
     query = "titi=tatae&tutu=tatae";
     RequestInfo ri = RequestInfo("/toto", "/toto", query);
@@ -89,7 +89,7 @@ void TestRequestProcessor::testSubstitution()
     CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
 
     //  Empty fields can be substituted
-    proc.addSubstitution("/toto", "tutu", "^$", "titi", tFilterBase::eFilterScope::HEADER);
+    proc.addSubstitution("/toto", "tutu", "^$", "titi", ApplicationScope::HEADER);
     query = "titi=tatae&tutu";
     ri = RequestInfo("/toto", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
@@ -102,21 +102,21 @@ void TestRequestProcessor::testSubstitution()
     CPPUNIT_ASSERT_EQUAL(std::string("TITI=TATAE&TUTU=TATAE"), ri.mArgs);
 
     // Substitutions on the same path and field are executed in the order they are added
-    proc.addSubstitution("/toto", "titi", "-(.*)-", "T\\1", tFilterBase::eFilterScope::HEADER);
+    proc.addSubstitution("/toto", "titi", "-(.*)-", "T\\1", ApplicationScope::HEADER);
     query = "titi=tatae&tutu=tatae";
     ri = RequestInfo("/toto", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
     CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tatae"), ri.mArgs);
 
     // Substituions in other field but same path
-    proc.addSubstitution("/toto", "tutu", "ata", "W", tFilterBase::eFilterScope::HEADER);
+    proc.addSubstitution("/toto", "tutu", "ata", "W", ApplicationScope::HEADER);
     query = "titi=tatae&tutu=tatae";
     ri = RequestInfo("/toto", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
     CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
 
     // Substitution on another path
-    proc.addSubstitution("/x/y/z", "tutu", "ata", "W", tFilterBase::eFilterScope::HEADER);
+    proc.addSubstitution("/x/y/z", "tutu", "ata", "W", ApplicationScope::HEADER);
     query = "titi=tatae&tutu=tatae";
     ri = RequestInfo("/x/y/z", "/x/y/z", query);
     CPPUNIT_ASSERT(proc.processRequest("/x/y/z", ri));
@@ -135,7 +135,7 @@ void TestRequestProcessor::testSubstitution()
     CPPUNIT_ASSERT_EQUAL(std::string("titi=tatae&tutu=tatae"), ri.mArgs);
 
     // Substitute escaped characters
-    proc.addSubstitution("/escaped", "titi", ",", "/", tFilterBase::eFilterScope::HEADER);
+    proc.addSubstitution("/escaped", "titi", ",", "/", ApplicationScope::HEADER);
     query = "titi=1%2C2%2C3";
     ri = RequestInfo("/escaped", "/escaped", query);
     CPPUNIT_ASSERT(proc.processRequest("/escaped", ri));
@@ -333,7 +333,7 @@ void TestRequestProcessor::testRawSubstitution()
         std::string body = "mybody1test";
         RequestInfo ri = RequestInfo("/toto", "/toto/titi/", query, &body);
 
-        proc.addRawSubstitution("/toto", "1", "2", tFilterBase::eFilterScope::HEADER);
+        proc.addRawSubstitution("/toto", "1", "2", ApplicationScope::HEADER);
         CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(body, ri.mBody);
@@ -349,7 +349,7 @@ void TestRequestProcessor::testRawSubstitution()
         std::string body = "mybody1test";
         RequestInfo ri = RequestInfo("/toto", "/toto/titi/", query, &body);
 
-        proc.addRawSubstitution("/toto", "1", "2", tFilterBase::eFilterScope::BODY);
+        proc.addRawSubstitution("/toto", "1", "2", ApplicationScope::BODY);
         CPPUNIT_ASSERT(proc.processRequest("/toto", ri));
         CPPUNIT_ASSERT_EQUAL(query, ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(std::string("mybody2test"), ri.mBody);

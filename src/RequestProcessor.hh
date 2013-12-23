@@ -52,19 +52,16 @@ namespace DupModule {
      */
     struct tFilterBase{
 
-
-        typedef ApplicationScope::eApplicationScope eFilterScope;
-
-        tFilterBase(const std::string &regex, eFilterScope scope);
+        tFilterBase(const std::string &regex, ApplicationScope::eApplicationScope scope);
 
         /**
          * Translates the character value of a scope into it's enumerate value
          * raises a std::exception if the string doesn't match any predefined values
          * Values are : ALL, BODY, HEADER
          */
-        static eFilterScope GetScopeFromString(const char*);
+        static ApplicationScope::eApplicationScope GetScopeFromString(const char*);
 
-        eFilterScope mScope; /** The action of the filter */
+        ApplicationScope::eApplicationScope mScope; /** The action of the filter */
         boost::regex mRegex; /** The matching regular expression */
     };
 
@@ -73,7 +70,7 @@ namespace DupModule {
      */
     struct tFilter : public tFilterBase{
 
-        tFilter(const std::string &regex, eFilterScope scope);
+        tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope);
 
         std::string mField; /** The key or field the filter applies on */
     };
@@ -84,7 +81,7 @@ namespace DupModule {
     struct tSubstitute : public tFilterBase{
 
         tSubstitute(const std::string &regex,
-                      const std::string &replacement, eFilterScope scope);
+                      const std::string &replacement, ApplicationScope::eApplicationScope scope);
 
         std::string mReplacement; /** The replacement value regex */
     };
@@ -183,7 +180,7 @@ namespace DupModule {
          * @param pFilter a reg exp which has to match for this request to be duplicated
          */
         void
-        addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter, tFilterBase::eFilterScope scope);
+        addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter, ApplicationScope::eApplicationScope scope);
 
         /**
          * @brief Add a RAW filter for all requests on a given path
@@ -192,7 +189,7 @@ namespace DupModule {
          * @param Scope: the elements to match the filter with
          */
         void
-        addRawFilter(const std::string &pPath, const std::string &pFilter, tFilterBase::eFilterScope scope);
+        addRawFilter(const std::string &pPath, const std::string &pFilter, ApplicationScope::eApplicationScope scope);
 
         /**
          * @brief Schedule a substitution on the value of a given field of all requests on a given path
@@ -203,7 +200,7 @@ namespace DupModule {
          */
         void
         addSubstitution(const std::string &pPath, const std::string &pField,
-                        const std::string &pMatch, const std::string &pReplace, tFilterBase::eFilterScope scope);
+                        const std::string &pMatch, const std::string &pReplace, ApplicationScope::eApplicationScope scope);
 
         /**
          * @brief Schedule a Raw substitution on the value of all requests on a given path
@@ -213,7 +210,7 @@ namespace DupModule {
          * @param pReplace the value which the match should be replaced with
          */
         void
-        addRawSubstitution(const std::string &pPath, const std::string &pMatch, const std::string &pReplace, tFilterBase::eFilterScope scope);
+        addRawSubstitution(const std::string &pPath, const std::string &pMatch, const std::string &pReplace, ApplicationScope::eApplicationScope scope);
 
         /**
          * @brief Returns wether or not the arguments match any of the filters
@@ -255,12 +252,12 @@ namespace DupModule {
         substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs);
 
         bool
-        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, tFilterBase::eFilterScope scope);
+        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, ApplicationScope::eApplicationScope scope);
 
         bool
         keySubstitute(tFieldSubstitutionMap &pSubs,
                       std::list<tKeyVal> &pParsedArgs,
-                      tFilterBase::eFilterScope scope,
+                      ApplicationScope::eApplicationScope scope,
                       std::string &result);
     };
 }

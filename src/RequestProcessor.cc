@@ -91,14 +91,14 @@ RequestProcessor::getDuplicatedCount() {
  * @param pFilter a reg exp which has to match for this request to be duplicated
  */
 void
-RequestProcessor::addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter, tFilterBase::eFilterScope scope) {
+RequestProcessor::addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter, ApplicationScope::eApplicationScope scope) {
 
     mCommands[pPath].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
                                                                      tFilter(pFilter, scope)));
 }
 
 void
-RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFilter, tFilterBase::eFilterScope scope) {
+RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFilter, ApplicationScope::eApplicationScope scope) {
     mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, scope));
 }
 
@@ -111,12 +111,12 @@ RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFil
  */
 void
 RequestProcessor::addSubstitution(const std::string &pPath, const std::string &pField, const std::string &pMatch,
-                                  const std::string &pReplace, tFilterBase::eFilterScope scope) {
+                                  const std::string &pReplace, ApplicationScope::eApplicationScope scope) {
     mCommands[pPath].mSubstitutions[boost::to_upper_copy(pField)].push_back(tSubstitute(pMatch, pReplace, scope));
 }
 
 void
-RequestProcessor::addRawSubstitution(const std::string &pPath, const std::string &pRegex, const std::string &pReplace, tFilterBase::eFilterScope pScope){
+RequestProcessor::addRawSubstitution(const std::string &pPath, const std::string &pRegex, const std::string &pReplace, ApplicationScope::eApplicationScope pScope){
     mCommands[pPath].mRawSubstitutions.push_back(tSubstitute(pRegex, pReplace, pScope));
 }
 
@@ -145,7 +145,7 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
 }
 
 bool
-RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, tFilterBase::eFilterScope scope){
+RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, ApplicationScope::eApplicationScope scope){
     // Key filter matching
     BOOST_FOREACH (const tKeyVal lKeyVal, pParsedArgs) {
         // Key Iteration
@@ -227,7 +227,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
 bool
 RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
                                 std::list<tKeyVal> &pParsedArgs,
-                                tFilterBase::eFilterScope scope,
+                                ApplicationScope::eApplicationScope scope,
                                 std::string &result){
     apr_pool_t *lPool = NULL;
     apr_pool_create(&lPool, 0);
@@ -427,16 +427,16 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
     curl_easy_cleanup(lCurl);
 }
 
-tFilterBase::tFilterBase(const std::string &r, eFilterScope s)
+tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationScope s)
     : mScope(s)
     , mRegex(r) {
 }
 
-tFilter::tFilter(const std::string &regex, eFilterScope scope)
+tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope)
     : tFilterBase(regex, scope) {
 }
 
-tFilterBase::eFilterScope tFilterBase::GetScopeFromString(const char *str) {
+ApplicationScope::eApplicationScope tFilterBase::GetScopeFromString(const char *str) {
     if (!strcmp(str, "ALL"))
         return ApplicationScope::ALL;
     if (!strcmp(str, "HEADER"))
@@ -446,7 +446,7 @@ tFilterBase::eFilterScope tFilterBase::GetScopeFromString(const char *str) {
     throw std::exception();
 }
 
-tSubstitute::tSubstitute(const std::string &regex, const std::string &replacement, eFilterScope scope)
+tSubstitute::tSubstitute(const std::string &regex, const std::string &replacement, ApplicationScope::eApplicationScope scope)
     : tFilterBase(regex, scope)
     , mReplacement(replacement){
 }
