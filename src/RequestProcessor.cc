@@ -30,6 +30,20 @@ namespace DupModule {
 
 namespace ApplicationScope {
       const char* c_ERROR_ON_STRING_VALUE = "Invalid ApplicationScope Value. Supported Values: ALL | HEADER | BODY" ;
+      const char* c_ALL = "ALL";
+      const char* c_BODY = "BODY";
+      const char* c_HEADER = "HEADER";
+
+
+    eApplicationScope stringToEnum(const char *str) throw (std::exception) {
+        if (!strcmp(str, c_ALL))
+            return ApplicationScope::ALL;
+        if (!strcmp(str, c_HEADER))
+            return ApplicationScope::HEADER;
+        if (!strcmp(str, c_BODY))
+            return ApplicationScope::BODY;
+        throw std::exception();
+    }
 }
 
 const char * gUserAgent = "mod-dup";
@@ -432,18 +446,12 @@ tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationSco
     , mRegex(r) {
 }
 
-tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope)
-    : tFilterBase(regex, scope) {
+tFilterBase::~tFilterBase() {
+
 }
 
-ApplicationScope::eApplicationScope tFilterBase::GetScopeFromString(const char *str) {
-    if (!strcmp(str, "ALL"))
-        return ApplicationScope::ALL;
-    if (!strcmp(str, "HEADER"))
-        return ApplicationScope::HEADER;
-    if (!strcmp(str, "BODY"))
-        return ApplicationScope::BODY;
-    throw std::exception();
+tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope)
+    : tFilterBase(regex, scope) {
 }
 
 tSubstitute::tSubstitute(const std::string &regex, const std::string &replacement, ApplicationScope::eApplicationScope scope)

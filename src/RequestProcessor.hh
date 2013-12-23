@@ -43,8 +43,18 @@ namespace DupModule {
             HEADER = 0x1,
             BODY = 0x2,
         };
-
+        extern const char* c_ALL;
+        extern const char* c_HEADER;
+        extern const char* c_BODY;
         extern const char* c_ERROR_ON_STRING_VALUE;
+
+        /**
+         * Translates the character value of a scope into it's enumerate value
+         * raises a std::exception if the string doesn't match any predefined values
+         * Values are : ALL, BODY, HEADER
+         */
+        eApplicationScope stringToEnum(const char* strValue) throw (std::exception);
+
     };
 
     /**
@@ -52,17 +62,13 @@ namespace DupModule {
      */
     struct tFilterBase{
 
-        tFilterBase(const std::string &regex, ApplicationScope::eApplicationScope scope);
+        tFilterBase(const std::string &regex,
+                    ApplicationScope::eApplicationScope scope);
 
-        /**
-         * Translates the character value of a scope into it's enumerate value
-         * raises a std::exception if the string doesn't match any predefined values
-         * Values are : ALL, BODY, HEADER
-         */
-        static ApplicationScope::eApplicationScope GetScopeFromString(const char*);
+        virtual ~tFilterBase();
 
-        ApplicationScope::eApplicationScope mScope; /** The action of the filter */
-        boost::regex mRegex; /** The matching regular expression */
+        ApplicationScope::eApplicationScope mScope;     /** The action of the filter */
+        boost::regex mRegex;                            /** The matching regular expression */
     };
 
     /**
@@ -70,7 +76,8 @@ namespace DupModule {
      */
     struct tFilter : public tFilterBase{
 
-        tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope);
+        tFilter(const std::string &regex,
+                ApplicationScope::eApplicationScope scope);
 
         std::string mField; /** The key or field the filter applies on */
     };
@@ -118,16 +125,21 @@ namespace DupModule {
     private:
 	/** @brief Maps paths to their corresponding processing (filter and substitution) directives */
 	std::map<std::string, tRequestProcessorCommands> mCommands;
+
 	/** @brief The destination string for the duplicated requests with the following format: <host>[:<port>] */
 	std::string mDestination;
+
 	/** @brief The timeout for outgoing requests in ms */
 	unsigned int mTimeout;
+
 	/** @brief The number of requests which timed out */
 	volatile unsigned int mTimeoutCount;
+
         /** @brief The number of requests duplicated */
         volatile unsigned int mDuplicatedCount;
-		/** @brief The url codec */
-		boost::scoped_ptr<const IUrlCodec> mUrlCodec;
+
+        /** @brief The url codec */
+        boost::scoped_ptr<const IUrlCodec> mUrlCodec;
 
 
     public:
@@ -166,12 +178,12 @@ namespace DupModule {
         const unsigned int
         getDuplicatedCount();
 
-		/**
-		 * @brief Set the url codec
-		 * @param pUrlCodec the codec to use
-		 */
-		void
-		setUrlCodec(const std::string &pUrlCodec="default");
+        /**
+         * @brief Set the url codec
+         * @param pUrlCodec the codec to use
+         */
+        void
+        setUrlCodec(const std::string &pUrlCodec="default");
 
         /**
          * @brief Add a filter for all requests on a given path

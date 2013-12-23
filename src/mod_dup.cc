@@ -50,7 +50,7 @@ namespace DuplicationType {
     const char* c_REQUEST_WITH_ANSWER =         "REQUEST_WITH_ANSWER";
     const char* c_ERROR_ON_STRING_VALUE =       "Invalid Duplication Type Value. Supported Values: HEADER_ONLY | COMPLETE_REQUEST | REQUEST_WITH_ANSWER" ;
 
-    eDuplicationType stringToEnum(const char *value) {
+    eDuplicationType stringToEnum(const char *value) throw (std::exception){
         if (!strcmp(value, c_HEADER_ONLY)) {
             return HEADER_ONLY;
         }
@@ -111,6 +111,9 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
 
                 Log::debug("Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
                 Log::debug("Uri:%s, dir name:%s", pRequest->uri, (*tConf)->dirName);
+                // Do context enrichment synchronously
+                // TODO
+                // Asynchronous push
                 gThreadPool->push(RequestInfo((*tConf)->dirName, pRequest->uri, pRequest->args ? pRequest->args : "", &pBH->body));
                 delete pBH;
                 pF->ctx = (void *)1;
@@ -146,6 +149,11 @@ filterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_
         return lStatus;
     }
     return analyseRequest(pFilter, pBrigade);
+}
+
+static apr_status_t
+outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+
 }
 
 /**
@@ -263,7 +271,7 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     }
     struct DupConf *tC = *reinterpret_cast<DupConf **>(pCfg);
     try {
-        tC->currentApplicationScope = tFilterBase::GetScopeFromString(pAppScope);
+        tC->currentApplicationScope = ApplicationScope::stringToEnum(pAppScope);
     } catch (std::exception e) {
         return ApplicationScope::c_ERROR_ON_STRING_VALUE;
     }
@@ -281,7 +289,7 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     }
     try {
         gProcessor->addRawSubstitution(pParams->path, pMatch, pReplace,
-                                       tFilterBase::GetScopeFromString(pType));
+                                       ApplicationScope::stringToEnum(pType));
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
     }
@@ -573,6 +581,7 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, filterHandler, NULL, AP_FTYPE_CONTENT_SET);
+    ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
 #endif
 }
 

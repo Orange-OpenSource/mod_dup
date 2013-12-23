@@ -18,17 +18,18 @@
 
 #pragma once
 
+#include <apr_pools.h>
+#include <apr_hooks.h>
+#include <boost/lexical_cast.hpp>
+#include <curl/curl.h>
+#include <exception>
 #include <httpd.h>
 #include <http_config.h>
 #include <http_request.h>
 #include <http_protocol.h>
-#include <apr_pools.h>
-#include <apr_hooks.h>
+#include <iostream>
 #include <queue>
 #include <unistd.h>
-#include <curl/curl.h>
-#include <iostream>
-#include <boost/lexical_cast.hpp>
 
 #include "Log.hh"
 #include "RequestProcessor.hh"
@@ -50,14 +51,16 @@ namespace DuplicationType {
     /*
      * Converts the string representation of a DuplicationType into the enum value
      */
-    eDuplicationType stringToEnum(const char *value);
+    eDuplicationType stringToEnum(const char *value) throw (std::exception);
 
+    // String representation of the Duplicationtype values
     extern const char* c_HEADER_ONLY;
     extern const char* c_COMPLETE_REQUEST;
     extern const char* c_REQUEST_WITH_ANSWER;
+
+    // Duplication type mismatch value error
     extern const char* c_ERROR_ON_STRING_VALUE;
 };
-
 
 /**
  * A structure that holds the configuration specific to the location
@@ -66,10 +69,8 @@ struct DupConf {
 
     DupConf();
 
-
     ApplicationScope::eApplicationScope  currentApplicationScope;
     DuplicationType::eDuplicationType   currentDuplicationType;
-
 
     char                                *dirName;
 };
