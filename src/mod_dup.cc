@@ -30,6 +30,7 @@
 #include <boost/algorithm/string.hpp>
 #include <exception>
 #include <set>
+#include <sstream>
 
 #include "mod_dup.hh"
 
@@ -41,7 +42,7 @@ namespace DupModule {
 
 
 const char *gName = "Dup";
-
+const char *c_COMPONENT_VERSION = "Dup/1.0";
 
 namespace DuplicationType {
 
@@ -83,10 +84,18 @@ struct BodyHandler {
     int sent;
 };
 
+/*
+ * Can only work in prefork mode
+ */
+unsigned int nextRequestID() {
+    static unsigned int rId = 0;
+    __sync_fetch_and_add(&rId, 1);
+    return rId;
+}
+
 #define GET_CONF_FROM_REQUEST(request) reinterpret_cast<DupConf **>(ap_get_module_config(request->per_dir_config, &dup_module))
 apr_status_t
 analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
-    Log::debug("Analyse request");
     request_rec *pRequest = pF->r;
     if (pRequest) {
 	struct DupConf **tConf = GET_CONF_FROM_REQUEST(pRequest);
@@ -114,6 +123,11 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
                 Log::debug("Uri:%s, dir name:%s", pRequest->uri, (*tConf)->dirName);
                 // Do context enrichment synchronously
                 // TODO
+                // const char * 	apr_table_get (const apr_table_t *t, const char *key)
+                //     void 	apr_table_set (apr_table_t *t, const char *key, const char *val)
+                apr_table_t *headers = pRequest->headers_in;
+                std::string reqId = boost::lexical_cast<std::string>(nextRequestID());
+                apr_table_set(headers, "request_id", reqId.c_str());
                 // Asynchronous push
                 gThreadPool->push(RequestInfo((*tConf)->dirName, pRequest->uri, pRequest->args ? pRequest->args : "", &pBH->body));
                 delete pBH;
@@ -152,10 +166,63 @@ filterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_
     return analyseRequest(pFilter, pBrigade);
 }
 
+struct RequestContext {
+    apr_bucket_brigade *tmpbb;
+    int filter_state;
+    std::string answer;
+};
+
 static apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
-    Log::debug("\n*****output filter call*****\n");
+    request_rec *pRequest = pFilter->r;
+    apr_table_t *headers = pRequest->headers_in;
+    const char *reqId = apr_table_get(headers, "request_id");
+    Log::debug("\n*****output filter call, id:%s*****\n", reqId);
+
+
+    struct RequestContext *ctx;
+    // Context init
+    ctx = (RequestContext *)pFilter->ctx;
+    if (ctx == NULL) {
+        ctx = (RequestContext *)apr_palloc(pFilter->r->pool, sizeof(*ctx));
+        ctx = new (ctx) RequestContext();
+        pFilter->ctx = ctx;
+        ctx->tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
+        ctx->filter_state = 1;
+    }
+
+    apr_bucket *currentBucket;
+
+    while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade)) {
+        const char *data;
+        apr_size_t len;
+        apr_status_t rv;
+        rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+
+        if ((rv == APR_SUCCESS) && (data != NULL)) {
+            ctx->answer.append(data, len);
+        }
+        if (APR_BUCKET_IS_EOS(currentBucket))
+            ctx->filter_state = 2;
+        /* Remove bucket e from bb. */
+        APR_BUCKET_REMOVE(currentBucket);
+        /* Insert it into  temporary brigade. */
+        APR_BRIGADE_INSERT_HEAD(ctx->tmpbb, currentBucket);
+        /* Pass brigade downstream. */
+        rv = ap_pass_brigade(pFilter->next, ctx->tmpbb);
+        // TODO if (rv) ...;
+        apr_brigade_cleanup(ctx->tmpbb);
+        // TODO Detect la fin
+
+    }
+    //    Log::debug("Answer read: %s", ctx->answer.c_str());
+    if (ctx->filter_state == 2) {
+        Log::debug("Response catched: %s", ctx->answer.c_str());
+        delete ctx;
+    }
+
+
     return OK;
 
 }
@@ -198,9 +265,9 @@ preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
  */
 int
 postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec * pServer) {
-	Log::init();
+    Log::init();
 
-    ap_add_version_component(pPool, "Dup/1.0") ;
+    ap_add_version_component(pPool, c_COMPONENT_VERSION) ;
     return OK;
 }
 
@@ -213,11 +280,11 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
  */
 const char*
 setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
-	if (!pDestination || strlen(pDestination) == 0) {
-		return "Missing destination";
-	}
-	gProcessor->setDestination(pDestination);
-	return NULL;
+    if (!pDestination || strlen(pDestination) == 0) {
+        return "Missing destination";
+    }
+    gProcessor->setDestination(pDestination);
+    return NULL;
 }
 
 /**
@@ -229,11 +296,11 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
  */
 const char*
 setName(cmd_parms* pParams, void* pCfg, const char* pName) {
-	if (!pName || strlen(pName) == 0) {
-		return "Missing program name";
-	}
-	gThreadPool->setProgramName(pName);
-	return NULL;
+    if (!pName || strlen(pName) == 0) {
+        return "Missing program name";
+    }
+    gThreadPool->setProgramName(pName);
+    return NULL;
 }
 
 /**
@@ -245,11 +312,11 @@ setName(cmd_parms* pParams, void* pCfg, const char* pName) {
  */
 const char*
 setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
-	if (!pUrlCodec || strlen(pUrlCodec) == 0) {
-		return "Missing url codec style";
-	}
-	gProcessor->setUrlCodec(pUrlCodec);
-	return NULL;
+    if (!pUrlCodec || strlen(pUrlCodec) == 0) {
+        return "Missing url codec style";
+    }
+    gProcessor->setUrlCodec(pUrlCodec);
+    return NULL;
 }
 
 const char*
@@ -282,7 +349,7 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     return NULL;
 }
 
-
+    // TODO adapt to new api
 const char*
 setRawSubstitute(cmd_parms* pParams, void* pCfg,
                  const char* pType,
@@ -385,7 +452,8 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 const char*
 setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = static_cast<DupConf *>(pCfg);
+    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+    assert(conf);
 
     if (lErrorMsg) {
         return lErrorMsg;
@@ -586,7 +654,7 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, filterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
+    ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
 #endif
 }
 

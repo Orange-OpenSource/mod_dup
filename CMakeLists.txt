@@ -1,7 +1,7 @@
 # mod_dup - duplicates apache requests
-# 
+#
 # Copyright (C) 2013 Orange
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,16 +18,16 @@ project(mod_dup)
 
 cmake_minimum_required (VERSION 2.6)
 
-# The version number.                                     
-set (${CMAKE_PROJECT_NAME}_VERSION_MAJOR 1)
+# The version number.
+set (${CMAKE_PROJECT_NAME}_VERSION_MAJOR 2)
 set (${CMAKE_PROJECT_NAME}_VERSION_MINOR 0)
 set (${CMAKE_PROJECT_NAME}_VERSION_PATCH 0)
 set(${CMAKE_PROJECT_NAME}_VERSION ${${CMAKE_PROJECT_NAME}_VERSION_MAJOR}.${${CMAKE_PROJECT_NAME}_VERSION_MINOR}.${${CMAKE_PROJECT_NAME}_VERSION_PATCH})
 set(PROJECT_VERSION ${${CMAKE_PROJECT_NAME}_VERSION})
 
 #-----------------------------------------------------------------------------
-# CMake variables                                                         
-#-----------------------------------------------------------------------------   
+# CMake variables
+#-----------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build unit tests")
 set(BUILD_COVERAGE OFF CACHE BOOL "Build with coverage testing")
@@ -35,9 +35,9 @@ set(INPUT_CMAKE_DIR ${CMAKE_SOURCE_DIR}/cmake)
 set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
 
-#-----------------------------------------------------------------------------                            
-# Set some compiler options                                                       
-#-----------------------------------------------------------------------------  
+#-----------------------------------------------------------------------------
+# Set some compiler options
+#-----------------------------------------------------------------------------
 
 if(DEBUG)
 	set(CMAKE_CXX_FLAGS "-g -O2 -Wall -std=c++0x")
@@ -61,22 +61,22 @@ endif()
 
 if(BUILD_UNIT_TESTS)
     enable_testing()
-    
-    #-----------------------------------------------------------------------------                                                                               
-    # Package dependencies                                                                                                                                       
-    #-----------------------------------------------------------------------------                                                                               
+
+    #-----------------------------------------------------------------------------
+    # Package dependencies
+    #-----------------------------------------------------------------------------
     # find_package(cppunit REQUIRED)
-    #----------------------------------------------------------------------------- 
-    # check target 
+    #-----------------------------------------------------------------------------
+    # check target
     #-------------------------------------------------------------------------------
-    add_custom_target(check make -j4 all 
+    add_custom_target(check make -j4 all
       COMMAND make test)
 endif()
 
 if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
-    #----------------------------------------------------------------------------- 
-    # coverage target                                                    
-    #-----------------------------------------------------------------------------     
+    #-----------------------------------------------------------------------------
+    # coverage target
+    #-----------------------------------------------------------------------------
     set(COVERDIR ${CMAKE_BINARY_DIR}/measures/coverage CACHE STRING "Path to the coverage results" FORCE)
     set(COVERAGE_TOP_DIR ${CMAKE_BINARY_DIR})
     set(TEMP_DIR ${CMAKE_BINARY_DIR}/temp)
@@ -85,27 +85,27 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     set(COVERAGE_HISTORY_PATH ${COVERDIR}/all.history.csv CACHE STRING "Path to the coverage history file" FORCE)
     set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} --coverage)
     target_link_libraries(gcov)
-    
+
     # Run the binary for coverage of the exception in AccessLogParser in case of redirection instead of pipe
     add_custom_target(coverage
       COMMAND make coverage-clean
       COMMAND make -j2 all
       COMMAND make test
       COMMAND make coverage-test)
-    
+
     add_custom_target(coverage-campaign
       COMMAND make coverage)
 
-    #-----------------------------------------------------------------------------                                                
-    # coverage-test target                                                                                                        
-    #-----------------------------------------------------------------------------                                                
+    #-----------------------------------------------------------------------------
+    # coverage-test target
+    #-----------------------------------------------------------------------------
     configure_file(${INPUT_CMAKE_DIR}/coverage-test.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-test.cmake IMMEDIATE @ONLY)
     add_custom_target(coverage-test
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-test.cmake)
 
-    #-----------------------------------------------------------------------------                                                
-    # coverage-clean target                                                                                                       
-    #-----------------------------------------------------------------------------                                                
+    #-----------------------------------------------------------------------------
+    # coverage-clean target
+    #-----------------------------------------------------------------------------
     configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-clean.cmake IMMEDIATE @ONLY)
     add_custom_target(coverage-clean
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-clean.cmake)
