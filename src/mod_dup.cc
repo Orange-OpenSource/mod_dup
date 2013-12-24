@@ -156,6 +156,8 @@ static apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     Log::debug("\n*****output filter call*****\n");
+    return OK;
+
 }
 
 /**
@@ -432,9 +434,9 @@ setActive(cmd_parms* pParams, void* pCfg) {
 const char*
 setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = static_cast<DupConf *>(pCfg);
-
+    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
     assert(conf);
+
     if (lErrorMsg) {
         return lErrorMsg;
     }
@@ -449,9 +451,10 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
 
 const char*
 setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
-    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
-
     const char *lErrorMsg = setActive(pParams, pCfg);
+    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+    assert(conf);
+
     if (lErrorMsg) {
         return lErrorMsg;
     }

@@ -205,6 +205,8 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
             keyFilterOnHeader = true;
      }
 
+    Log::debug("Filters on body: %d | on header: %d", keyFilterOnBody, keyFilterOnHeader);
+
     // Key filters on header
     if (keyFilterOnHeader && keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER)){
         return true;
@@ -353,7 +355,7 @@ RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pReq
     std::list<std::pair<std::string, std::string> > lParsedArgs;
     parseArgs(lParsedArgs, pRequest.mArgs);
 
-    // Tests if at least one acitve filter matches
+    // Tests if at least one active filter matches
     if (!argsMatchFilter(pRequest, lCommands, lParsedArgs)) {
 		Log::debug("No args match filter");
         return false;
