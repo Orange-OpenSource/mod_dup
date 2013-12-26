@@ -31,6 +31,8 @@
 
 namespace DupModule {
 
+    class DupConf;
+
     typedef std::pair<std::string, std::string> tKeyVal;
 
     namespace ApplicationScope {
@@ -77,9 +79,12 @@ namespace DupModule {
     struct tFilter : public tFilterBase{
 
         tFilter(const std::string &regex,
-                ApplicationScope::eApplicationScope scope);
+                ApplicationScope::eApplicationScope scope,
+                const std::string &currentDupDestination);
 
-        std::string mField; /** The key or field the filter applies on */
+        std::string mField;                     /** The key or field the filter applies on */
+        std::string mDestination;               /** The host to duplicate the request to if the filter matches
+                                                    the destination in &lt;host>[:&lt;port>] format */
     };
 
     /**
@@ -126,9 +131,6 @@ namespace DupModule {
 	/** @brief Maps paths to their corresponding processing (filter and substitution) directives */
 	std::map<std::string, tRequestProcessorCommands> mCommands;
 
-	/** @brief The destination string for the duplicated requests with the following format: <host>[:<port>] */
-	std::string mDestination;
-
 	/** @brief The timeout for outgoing requests in ms */
 	unsigned int mTimeout;
 
@@ -149,13 +151,6 @@ namespace DupModule {
 	RequestProcessor() : mTimeout(0), mTimeoutCount(0), mDuplicatedCount(0) {
 		setUrlCodec();
 	}
-
-	/**
-	 * @brief Set the destination server and port
-	 * @param pDestination the destination in &lt;host>[:&lt;port>] format
-	 */
-	void
-	setDestination(const std::string &pDestination);
 
 	/**
 	 * @brief Set the timeout
@@ -190,9 +185,11 @@ namespace DupModule {
          * @param pPath the path of the request
          * @param pField the field on which to do the substitution
          * @param pFilter a reg exp which has to match for this request to be duplicated
+         * @param pAssociatedConf the filter declaration context
          */
         void
-        addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter, ApplicationScope::eApplicationScope scope);
+        addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
+                  const DupConf &pAssociatedConf);
 
         /**
          * @brief Add a RAW filter for all requests on a given path
@@ -201,7 +198,8 @@ namespace DupModule {
          * @param Scope: the elements to match the filter with
          */
         void
-        addRawFilter(const std::string &pPath, const std::string &pFilter, ApplicationScope::eApplicationScope scope);
+        addRawFilter(const std::string &pPath, const std::string &pFilter,
+                     const DupConf &pAssociatedConf);
 
         /**
          * @brief Schedule a substitution on the value of a given field of all requests on a given path
@@ -212,7 +210,8 @@ namespace DupModule {
          */
         void
         addSubstitution(const std::string &pPath, const std::string &pField,
-                        const std::string &pMatch, const std::string &pReplace, ApplicationScope::eApplicationScope scope);
+                        const std::string &pMatch, const std::string &pReplace,
+                        const DupConf &pAssociatedConf);
 
         /**
          * @brief Schedule a Raw substitution on the value of all requests on a given path
@@ -222,7 +221,8 @@ namespace DupModule {
          * @param pReplace the value which the match should be replaced with
          */
         void
-        addRawSubstitution(const std::string &pPath, const std::string &pMatch, const std::string &pReplace, ApplicationScope::eApplicationScope scope);
+        addRawSubstitution(const std::string &pPath, const std::string &pMatch, const std::string &pReplace,
+                           const DupConf &pAssociatedConf);
 
         /**
          * @brief Returns wether or not the arguments match any of the filters
@@ -230,7 +230,7 @@ namespace DupModule {
          * @param pFilters the filters which should be applied
          * @return true if there are no filters or at least one filter matches, false otherwhise
          */
-        bool
+        const tFilter*
         argsMatchFilter(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pParsedArgs);
 
         /**
@@ -248,7 +248,7 @@ namespace DupModule {
          * @return true if the request should get duplicated, false otherwise.
          * If and only if it returned true, pArgs will have all necessary substitutions applied.
          */
-        bool
+        const tFilter *
         processRequest(const std::string &pConfPath, RequestInfo &pRequest);
 
         /**
@@ -263,7 +263,7 @@ namespace DupModule {
         bool
         substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs);
 
-        bool
+        const tFilter *
         keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, ApplicationScope::eApplicationScope scope);
 
         bool

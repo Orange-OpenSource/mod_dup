@@ -69,10 +69,12 @@ struct DupConf {
 
     DupConf();
 
-    ApplicationScope::eApplicationScope  currentApplicationScope;
-    DuplicationType::eDuplicationType   currentDuplicationType;
+    ApplicationScope::eApplicationScope         currentApplicationScope;
+    DuplicationType::eDuplicationType           currentDuplicationType;
 
-    char                                *dirName;
+    char                                        *dirName;
+
+    std::string                                 currentDupDestination;
 };
 
 

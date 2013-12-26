@@ -272,22 +272,6 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
 }
 
 /**
- * @brief Set the destination host and port
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pDestionation the destination in <host>[:<port>] format
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
-const char*
-setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
-    if (!pDestination || strlen(pDestination) == 0) {
-        return "Missing destination";
-    }
-    gProcessor->setDestination(pDestination);
-    return NULL;
-}
-
-/**
  * @brief Set the program name used in the stats messages
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
@@ -316,6 +300,28 @@ setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
         return "Missing url codec style";
     }
     gProcessor->setUrlCodec(pUrlCodec);
+    return NULL;
+}
+
+/**
+ * @brief Set the destination host and port
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pDestionation the destination in <host>[:<port>] format
+ * @return NULL if parameters are valid, otherwise a string describing the error
+ */
+const char*
+setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
+    struct DupConf *tC = *reinterpret_cast<DupConf **>(pCfg);
+    assert(tC);
+    if (!pDestination || strlen(pDestination) == 0) {
+        return "Missing destination argument";
+    }
+    tC->currentDupDestination = pDestination;
     return NULL;
 }
 
@@ -359,8 +365,8 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
         return lErrorMsg;
     }
     try {
-        gProcessor->addRawSubstitution(pParams->path, pMatch, pReplace,
-                                       ApplicationScope::stringToEnum(pType));
+        // gProcessor->addRawSubstitution(pParams->path, pMatch, pReplace,
+        //                                ApplicationScope::stringToEnum(pType));
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
     }
@@ -459,7 +465,7 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
         return lErrorMsg;
     }
     try {
-        gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, conf->currentApplicationScope);
+        // gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, conf->currentApplicationScope);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
     }
@@ -509,7 +515,7 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
         return lErrorMsg;
     }
     try {
-        gProcessor->addFilter(pParams->path, pField, pFilter, conf->currentApplicationScope);
+        gProcessor->addFilter(pParams->path, pField, pFilter, *conf);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in filter definition.";
     }
@@ -527,7 +533,7 @@ setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
         return lErrorMsg;
     }
     try {
-        gProcessor->addRawFilter(pParams->path, pExpression, conf->currentApplicationScope);
+        // gProcessor->addRawFilter(pParams->path, pExpression, conf->currentApplicationScope);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in filter definition.";
     }
@@ -569,11 +575,6 @@ command_rec gCmds[] = {
     //          void * extra data,
     //          overrides to allow in order to enable,
     //          help message),
-	AP_INIT_TAKE1("DupDestination",
-		reinterpret_cast<const char *(*)()>(&setDestination),
-		0,
-		OR_ALL,
-		"Set the destination for the duplicated requests. Format: host[:port]"),
 	AP_INIT_TAKE1("DupName",
 		reinterpret_cast<const char *(*)()>(&setName),
 		0,
@@ -599,6 +600,11 @@ command_rec gCmds[] = {
 		0,
 		OR_ALL,
 		"Set the minimum and maximum queue size for each thread pool."),
+	AP_INIT_TAKE1("DupDestination",
+		reinterpret_cast<const char *(*)()>(&setDestination),
+		0,
+		ACCESS_CONF,
+		"Set the destination for the duplicated requests. Format: host[:port]"),
 	AP_INIT_TAKE1("DupApplicationScope",
                 reinterpret_cast<const char *(*)()>(&setApplicationScope),
                 0,
