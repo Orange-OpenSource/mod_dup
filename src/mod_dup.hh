@@ -43,9 +43,9 @@ namespace DupModule {
 namespace DuplicationType {
 
     enum eDuplicationType {
-        HEADER_ONLY,            // Duplication only the HTTP HEADER of matching requests
-        COMPLETE_REQUEST,       // Duplication HTTP HEADER AND BODY of matching requests
-        REQUEST_WITH_ANSWER,    // Duplication HTTP REQUEST AND ANSWER of matching requests
+        HEADER_ONLY = 0,            // Duplication only the HTTP HEADER of matching requests
+        COMPLETE_REQUEST = 1,       // Duplication HTTP HEADER AND BODY of matching requests
+        REQUEST_WITH_ANSWER = 2,    // Duplication HTTP REQUEST AND ANSWER of matching requests
     };
 
     /*
@@ -60,6 +60,8 @@ namespace DuplicationType {
 
     // Duplication type mismatch value error
     extern const char* c_ERROR_ON_STRING_VALUE;
+
+    extern eDuplicationType value;
 };
 
 /**
@@ -70,7 +72,6 @@ struct DupConf {
     DupConf();
 
     ApplicationScope::eApplicationScope         currentApplicationScope;
-    DuplicationType::eDuplicationType           currentDuplicationType;
 
     char                                        *dirName;
 
@@ -191,16 +192,6 @@ cleanUp(void *);
  */
 void
 childInit(apr_pool_t *pPool, server_rec *pServer);
-
-/*
- * Defines the duplication type for the elts defined after this statement
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pDupType the string representing the duplication type
- */
-const char*
-setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType);
-
 
 /*
  * Defines the application scope for the elts defined after this statement

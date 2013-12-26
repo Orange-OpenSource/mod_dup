@@ -64,12 +64,12 @@ namespace DuplicationType {
         throw std::exception();
     }
 
+    eDuplicationType value = HEADER_ONLY;
 }
 
 
 DupConf::DupConf()
     : currentApplicationScope(ApplicationScope::HEADER)
-    , currentDuplicationType(DuplicationType::HEADER_ONLY)
     , dirName(NULL) {
 
 }
@@ -174,12 +174,11 @@ struct RequestContext {
 
 static apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    assert(DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER);
 
     request_rec *pRequest = pFilter->r;
     apr_table_t *headers = pRequest->headers_in;
     const char *reqId = apr_table_get(headers, "request_id");
-    Log::debug("\n*****output filter call, id:%s*****\n", reqId);
-
 
     struct RequestContext *ctx;
     // Context init
@@ -221,8 +220,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         Log::debug("Response catched: %s", ctx->answer.c_str());
         delete ctx;
     }
-
-
     return OK;
 
 }
@@ -326,21 +323,6 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
 }
 
 const char*
-setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
-    const char *lErrorMsg = setActive(pParams, pCfg);
-    if (lErrorMsg) {
-        return lErrorMsg;
-    }
-    struct DupConf *tC = *reinterpret_cast<DupConf **>(pCfg);
-    try {
-        tC->currentDuplicationType = DuplicationType::stringToEnum(pDupType);
-    } catch (std::exception e) {
-        return DuplicationType::c_ERROR_ON_STRING_VALUE;
-    }
-    return NULL;
-}
-
-const char*
 setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
@@ -408,16 +390,28 @@ setThreads(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
  */
 const char*
 setTimeout(cmd_parms* pParams, void* pCfg, const char* pTimeout) {
-	size_t lTimeout;
-	try {
-		lTimeout = boost::lexical_cast<unsigned int>(pTimeout);
-	} catch (boost::bad_lexical_cast) {
-		return "Invalid value(s) for timeout.";
-	}
+    size_t lTimeout;
+    try {
+        lTimeout = boost::lexical_cast<unsigned int>(pTimeout);
+    } catch (boost::bad_lexical_cast) {
+        return "Invalid value(s) for timeout.";
+    }
 
-	gProcessor->setTimeout(lTimeout);
-	return NULL;
+    gProcessor->setTimeout(lTimeout);
+    return NULL;
 }
+
+const char*
+setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
+    try {
+        DuplicationType::eDuplicationType v = DuplicationType::stringToEnum(pDupType);
+        DuplicationType::value = v;
+    } catch (std::exception e) {
+        return DuplicationType::c_ERROR_ON_STRING_VALUE;
+    }
+    return NULL;
+}
+
 
 /**
  * @brief Set the minimum and maximum queue size
@@ -580,6 +574,11 @@ command_rec gCmds[] = {
 		0,
 		OR_ALL,
 		"Set the program name for the stats log messages"),
+	AP_INIT_TAKE1("DupDuplicationType",
+		reinterpret_cast<const char *(*)()>(&setDuplicationType),
+		0,
+		OR_ALL,
+		"Sets the duplication type that will used for all the following filters declarations"),
 	AP_INIT_TAKE1("DupUrlCodec",
 		reinterpret_cast<const char *(*)()>(&setUrlCodec),
 		0,
@@ -635,11 +634,6 @@ command_rec gCmds[] = {
 		0,
 		ACCESS_CONF,
 		""),
-	AP_INIT_TAKE1("DupDuplicationType",
-		reinterpret_cast<const char *(*)()>(&setDuplicationType),
-		0,
-		ACCESS_CONF,
-		"Sets the duplication type that will used for all the following filters declarations"),
 	AP_INIT_NO_ARGS("Dup",
 		reinterpret_cast<const char *(*)()>(&setActive),
 		0,
@@ -660,7 +654,9 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, filterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
+    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+        ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
+    }
 #endif
 }
 
