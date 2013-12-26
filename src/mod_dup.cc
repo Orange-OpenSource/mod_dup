@@ -223,9 +223,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             AnswerHolder *ans = gProcessor->getAnswer(rId);
             Log::debug("### After loop GA: %d | Answer size: %d", rId, ctx->answer.length());
             ans->m_body = ctx->answer;
-            //            Log::debug("### Unlocking: %d", rId);
-            // FIXME ans->m_sync.unlock();
-            ans->m_sync.lock();
+            Log::debug("### Unlocking: %d", rId);
+            ans->m_sync.unlock();
 
     //FIXME    ctx->~RequestContext();
     //    pFilter->ctx = (void *) -1;
@@ -667,9 +666,9 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, filterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    //    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
         ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
-        //    }
+    }
 #endif
 }
 

@@ -358,45 +358,62 @@ RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pReq
 void
 RequestProcessor::setUrlCodec(const std::string &pUrlCodec)
 {
-	mUrlCodec.reset(getUrlCodec(pUrlCodec));
+    mUrlCodec.reset(getUrlCodec(pUrlCodec));
+}
+
+void
+sendPlainBody(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo){
+    slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
+    // Avoid Expect: 100 continue
+    slist = curl_slist_append(slist, "Expect:");
+
+    std::string contentLen = std::string("Content-Length: ") +
+        boost::lexical_cast<std::string>(rInfo.mBody.size());
+    curl_slist_append(slist, contentLen.c_str());
+    curl_easy_setopt(curl, CURLOPT_POST, 1);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, rInfo.mBody.size());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, rInfo.mBody.c_str());
+
+}
+
+void
+sendDupFormat(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo, const AnswerHolder &a){
+    Log::debug("*** SendDupFormat ***");
+
 }
 
 void
 RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo) {
     Log::debug("**** PERFORMING CURL CALL");
-
+    AnswerHolder *a = NULL;
     // reply with answer mode check
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
         // fetching the request answer object completed
-        AnswerHolder *a = getAnswer(rInfo.mId);
+        a = getAnswer(rInfo.mId);
         // Wait for the answer to be fetched
-        Log::debug("**** locking on : %d", rInfo.mId);
         a->m_sync.lock();
-        Log::debug("*****Answer synced: %s", a->m_body.c_str());
+        Log::debug("*****Answer synced: %d", a->m_body.length());
         // remove answer from map
         rmAnswer(rInfo.mId);
     }
+    // Setting URI
+    std::string uri = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
+    curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
 
-    std::string request = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
-    curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
+    // Sending body in plain or dup format according to the duplication need
     struct curl_slist *slist = NULL;
-    if (rInfo.hasBody()) {
-        slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
-        // Avoid Expect: 100 continue
-        slist = curl_slist_append(slist, "Expect:");
-        std::string contentLen = std::string("Content-Length: ") +
-            boost::lexical_cast<std::string>(rInfo.mBody.size());
-        curl_slist_append(slist, contentLen.c_str());
-        curl_easy_setopt(curl, CURLOPT_POST, 1);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, rInfo.mBody.size());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, rInfo.mBody.c_str());
+    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+        sendDupFormat(curl, slist, rInfo, *a);
+    } else if (rInfo.hasBody()){
+        sendPlainBody(curl, slist, rInfo);
     } else {
+        // Regular GET case
         curl_easy_setopt(curl, CURLOPT_HTTPGET, 1);
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, NULL);
     }
 
-    Log::debug("Duplicating: %s", request.c_str());
+    Log::debug("Duplicating: %s", uri.c_str());
 
     int err = curl_easy_perform(curl);
     if (slist)
@@ -404,10 +421,10 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     if (err == CURLE_OPERATION_TIMEDOUT) {
         __sync_fetch_and_add(&mTimeoutCount, 1);
     } else if (err) {
-        Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, request.c_str());
+        Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, uri.c_str());
     }
 
-
+    delete a;
 }
 
 /**
@@ -447,7 +464,6 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
 
 AnswerHolder *
 RequestProcessor::getAnswer(unsigned int requestId) {
-    Log::debug("GetAnswer for: %d", requestId);
     AnswerHolder *ret = NULL;
     boost::lock_guard<boost::mutex> guard(mAnswerSync);
     std::map<unsigned int, AnswerHolder *>::iterator a;
@@ -456,11 +472,8 @@ RequestProcessor::getAnswer(unsigned int requestId) {
         ret = new AnswerHolder();
         mAnswers[requestId] = ret;
     }
-    else {
-        Log::debug("Found in map");
+    else
         ret = a->second;
-    }
-    Log::debug("returning AnswerHolder");
     return ret;
 }
 
