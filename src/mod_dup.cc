@@ -349,7 +349,6 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     return NULL;
 }
 
-    // TODO adapt to new api
 const char*
 setRawSubstitute(cmd_parms* pParams, void* pCfg,
                  const char* pType,
@@ -358,9 +357,12 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     if (lErrorMsg) {
         return lErrorMsg;
     }
+    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+    assert(conf);
+
     try {
-        // gProcessor->addRawSubstitution(pParams->path, pMatch, pReplace,
-        //                                ApplicationScope::stringToEnum(pType));
+        gProcessor->addRawSubstitution(pParams->path, pMatch, pReplace,
+                                       *conf);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
     }
@@ -471,7 +473,7 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
         return lErrorMsg;
     }
     try {
-        // gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, conf->currentApplicationScope);
+        gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, *conf);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
     }
@@ -539,7 +541,7 @@ setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
         return lErrorMsg;
     }
     try {
-        // gProcessor->addRawFilter(pParams->path, pExpression, conf->currentApplicationScope);
+        gProcessor->addRawFilter(pParams->path, pExpression, *conf);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in filter definition.";
     }

@@ -40,9 +40,9 @@ set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 #-----------------------------------------------------------------------------
 
 if(DEBUG)
-	set(CMAKE_CXX_FLAGS "-g -O2 -Wall -std=c++0x")
+  set(CMAKE_CXX_FLAGS "-g -O2 -Wall -std=c++0x")
 else()
-	set(CMAKE_CXX_FLAGS "-O2 -Wall -std=c++0x")
+  set(CMAKE_CXX_FLAGS "-O2 -Wall -std=c++0x")
 endif()
 
 if(BUILD_COVERAGE)

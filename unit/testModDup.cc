@@ -37,6 +37,27 @@ extern module AP_DECLARE_DATA dup_module;
 
 using namespace DupModule;
 
+
+//////////////////////////////////////////////////////////////
+// Dummy implementations of apache funcs
+/////////////////////////////////////////////////////////////
+apr_status_t
+ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *){
+    return OK;
+}
+
+const apr_bucket_type_t 	apr_bucket_type_eos = apr_bucket_type_t();
+apr_bucket_brigade * 	apr_brigade_create (apr_pool_t *, apr_bucket_alloc_t *){
+    return NULL;
+}
+
+apr_status_t 	apr_brigade_cleanup (void *){
+    return OK;
+}
+//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+
+
 namespace DupModule {
 
 RequestProcessor *gProcessor;
@@ -149,9 +170,6 @@ void TestModDup::testRequestHandler()
 
 void TestModDup::testConfig()
 {
-        CPPUNIT_ASSERT(setDestination(NULL, NULL, NULL));
-        CPPUNIT_ASSERT(setDestination(NULL, NULL, ""));
-        CPPUNIT_ASSERT(!setDestination(NULL, NULL, "localhost"));
 
         CPPUNIT_ASSERT(setThreads(NULL, NULL, "", "1"));
         CPPUNIT_ASSERT(setThreads(NULL, NULL, "1", ""));
@@ -173,7 +191,12 @@ void TestModDup::testConfig()
         strcpy(lParms->path, "/spp/main");
         // Pointer to a boolean meant to activate the module on a given path
         DupConf *lDoHandle = new DupConf();
-        //        memset(lDoHandle, 0, sizeof(*lDoHandle));
+
+
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) &lDoHandle, NULL));
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) &lDoHandle, ""));
+        CPPUNIT_ASSERT(!setDestination(lParms, (void *) &lDoHandle, "localhost"));
+
         CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)&lDoHandle, "toto", "toto", "titi"));
 
         // Invalid regexp
@@ -215,11 +238,11 @@ void TestModDup::testDuplicationType()
         DupConf *conf = new DupConf();
 
         // Default value
-        CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, conf->currentDuplicationType);
+        CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, DuplicationType::value);
 
         // Switching to COMPLETE_REQUEST
         CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)&conf, "COMPLETE_REQUEST"));
-        CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, conf->currentDuplicationType);
+        CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, DuplicationType::value);
 
         // Incorrect value
         CPPUNIT_ASSERT(setDuplicationType(lParms, (void *)&conf, "incorrect_vALUE"));

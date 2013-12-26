@@ -28,6 +28,7 @@
 #include "RequestInfo.hh"
 #include "UrlCodec.hh"
 
+typedef void CURL;
 
 namespace DupModule {
 
@@ -161,8 +162,9 @@ namespace DupModule {
 	/**
 	 * @brief Constructs a RequestProcessor
 	 */
-	RequestProcessor() : mTimeout(0), mTimeoutCount(0), mDuplicatedCount(0) {
-		setUrlCodec();
+	RequestProcessor() : mTimeout(0), mTimeoutCount(0),
+                             mDuplicatedCount(0) , mAnswerSync(){
+            setUrlCodec();
 	}
 
 	/**

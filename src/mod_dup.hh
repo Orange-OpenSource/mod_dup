@@ -209,4 +209,8 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope);
  */
 void registerHooks(apr_pool_t *pPool);
 
+
+const char*
+setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType);
+
 }

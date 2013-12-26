@@ -108,7 +108,8 @@ RequestProcessor::addFilter(const std::string &pPath, const std::string &pField,
 void
 RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFilter,
                                 const DupConf &pAssociatedConf) {
-    //    mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, scope));
+    mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, pAssociatedConf.currentApplicationScope,
+                                                   pAssociatedConf.currentDupDestination));
 }
 
 /**
@@ -121,13 +122,15 @@ RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFil
 void
 RequestProcessor::addSubstitution(const std::string &pPath, const std::string &pField, const std::string &pMatch,
                                   const std::string &pReplace,  const DupConf &pAssociatedConf) {
-    //    mCommands[pPath].mSubstitutions[boost::to_upper_copy(pField)].push_back(tSubstitute(pMatch, pReplace, scope));
+    mCommands[pPath].mSubstitutions[boost::to_upper_copy(pField)].push_back(tSubstitute(pMatch, pReplace,
+                                                                                        pAssociatedConf.currentApplicationScope));
 }
 
 void
 RequestProcessor::addRawSubstitution(const std::string &pPath, const std::string &pRegex, const std::string &pReplace,
                                       const DupConf &pAssociatedConf){
-    //    mCommands[pPath].mRawSubstitutions.push_back(tSubstitute(pRegex, pReplace, pScope));
+    mCommands[pPath].mRawSubstitutions.push_back(tSubstitute(pRegex, pReplace,
+                                                             pAssociatedConf.currentApplicationScope));
 }
 
 /**
@@ -335,6 +338,10 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
 const tFilter *
 RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pRequest) {
     std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(pConfPath);
+
+    // No filters for this path
+    if (it == mCommands.end() || (!it->second.mFilters.size() && !it->second.mRawFilters.size()))
+        return NULL;
 
     tRequestProcessorCommands lCommands = (*it).second;
 
