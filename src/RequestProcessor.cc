@@ -380,7 +380,30 @@ sendPlainBody(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo){
 void
 sendDupFormat(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo, const AnswerHolder &a){
     Log::debug("*** SendDupFormat ***");
+    slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
+    // Avoid Expect: 100 continue
+    slist = curl_slist_append(slist, "Expect:");
 
+    //Computing dup format string
+    std::stringstream ss;
+    //Request body
+    ss << std::setfill('0') << std::setw(8) << rInfo.mBody.length() << rInfo.mBody;
+    // Answer header
+    ss << std::setfill('0') << std::setw(8) << a.m_header.length() << a.m_header;
+    // Answer Body
+    ss << std::setfill('0') << std::setw(8) << a.m_body.length() << a.m_body;
+
+
+    std::string content = ss.str();
+
+    std::string contentLen = std::string("Content-Length: ") +
+        boost::lexical_cast<std::string>(content.size());
+    curl_slist_append(slist, contentLen.c_str());
+    curl_easy_setopt(curl, CURLOPT_POST, 1);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, content.size());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, content.c_str());
+    Log::debug("Content: @@@%s@@@", content.c_str());
 }
 
 void
