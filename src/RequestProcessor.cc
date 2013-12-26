@@ -361,6 +361,55 @@ RequestProcessor::setUrlCodec(const std::string &pUrlCodec)
 	mUrlCodec.reset(getUrlCodec(pUrlCodec));
 }
 
+void
+RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo) {
+    Log::debug("**** PERFORMING CURL CALL");
+
+    // reply with answer mode check
+    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+        // fetching the request answer object completed
+        AnswerHolder *a = getAnswer(rInfo.mId);
+        // Wait for the answer to be fetched
+        Log::debug("**** locking on : %d", rInfo.mId);
+        a->m_sync.lock();
+        Log::debug("*****Answer synced: %s", a->m_body.c_str());
+        // remove answer from map
+        rmAnswer(rInfo.mId);
+    }
+
+    std::string request = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
+    curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
+    struct curl_slist *slist = NULL;
+    if (rInfo.hasBody()) {
+        slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
+        // Avoid Expect: 100 continue
+        slist = curl_slist_append(slist, "Expect:");
+        std::string contentLen = std::string("Content-Length: ") +
+            boost::lexical_cast<std::string>(rInfo.mBody.size());
+        curl_slist_append(slist, contentLen.c_str());
+        curl_easy_setopt(curl, CURLOPT_POST, 1);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, rInfo.mBody.size());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, rInfo.mBody.c_str());
+    } else {
+        curl_easy_setopt(curl, CURLOPT_HTTPGET, 1);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, NULL);
+    }
+
+    Log::debug("Duplicating: %s", request.c_str());
+
+    int err = curl_easy_perform(curl);
+    if (slist)
+        curl_slist_free_all(slist);
+    if (err == CURLE_OPERATION_TIMEDOUT) {
+        __sync_fetch_and_add(&mTimeoutCount, 1);
+    } else if (err) {
+        Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, request.c_str());
+    }
+
+
+}
+
 /**
  * @brief Run the infinite loop which pops new requests of the given queue, processes them and sends the over to the configured destination
  * @param pQueue the queue which gets filled with incoming requests
@@ -390,38 +439,35 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
         const tFilter *matchedFilter;
         if ((matchedFilter = processRequest(lQueueItem.mConfPath, lQueueItem))) {
             __sync_fetch_and_add(&mDuplicatedCount, 1);
-            std::string request = matchedFilter->mDestination + lQueueItem.mPath + "?" + lQueueItem.mArgs;
-            curl_easy_setopt(lCurl, CURLOPT_URL, request.c_str());
-            struct curl_slist *slist = NULL;
-            if (lQueueItem.hasBody()) {
-                slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
-                // Avoid Expect: 100 continue
-                slist = curl_slist_append(slist, "Expect:");
-                std::string contentLen = std::string("Content-Length: ") +
-                    boost::lexical_cast<std::string>(lQueueItem.mBody.size());
-                curl_slist_append(slist, contentLen.c_str());
-                curl_easy_setopt(lCurl, CURLOPT_POST, 1);
-                curl_easy_setopt(lCurl, CURLOPT_HTTPHEADER, slist);
-                curl_easy_setopt(lCurl, CURLOPT_POSTFIELDSIZE, lQueueItem.mBody.size());
-                curl_easy_setopt(lCurl, CURLOPT_POSTFIELDS, lQueueItem.mBody.c_str());
-            } else {
-                curl_easy_setopt(lCurl, CURLOPT_HTTPGET, 1);
-                curl_easy_setopt(lCurl, CURLOPT_HTTPHEADER, NULL);
-            }
-
-            Log::debug("Duplicating: %s", request.c_str());
-
-            int err = curl_easy_perform(lCurl);
-            if (slist)
-                curl_slist_free_all(slist);
-            if (err == CURLE_OPERATION_TIMEDOUT) {
-                __sync_fetch_and_add(&mTimeoutCount, 1);
-            } else if (err) {
-                Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, request.c_str());
-            }
+            performCurlCall(lCurl, *matchedFilter, lQueueItem);
         }
     }
     curl_easy_cleanup(lCurl);
+}
+
+AnswerHolder *
+RequestProcessor::getAnswer(unsigned int requestId) {
+    Log::debug("GetAnswer for: %d", requestId);
+    AnswerHolder *ret = NULL;
+    boost::lock_guard<boost::mutex> guard(mAnswerSync);
+    std::map<unsigned int, AnswerHolder *>::iterator a;
+    a = mAnswers.find(requestId);
+    if (a == mAnswers.end()) {
+        ret = new AnswerHolder();
+        mAnswers[requestId] = ret;
+    }
+    else {
+        Log::debug("Found in map");
+        ret = a->second;
+    }
+    Log::debug("returning AnswerHolder");
+    return ret;
+}
+
+void
+RequestProcessor::rmAnswer(unsigned int requestId) {
+    boost::lock_guard<boost::mutex> guard(mAnswerSync);
+    mAnswers.erase(requestId);
 }
 
 tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationScope s)
@@ -443,5 +489,20 @@ tSubstitute::tSubstitute(const std::string &regex, const std::string &replacemen
     : tFilterBase(regex, scope)
     , mReplacement(replacement){
 }
+
+AnswerHolder::AnswerHolder(const std::string &header, const std::string &body)
+    : m_header(header)
+    , m_body(body)
+    , m_sync() {
+    m_sync.lock();
+}
+
+AnswerHolder::AnswerHolder()
+    : m_header()
+    , m_body()
+    , m_sync() {
+    m_sync.lock();
+}
+
 
 }

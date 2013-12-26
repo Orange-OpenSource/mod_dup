@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -27,11 +27,13 @@ namespace DupModule {
      * @brief Contains information about the incoming request.
      */
     class RequestInfo {
+
     private:
 	/** @brief True if the request processor should stop ater seeing this object. */
 	bool mPoison;
 
     public:
+        unsigned int mId;
 	/** @brief The location (in the conf) which matched this query. */
 	std::string mConfPath;
 	/** @brief The path part of the request. */
@@ -47,7 +49,8 @@ namespace DupModule {
 	 * @param pPath The path part of the request
 	 * @param pConfPath The parameters part of the query (without leading ?)
 	 */
-        RequestInfo(const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *body = 0);
+        RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath,
+                    const std::string &pArgs, const std::string *body = 0);
 
 	/**
 	 * @brief Constructs a poisonous object causing the processor to stop when read

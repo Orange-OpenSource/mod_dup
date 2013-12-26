@@ -42,6 +42,7 @@ namespace DupModule {
 
 
 const char *gName = "Dup";
+const char *gOutName = "DupOut";
 const char *c_COMPONENT_VERSION = "Dup/1.0";
 
 namespace DuplicationType {
@@ -126,10 +127,12 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
                 // const char * 	apr_table_get (const apr_table_t *t, const char *key)
                 //     void 	apr_table_set (apr_table_t *t, const char *key, const char *val)
                 apr_table_t *headers = pRequest->headers_in;
-                std::string reqId = boost::lexical_cast<std::string>(nextRequestID());
+                unsigned int rId = nextRequestID();
+                std::string reqId = boost::lexical_cast<std::string>(rId);
                 apr_table_set(headers, "request_id", reqId.c_str());
                 // Asynchronous push
-                gThreadPool->push(RequestInfo((*tConf)->dirName, pRequest->uri, pRequest->args ? pRequest->args : "", &pBH->body));
+                gThreadPool->push(RequestInfo(rId, (*tConf)->dirName,
+                                              pRequest->uri, pRequest->args ? pRequest->args : "", &pBH->body));
                 delete pBH;
                 pF->ctx = (void *)1;
                 break;
@@ -174,11 +177,10 @@ struct RequestContext {
 
 static apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+
+    Log::debug("### Output filter ###");
     assert(DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER);
 
-    request_rec *pRequest = pFilter->r;
-    apr_table_t *headers = pRequest->headers_in;
-    const char *reqId = apr_table_get(headers, "request_id");
 
     struct RequestContext *ctx;
     // Context init
@@ -191,6 +193,11 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         ctx->filter_state = 1;
     }
 
+    request_rec *pRequest = pFilter->r;
+    apr_table_t *headers = pRequest->headers_in;
+    const char *reqId = apr_table_get(headers, "request_id");
+    unsigned int rId = boost::lexical_cast<unsigned int>(reqId);
+
     apr_bucket *currentBucket;
 
     while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade)) {
@@ -202,8 +209,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         if ((rv == APR_SUCCESS) && (data != NULL)) {
             ctx->answer.append(data, len);
         }
-        if (APR_BUCKET_IS_EOS(currentBucket))
-            ctx->filter_state = 2;
         /* Remove bucket e from bb. */
         APR_BUCKET_REMOVE(currentBucket);
         /* Insert it into  temporary brigade. */
@@ -212,16 +217,24 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         rv = ap_pass_brigade(pFilter->next, ctx->tmpbb);
         // TODO if (rv) ...;
         apr_brigade_cleanup(ctx->tmpbb);
-        // TODO Detect la fin
+        if (APR_BUCKET_IS_EOS(currentBucket)) {
+            Log::debug("END OF STREAM BUCKET");
 
+            AnswerHolder *ans = gProcessor->getAnswer(rId);
+            Log::debug("### After loop GA: %d | Answer size: %d", rId, ctx->answer.length());
+            ans->m_body = ctx->answer;
+            //            Log::debug("### Unlocking: %d", rId);
+            // FIXME ans->m_sync.unlock();
+            ans->m_sync.lock();
+
+    //FIXME    ctx->~RequestContext();
+    //    pFilter->ctx = (void *) -1;
+
+            Log::debug("### RETURN");
+        }
     }
-    //    Log::debug("Answer read: %s", ctx->answer.c_str());
-    if (ctx->filter_state == 2) {
-        Log::debug("Response catched: %s", ctx->answer.c_str());
-        delete ctx;
-    }
+
     return OK;
-
 }
 
 /**
@@ -654,9 +667,9 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, filterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+    //    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
         ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
-    }
+        //    }
 #endif
 }
 

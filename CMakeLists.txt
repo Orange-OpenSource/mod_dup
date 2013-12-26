@@ -55,7 +55,7 @@ else()
     set(CMAKE_CXX_FLAGS "-g -O0 -fno-inline -Wall -Wno-deprecated -std=c++0x")
     add_definitions(-DDEBUG)
   else()
-    add_definitions(-DNDEBUG)
+#    add_definitions(-DNDEBUG)
   endif()
 endif()
 
@@ -113,9 +113,9 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
 endif()
 
 
-if(DEBUG)
+#if(DEBUG)
   add_definitions(-DDEBUG)
-endif()
+#endif()
 
 # add the binary tree to the search path for include files
 include_directories("${PROJECT_BINARY_DIR}")

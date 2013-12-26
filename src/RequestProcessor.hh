@@ -120,6 +120,17 @@ namespace DupModule {
         std::list<tSubstitute> mRawSubstitutions;
     };
 
+    struct AnswerHolder {
+
+        AnswerHolder(const std::string &header, const std::string &body);
+        AnswerHolder();
+
+        std::string     m_header;
+        std::string     m_body;
+
+        boost::mutex    m_sync;
+    };
+
     /**
      * @brief RequestProcessor is responsible for processing and sending requests to their destination.
      * This is where all the business logic is configured and executed.
@@ -132,17 +143,19 @@ namespace DupModule {
 	std::map<std::string, tRequestProcessorCommands> mCommands;
 
 	/** @brief The timeout for outgoing requests in ms */
-	unsigned int mTimeout;
+	unsigned int                                    mTimeout;
 
 	/** @brief The number of requests which timed out */
-	volatile unsigned int mTimeoutCount;
+	volatile unsigned int                           mTimeoutCount;
 
         /** @brief The number of requests duplicated */
-        volatile unsigned int mDuplicatedCount;
+        volatile unsigned int                           mDuplicatedCount;
 
         /** @brief The url codec */
-        boost::scoped_ptr<const IUrlCodec> mUrlCodec;
+        boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
 
+	std::map<unsigned int, AnswerHolder *>          mAnswers;
+        boost::mutex                                    mAnswerSync;
 
     public:
 	/**
@@ -166,6 +179,9 @@ namespace DupModule {
 	const unsigned int
 	getTimeoutCount();
 
+        void
+        performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
+
         /**
          * @brief Get the number of requests duplicated since last call to this method
          * @return The duplicated count
@@ -179,6 +195,9 @@ namespace DupModule {
          */
         void
         setUrlCodec(const std::string &pUrlCodec="default");
+
+        AnswerHolder*
+        getAnswer(unsigned int requestId);
 
         /**
          * @brief Add a filter for all requests on a given path
@@ -271,5 +290,9 @@ namespace DupModule {
                       std::list<tKeyVal> &pParsedArgs,
                       ApplicationScope::eApplicationScope scope,
                       std::string &result);
+
+        void
+        rmAnswer(unsigned int requestId);
+
     };
 }
