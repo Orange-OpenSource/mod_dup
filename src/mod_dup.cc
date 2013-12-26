@@ -122,17 +122,19 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
 
                 Log::debug("Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
                 Log::debug("Uri:%s, dir name:%s", pRequest->uri, (*tConf)->dirName);
-                // Do context enrichment synchronously
-                // TODO
-                // const char * 	apr_table_get (const apr_table_t *t, const char *key)
-                //     void 	apr_table_set (apr_table_t *t, const char *key, const char *val)
-                apr_table_t *headers = pRequest->headers_in;
+
+                // TODO Do context enrichment synchronously
+
+                apr_table_t *headersIn = pRequest->headers_in;
                 unsigned int rId = nextRequestID();
                 std::string reqId = boost::lexical_cast<std::string>(rId);
-                apr_table_set(headers, "request_id", reqId.c_str());
+                apr_table_set(headersIn, "request_id", reqId.c_str());
+                //                apr_table_set(pRequest->headers_out, "request_id", reqId.c_str());
+
                 // Asynchronous push
                 gThreadPool->push(RequestInfo(rId, (*tConf)->dirName,
                                               pRequest->uri, pRequest->args ? pRequest->args : "", &pBH->body));
+
                 delete pBH;
                 pF->ctx = (void *)1;
                 break;
@@ -191,6 +193,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = ctx;
         ctx->tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
         ctx->filter_state = 1;
+    } else if (ctx == (void *) -1) {
+        return ap_pass_brigade(pFilter->next, ctx->tmpbb);
     }
 
     request_rec *pRequest = pFilter->r;
@@ -219,17 +223,13 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         apr_brigade_cleanup(ctx->tmpbb);
         if (APR_BUCKET_IS_EOS(currentBucket)) {
             Log::debug("END OF STREAM BUCKET");
-
+            // Pushing the answer to the processor
+            // TODO dissociate body from header if possible
             AnswerHolder *ans = gProcessor->getAnswer(rId);
-            Log::debug("### After loop GA: %d | Answer size: %d", rId, ctx->answer.length());
             ans->m_body = ctx->answer;
-            Log::debug("### Unlocking: %d", rId);
             ans->m_sync.unlock();
-
-    //FIXME    ctx->~RequestContext();
-    //    pFilter->ctx = (void *) -1;
-
-            Log::debug("### RETURN");
+            //ctx->~RequestContext();
+            //            pFilter->ctx = (void *) -1;
         }
     }
 
