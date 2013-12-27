@@ -102,7 +102,7 @@ RequestProcessor::addFilter(const std::string &pPath, const std::string &pField,
 
     mCommands[pPath].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
                                                                      tFilter(pFilter, pAssociatedConf.currentApplicationScope,
-                                                                              pAssociatedConf.currentDupDestination)));
+                                                                             pAssociatedConf.currentDupDestination)));
 }
 
 void
@@ -169,7 +169,7 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
             if ((it->second.mScope & scope) &&                                  // Scope check
                 boost::regex_search(lKeyVal.second, it->second.mRegex)) {        // Regex match
                 Log::debug("Key filter matched: %s | %s", lKeyVal.second.c_str(), it->second.mRegex.str().c_str());
-                return &it->second;
+                return new tFilter(it->second);
             }
         }
     }
@@ -203,6 +203,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
 
     // Key filters on header
     if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER))){
+        Log::debug("Filter on HEADER match: destination:%s", matched->mDestination.c_str());
         return matched;
     }
 
@@ -210,8 +211,10 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
     if (keyFilterOnBody){
         std::list<tKeyVal> lParsedArgs;
         parseArgs(lParsedArgs, pRequest.mBody);
-        if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY)))
+        if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY))) {
+            Log::debug("Filter on BODY match: destination:%s", matched->mDestination.c_str());
             return matched;
+        }
     }
 
     // Raw filters matching
@@ -376,7 +379,7 @@ sendPlainBody(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo){
 
     std::string contentLen = std::string("Content-Length: ") +
         boost::lexical_cast<std::string>(rInfo.mBody.size());
-    curl_slist_append(slist, contentLen.c_str());
+    slist = curl_slist_append(slist, contentLen.c_str());
     curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, rInfo.mBody.size());
@@ -404,7 +407,7 @@ sendDupFormat(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo, co
 
     std::string contentLen = std::string("Content-Length: ") +
         boost::lexical_cast<std::string>(content->size());
-    curl_slist_append(slist, contentLen.c_str());
+    slist = curl_slist_append(slist, contentLen.c_str());
     curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, content->size());
@@ -415,6 +418,7 @@ sendDupFormat(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo, co
 
 void
 RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo) {
+
     Log::debug("**** PERFORMING CURL CALL");
     AnswerHolder *a = NULL;
     // reply with answer mode check
@@ -424,9 +428,8 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
         // Wait for the answer to be fetched
         a->m_sync.lock();
         Log::debug("*****Answer synced: %d", (int)a->m_body.length());
-        // remove answer from map
-        rmAnswer(rInfo.mId);
     }
+
     // Setting URI
     std::string uri = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
     curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
@@ -449,7 +452,6 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     int err = curl_easy_perform(curl);
     if (slist)
         curl_slist_free_all(slist);
-    delete content;
 
     if (err == CURLE_OPERATION_TIMEDOUT) {
         __sync_fetch_and_add(&mTimeoutCount, 1);
@@ -457,7 +459,12 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
         Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, uri.c_str());
     }
 
-    delete a;
+    delete content;
+    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+        // remove answer from map
+        rmAnswer(rInfo.mId);
+        //delete a;
+    }
 }
 
 /**
@@ -490,6 +497,7 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
         if ((matchedFilter = processRequest(lQueueItem.mConfPath, lQueueItem))) {
             __sync_fetch_and_add(&mDuplicatedCount, 1);
             performCurlCall(lCurl, *matchedFilter, lQueueItem);
+            delete matchedFilter;
         }
     }
     curl_easy_cleanup(lCurl);
@@ -522,13 +530,26 @@ tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationSco
 }
 
 tFilterBase::~tFilterBase() {
-
 }
 
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
                  const std::string &currentDupDestination)
     : tFilterBase(regex, scope)
     , mDestination(currentDupDestination) {
+}
+
+    tFilter::tFilter(const tFilter& other): tFilterBase(other) {
+    if (&other == this)
+        return;
+    mField = other.mField;
+    mDestination = other.mDestination;
+}
+
+tFilterBase::tFilterBase(const tFilterBase &other) {
+    if (&other == this)
+        return;
+    mScope = other.mScope;
+    mRegex = other.mRegex;
 }
 
 tSubstitute::tSubstitute(const std::string &regex, const std::string &replacement, ApplicationScope::eApplicationScope scope)
@@ -548,6 +569,10 @@ AnswerHolder::AnswerHolder()
     , m_body()
     , m_sync() {
     m_sync.lock();
+}
+
+AnswerHolder::~AnswerHolder() {
+    Log::debug("Destroyed");
 }
 
 

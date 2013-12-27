@@ -42,7 +42,6 @@ namespace DupModule {
 
 
 const char *gName = "Dup";
-const char *gOutName = "DupOut";
 const char *c_COMPONENT_VERSION = "Dup/1.0";
 
 namespace DuplicationType {
@@ -120,8 +119,8 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
 #endif
                 pBH->sent = 1;
 
-                Log::debug("Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
-                Log::debug("Uri:%s, dir name:%s", pRequest->uri, (*tConf)->dirName);
+                Log::debug("### Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
+                Log::debug("### Uri:%s, dir name:%s", pRequest->uri, (*tConf)->dirName);
 
                 // TODO Do context enrichment synchronously
 
@@ -179,22 +178,21 @@ struct RequestContext {
 
 static apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-
-    Log::debug("### Output filter ###");
-    assert(DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER);
-
-
+    if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
+        Log::debug("Conf error, do not setOutputFilter with duplicatinType != REQUEST_WITH_ANSWER");
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
     struct RequestContext *ctx;
-    // Context init
     ctx = (RequestContext *)pFilter->ctx;
     if (ctx == NULL) {
+    // Context init
         ctx = (RequestContext *)apr_palloc(pFilter->r->pool, sizeof(*ctx));
         ctx = new (ctx) RequestContext();
         pFilter->ctx = ctx;
         ctx->tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
         ctx->filter_state = 1;
     } else if (ctx == (void *) -1) {
-        return ap_pass_brigade(pFilter->next, ctx->tmpbb);
+        return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     request_rec *pRequest = pFilter->r;
@@ -203,7 +201,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     unsigned int rId = boost::lexical_cast<unsigned int>(reqId);
 
     apr_bucket *currentBucket;
-
     while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade)) {
         const char *data;
         apr_size_t len;
@@ -220,17 +217,21 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         /* Pass brigade downstream. */
         rv = ap_pass_brigade(pFilter->next, ctx->tmpbb);
         // TODO if (rv) ...;
-        apr_brigade_cleanup(ctx->tmpbb);
         if (APR_BUCKET_IS_EOS(currentBucket)) {
+            apr_brigade_cleanup(ctx->tmpbb);
             Log::debug("END OF STREAM BUCKET");
             // Pushing the answer to the processor
             // TODO dissociate body from header if possible
             AnswerHolder *ans = gProcessor->getAnswer(rId);
             ans->m_body = ctx->answer;
             ans->m_sync.unlock();
-            //ctx->~RequestContext();
-            //            pFilter->ctx = (void *) -1;
+            //            ctx->~RequestContext();
+            pFilter->ctx = (void *) -1;
         }
+        else {
+            apr_brigade_cleanup(ctx->tmpbb);
+        }
+
     }
 
     return OK;

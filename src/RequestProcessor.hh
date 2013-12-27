@@ -68,6 +68,9 @@ namespace DupModule {
         tFilterBase(const std::string &regex,
                     ApplicationScope::eApplicationScope scope);
 
+        tFilterBase(const tFilterBase &other);
+
+
         virtual ~tFilterBase();
 
         ApplicationScope::eApplicationScope mScope;     /** The action of the filter */
@@ -83,6 +86,10 @@ namespace DupModule {
                 ApplicationScope::eApplicationScope scope,
                 const std::string &currentDupDestination);
 
+        tFilter(const tFilter& other);
+
+        virtual ~tFilter(){}
+
         std::string mField;                     /** The key or field the filter applies on */
         std::string mDestination;               /** The host to duplicate the request to if the filter matches
                                                     the destination in &lt;host>[:&lt;port>] format */
@@ -96,6 +103,7 @@ namespace DupModule {
         tSubstitute(const std::string &regex,
                       const std::string &replacement, ApplicationScope::eApplicationScope scope);
 
+        virtual ~tSubstitute() {}
         std::string mReplacement; /** The replacement value regex */
     };
 
@@ -125,6 +133,8 @@ namespace DupModule {
 
         AnswerHolder(const std::string &header, const std::string &body);
         AnswerHolder();
+
+        virtual ~AnswerHolder();
 
         std::string     m_header;
         std::string     m_body;
