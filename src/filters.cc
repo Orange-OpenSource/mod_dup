@@ -51,7 +51,7 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
 
                 Log::debug("### Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
                 Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
-
+                Log::debug("### Request args: %s", pRequest->args);
                 // TODO Do context enrichment synchronously
 
                 apr_table_t *headersIn = pRequest->headers_in;
@@ -102,7 +102,7 @@ struct RequestContext {
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
-        Log::debug("Conf error, do not setOutputFilter with duplicatinType != REQUEST_WITH_ANSWER");
+        Log::debug("Conf error, do not setOutputFilter with duplicationType != REQUEST_WITH_ANSWER");
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
     struct RequestContext *ctx;

@@ -223,11 +223,11 @@ void TestModDup::testScope()
         CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->currentApplicationScope);
 
         // Switching to ALL
-        CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)&conf, "ALL"));
+        CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "ALL"));
         CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->currentApplicationScope);
 
         // Incorrect value
-        CPPUNIT_ASSERT(setApplicationScope(lParms, (void *)&conf, "incorrect_vALUE"));
+        CPPUNIT_ASSERT(setApplicationScope(lParms, (void *)conf, "incorrect_vALUE"));
 }
 
 void TestModDup::testDuplicationType()

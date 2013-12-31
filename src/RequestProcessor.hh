@@ -101,7 +101,10 @@ namespace DupModule {
     struct tSubstitute : public tFilterBase{
 
         tSubstitute(const std::string &regex,
-                      const std::string &replacement, ApplicationScope::eApplicationScope scope);
+                    const std::string &replacement,
+                    ApplicationScope::eApplicationScope scope);
+
+        tSubstitute(const tSubstitute &other);
 
         virtual ~tSubstitute();
 

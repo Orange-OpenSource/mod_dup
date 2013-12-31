@@ -195,7 +195,6 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
 
 const char*
 setRawSubstitute(cmd_parms* pParams, void* pCfg,
-                 const char* pType,
                  const char* pMatch, const char* pReplace){
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
@@ -288,7 +287,7 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
         return "Invalid value(s) for minimum and maximum queue size.";
     }
 
-    if (lMax < lMin || !lMax || !lMin) {
+    if (lMax < lMin) {
         return "Invalid value(s) for minimum and maximum queue size.";
     }
 

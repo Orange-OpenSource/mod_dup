@@ -316,10 +316,11 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
                                        pRequest.mBody);
     }
     // Run the raw substitutions
-    BOOST_FOREACH(tSubstitute &s, pCommands.mRawSubstitutions) {
+    BOOST_FOREACH(const tSubstitute &s, pCommands.mRawSubstitutions) {
         if (s.mScope & ApplicationScope::BODY) {
             pRequest.mBody = boost::regex_replace(pRequest.mBody, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
+
         if (s.mScope & ApplicationScope::HEADER) {
             pRequest.mArgs = boost::regex_replace(pRequest.mArgs, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
@@ -543,8 +544,14 @@ tSubstitute::tSubstitute(const std::string &regex, const std::string &replacemen
     , mReplacement(replacement){
 }
 
-tSubstitute::~tSubstitute() {
+tSubstitute::tSubstitute(const tSubstitute &other)
+    : tFilterBase(other){
+    if (&other == this)
+        return;
+    mReplacement = other.mReplacement;
+}
 
+tSubstitute::~tSubstitute() {
 }
 
 AnswerHolder::AnswerHolder(const std::string &header, const std::string &body)
