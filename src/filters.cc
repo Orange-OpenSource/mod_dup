@@ -21,9 +21,8 @@
 namespace DupModule {
 
 struct BodyHandler {
-    BodyHandler() : body(), sent(0) {}
+    BodyHandler() : body() {}
     std::string body;
-    int sent;
 };
 
 apr_status_t
@@ -49,7 +48,6 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
             // Metadata end of stream
             if ( APR_BUCKET_IS_EOS(b) ) {
 #endif
-                pBH->sent = 1;
 
                 Log::debug("### Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
                 Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
@@ -61,7 +59,7 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
                 rId = tConf->getNextReqId();
                 std::string reqId = boost::lexical_cast<std::string>(rId);
                 apr_table_set(headersIn, "request_id", reqId.c_str());
-                //                apr_table_set(pRequest->headers_out, "request_id", reqId.c_str());
+                //apr_table_set(pRequest->headers_out, "request_id", reqId.c_str());
 
                 // Asynchronous push
                 gThreadPool->push(RequestInfo(rId, tConf->dirName,
@@ -149,7 +147,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             AnswerHolder *ans = gProcessor->getAnswer(rId);
             ans->m_body = ctx->answer;
             ans->m_sync.unlock();
-            //            ctx->~RequestContext();
+            ctx->~RequestContext();
             pFilter->ctx = (void *) -1;
         }
         else {

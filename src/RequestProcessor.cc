@@ -446,8 +446,10 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
 
     delete content;
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
-        // remove answer from map
+        // remove answer from maps
         rmAnswer(rInfo.mId);
+        // Clear the AnswerHolder existing struct
+        a->m_sync.unlock();
         delete a;
     }
 }
