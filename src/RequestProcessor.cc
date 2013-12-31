@@ -371,7 +371,7 @@ RequestProcessor::setUrlCodec(const std::string &pUrlCodec)
     mUrlCodec.reset(getUrlCodec(pUrlCodec));
 }
 
-void
+static void
 sendInBody(CURL *curl, struct curl_slist *&slist, const std::string &toSend){
     slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
     // Avoid Expect: 100 continue
@@ -387,7 +387,7 @@ sendInBody(CURL *curl, struct curl_slist *&slist, const std::string &toSend){
     //    Log::debug("Content: @@@%s@@@", toSend.c_str());
 }
 
-std::string *
+static std::string *
 sendDupFormat(CURL *curl, const RequestInfo &rInfo, struct curl_slist *&slist, const AnswerHolder &a){
 
     //Computing dup format string
@@ -523,7 +523,7 @@ tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope s
     , mDestination(currentDupDestination) {
 }
 
-    tFilter::tFilter(const tFilter& other): tFilterBase(other) {
+tFilter::tFilter(const tFilter& other): tFilterBase(other) {
     if (&other == this)
         return;
     mField = other.mField;
@@ -542,6 +542,10 @@ tSubstitute::tSubstitute(const std::string &regex, const std::string &replacemen
     , mReplacement(replacement){
 }
 
+tSubstitute::~tSubstitute() {
+
+}
+
 AnswerHolder::AnswerHolder(const std::string &header, const std::string &body)
     : m_header(header)
     , m_body(body)
@@ -557,8 +561,6 @@ AnswerHolder::AnswerHolder()
 }
 
 AnswerHolder::~AnswerHolder() {
-    Log::debug("Destroyed");
 }
-
 
 }

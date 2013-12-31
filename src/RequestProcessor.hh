@@ -103,7 +103,8 @@ namespace DupModule {
         tSubstitute(const std::string &regex,
                       const std::string &replacement, ApplicationScope::eApplicationScope scope);
 
-        virtual ~tSubstitute() {}
+        virtual ~tSubstitute();
+
         std::string mReplacement; /** The replacement value regex */
     };
 

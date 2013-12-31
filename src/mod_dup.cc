@@ -68,7 +68,6 @@ namespace DuplicationType {
     eDuplicationType value = HEADER_ONLY;
 }
 
-
 DupConf::DupConf()
     : currentApplicationScope(ApplicationScope::HEADER)
     , dirName(NULL) {
