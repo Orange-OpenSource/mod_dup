@@ -160,7 +160,7 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
 const tFilter *
 RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, ApplicationScope::eApplicationScope scope){
     // Key filter matching
-    BOOST_FOREACH (const tKeyVal lKeyVal, pParsedArgs) {
+    BOOST_FOREACH (const tKeyVal &lKeyVal, pParsedArgs) {
         // Key Iteration
         std::pair<std::multimap<std::string, tFilter>::iterator,
                   std::multimap<std::string, tFilter>::iterator> lFilterIter = pFilters.equal_range(lKeyVal.first);
