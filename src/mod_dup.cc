@@ -433,20 +433,20 @@ setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
  */
 const char*
 setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
-	size_t lMin, lMax;
-	try {
-		lMin = boost::lexical_cast<size_t>(pMin);
-		lMax = boost::lexical_cast<size_t>(pMax);
-	} catch (boost::bad_lexical_cast) {
-		return "Invalid value(s) for minimum and maximum queue size.";
-	}
+    size_t lMin, lMax;
+    try {
+        lMin = boost::lexical_cast<size_t>(pMin);
+        lMax = boost::lexical_cast<size_t>(pMax);
+    } catch (boost::bad_lexical_cast) {
+        return "Invalid value(s) for minimum and maximum queue size.";
+    }
 
-	if (pMax < pMin) {
-		return "Invalid value(s) for minimum and maximum queue size.";
-	}
+    if (lMax < lMin || !lMax || !lMin) {
+        return "Invalid value(s) for minimum and maximum queue size.";
+    }
 
-	gThreadPool->setQueue(lMin, lMax);
-	return NULL;
+    gThreadPool->setQueue(lMin, lMax);
+    return NULL;
 }
 
 /**
