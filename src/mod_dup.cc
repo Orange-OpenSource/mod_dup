@@ -87,13 +87,13 @@ struct BodyHandler {
     int sent;
 };
 
-#define GET_CONF_FROM_REQUEST(request) reinterpret_cast<DupConf **>(ap_get_module_config(request->per_dir_config, &dup_module))
+#define GET_CONF_FROM_REQUEST(request) reinterpret_cast<DupConf *>(ap_get_module_config(request->per_dir_config, &dup_module))
 apr_status_t
 analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
     request_rec *pRequest = pF->r;
     if (pRequest) {
-	struct DupConf **tConf = GET_CONF_FROM_REQUEST(pRequest);
-	if (!tConf || !*tConf) {
+	struct DupConf *tConf = GET_CONF_FROM_REQUEST(pRequest);
+	if (!tConf) {
             return OK;
 	}
         // Do we have a context?
@@ -114,19 +114,19 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
                 pBH->sent = 1;
 
                 Log::debug("### Pushing a request, body size:%s", boost::lexical_cast<std::string>(pBH->body.size()).c_str());
-                Log::debug("### Uri:%s, dir name:%s", pRequest->uri, (*tConf)->dirName);
+                Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
 
                 // TODO Do context enrichment synchronously
 
                 apr_table_t *headersIn = pRequest->headers_in;
-                volatile unsigned int rId = (*tConf)->getNextReqId();
-                rId = (*tConf)->getNextReqId();
+                volatile unsigned int rId = tConf->getNextReqId();
+                rId = tConf->getNextReqId();
                 std::string reqId = boost::lexical_cast<std::string>(rId);
                 apr_table_set(headersIn, "request_id", reqId.c_str());
                 //                apr_table_set(pRequest->headers_out, "request_id", reqId.c_str());
 
                 // Asynchronous push
-                gThreadPool->push(RequestInfo(rId, (*tConf)->dirName,
+                gThreadPool->push(RequestInfo(rId, tConf->dirName,
                                               pRequest->uri, pRequest->args ? pRequest->args : "", &pBH->body));
 
                 delete pBH;
@@ -241,8 +241,9 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 void *
 createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
-    struct DupConf **lConf = (struct DupConf **) apr_pcalloc(pPool, sizeof(*lConf));
-    return reinterpret_cast<void *>(lConf);
+    void *addr= apr_pcalloc(pPool, sizeof(struct DupConf));
+    new (addr) DupConf();
+    return addr;
 }
 
 /**
@@ -321,7 +322,7 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
     if (lErrorMsg) {
         return lErrorMsg;
     }
-    struct DupConf *tC = *reinterpret_cast<DupConf **>(pCfg);
+    struct DupConf *tC = reinterpret_cast<DupConf *>(pCfg);
     assert(tC);
     if (!pDestination || strlen(pDestination) == 0) {
         return "Missing destination argument";
@@ -336,7 +337,7 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     if (lErrorMsg) {
         return lErrorMsg;
     }
-    struct DupConf *tC = *reinterpret_cast<DupConf **>(pCfg);
+    struct DupConf *tC = reinterpret_cast<DupConf *>(pCfg);
     try {
         tC->currentApplicationScope = ApplicationScope::stringToEnum(pAppScope);
     } catch (std::exception e) {
@@ -353,7 +354,7 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     if (lErrorMsg) {
         return lErrorMsg;
     }
-    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
     try {
@@ -462,7 +463,7 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 const char*
 setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
     if (lErrorMsg) {
@@ -484,19 +485,14 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
  */
 const char*
 setActive(cmd_parms* pParams, void* pCfg) {
-    struct DupConf **lConf = reinterpret_cast<DupConf **>(pCfg);
+    struct DupConf *lConf = reinterpret_cast<DupConf *>(pCfg);
     if (!lConf) {
         return "No per_dir conf defined. This should never happen!";
     }
-    // No dup conf struct initialized
-    if (!*lConf) {
-        *lConf = (DupConf *) apr_pcalloc(pParams->pool, sizeof(**lConf));
-        *lConf = new (*lConf) DupConf();
-    }
     // No dir name initialized
-    if (!((*lConf)->dirName)) {
-        (*lConf)->dirName = (char *) apr_pcalloc(pParams->pool, sizeof(char) * (strlen(pParams->path) + 1));
-        strcpy((*lConf)->dirName, pParams->path);
+    if (!(lConf->dirName)) {
+        lConf->dirName = (char *) apr_pcalloc(pParams->pool, sizeof(char) * (strlen(pParams->path) + 1));
+        strcpy(lConf->dirName, pParams->path);
     }
     return NULL;
 }
@@ -512,7 +508,7 @@ setActive(cmd_parms* pParams, void* pCfg) {
 const char*
 setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
     if (lErrorMsg) {
@@ -530,7 +526,7 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
 const char*
 setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = *reinterpret_cast<DupConf **>(pCfg);
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
     if (lErrorMsg) {
