@@ -223,14 +223,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
         if (raw.mScope & ApplicationScope::HEADER) {
             if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
                 Log::debug("Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
-                return &raw;
+                return new tFilter(raw);
             }
         }
         // Body application
         if (raw.mScope & ApplicationScope::BODY) {
             if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
                 Log::debug("Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
-                return &raw;
+                return new tFilter(raw);
             }
         }
     }
