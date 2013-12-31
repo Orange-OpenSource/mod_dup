@@ -38,6 +38,7 @@ extern module AP_DECLARE_DATA dup_module;
 
 namespace alg = boost::algorithm;
 
+
 namespace DupModule {
 
 
@@ -71,9 +72,12 @@ namespace DuplicationType {
 DupConf::DupConf()
     : currentApplicationScope(ApplicationScope::HEADER)
     , dirName(NULL) {
-
+    srand(time(NULL));
 }
 
+unsigned int DupConf::getNextReqId() {
+    return rand();
+}
 
 RequestProcessor *gProcessor;
 ThreadPool<RequestInfo> *gThreadPool;
@@ -83,15 +87,6 @@ struct BodyHandler {
     std::string body;
     int sent;
 };
-
-/*
- * Can only work in prefork mode
- */
-unsigned int nextRequestID() {
-    static unsigned int rId = 0;
-    __sync_fetch_and_add(&rId, 1);
-    return rId;
-}
 
 #define GET_CONF_FROM_REQUEST(request) reinterpret_cast<DupConf **>(ap_get_module_config(request->per_dir_config, &dup_module))
 apr_status_t
@@ -125,7 +120,8 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
                 // TODO Do context enrichment synchronously
 
                 apr_table_t *headersIn = pRequest->headers_in;
-                unsigned int rId = nextRequestID();
+                volatile unsigned int rId = (*tConf)->getNextReqId();
+                rId = (*tConf)->getNextReqId();
                 std::string reqId = boost::lexical_cast<std::string>(rId);
                 apr_table_set(headersIn, "request_id", reqId.c_str());
                 //                apr_table_set(pRequest->headers_out, "request_id", reqId.c_str());

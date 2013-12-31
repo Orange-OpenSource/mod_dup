@@ -372,7 +372,7 @@ RequestProcessor::setUrlCodec(const std::string &pUrlCodec)
 }
 
 void
-sendPlainBody(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo){
+sendPlainBody(CURL *curl, const RequestInfo &rInfo, struct curl_slist *&slist){
     slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
     // Avoid Expect: 100 continue
     slist = curl_slist_append(slist, "Expect:");
@@ -387,7 +387,7 @@ sendPlainBody(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo){
 }
 
 std::string *
-sendDupFormat(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo, const AnswerHolder &a){
+sendDupFormat(CURL *curl, const RequestInfo &rInfo, const AnswerHolder &a, struct curl_slist *&slist){
     Log::debug("*** SendDupFormat ***");
     slist = curl_slist_append(slist, "Content-Type: text/xml; charset=utf-8");
     // Avoid Expect: 100 continue
@@ -402,7 +402,6 @@ sendDupFormat(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo, co
     // Answer Body
     ss << std::setfill('0') << std::setw(8) << a.m_body.length() << a.m_body;
 
-
     std::string *content = new std::string(ss.str());
 
     std::string contentLen = std::string("Content-Length: ") +
@@ -411,18 +410,20 @@ sendDupFormat(CURL *curl, struct curl_slist *slist, const RequestInfo &rInfo, co
     curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, content->size());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strdup(content->c_str()));
-    Log::debug("Content: @@@%s@@@", content->c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, content->c_str());
+    //    Log::debug("Content: @@@%s@@@", content->c_str());
     return content;
 }
 
 void
 RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo) {
+    // Setting URI
+    std::string uri = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
+    curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
 
-    Log::debug("**** PERFORMING CURL CALL");
     AnswerHolder *a = NULL;
-    // reply with answer mode check
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+        // reply with answer mode check
         // fetching the request answer object completed
         a = getAnswer(rInfo.mId);
         // Wait for the answer to be fetched
@@ -430,24 +431,20 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
         Log::debug("*****Answer synced: %d", (int)a->m_body.length());
     }
 
-    // Setting URI
-    std::string uri = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
-    curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
-
     // Sending body in plain or dup format according to the duplication need
-    struct curl_slist *slist = NULL;
     std::string *content = NULL;
+    struct curl_slist *slist = NULL;
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
-        content = sendDupFormat(curl, slist, rInfo, *a);
+        content = sendDupFormat(curl, rInfo, *a, slist);
     } else if (rInfo.hasBody()){
-        sendPlainBody(curl, slist, rInfo);
+        sendPlainBody(curl, rInfo, slist);
     } else {
         // Regular GET case
         curl_easy_setopt(curl, CURLOPT_HTTPGET, 1);
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, NULL);
     }
 
-    Log::debug("Duplicating: %s", uri.c_str());
+    Log::debug("---->>>> Duplicating: %s", uri.c_str());
 
     int err = curl_easy_perform(curl);
     if (slist)
@@ -463,7 +460,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
         // remove answer from map
         rmAnswer(rInfo.mId);
-        //delete a;
+        delete a;
     }
 }
 

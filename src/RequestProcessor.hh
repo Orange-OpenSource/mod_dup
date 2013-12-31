@@ -140,6 +140,11 @@ namespace DupModule {
         std::string     m_body;
 
         boost::mutex    m_sync;
+
+    private:
+        AnswerHolder(const AnswerHolder &other);
+        AnswerHolder& operator=(const AnswerHolder &other);
+
     };
 
     /**

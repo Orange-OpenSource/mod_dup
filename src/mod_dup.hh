@@ -74,8 +74,9 @@ struct DupConf {
     ApplicationScope::eApplicationScope         currentApplicationScope;
 
     char                                        *dirName;
-
     std::string                                 currentDupDestination;
+
+    unsigned int                               getNextReqId();
 };
 
 
