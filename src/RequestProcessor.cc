@@ -169,7 +169,7 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
             if ((it->second.mScope & scope) &&                                  // Scope check
                 boost::regex_search(lKeyVal.second, it->second.mRegex)) {        // Regex match
                 Log::debug("Key filter matched: %s | %s", lKeyVal.second.c_str(), it->second.mRegex.str().c_str());
-                return new tFilter(it->second);
+                return &it->second;
             }
         }
     }
@@ -223,14 +223,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
         if (raw.mScope & ApplicationScope::HEADER) {
             if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
                 Log::debug("Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
-                return new tFilter(raw);
+                return &raw;
             }
         }
         // Body application
         if (raw.mScope & ApplicationScope::BODY) {
             if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
                 Log::debug("Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
-                return new tFilter(raw);
+                return &raw;
             }
         }
     }
@@ -484,7 +484,6 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
         if ((matchedFilter = processRequest(lQueueItem.mConfPath, lQueueItem))) {
             __sync_fetch_and_add(&mDuplicatedCount, 1);
             performCurlCall(lCurl, *matchedFilter, lQueueItem);
-            delete matchedFilter;
         }
     }
     curl_easy_cleanup(lCurl);
