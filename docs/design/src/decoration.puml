@@ -1,0 +1,28 @@
+@startuml
+actor HTTPRequest
+box "frontal"
+    entity mod_dup
+    entity mod_rewrite
+    entity PNS_WS
+    entity "<b>WS_3_1</b>" as WS_3_1
+end box
+
+autonumber "<b>[00]"
+
+HTTPRequest --> mod_dup
+activate mod_dup
+mod_dup --> mod_dup: Context enrichment:<b> MATCH
+mod_dup --> mod_dup: <b>NO FILTER MATCH
+mod_dup --> mod_rewrite: delegates redirection
+activate mod_rewrite
+deactivate mod_dup
+mod_rewrite --> mod_rewrite: Apply redirection rules \n using request env
+mod_rewrite --> WS_3_1: Send request to process
+deactivate mod_rewrite
+activate WS_3_1
+WS_3_1 --> WS_3_1: Exec request on\nnew WS
+WS_3_1 --> HTTPRequest: Sends the request back to the client
+deactivate WS_3_1
+
+
+@enduml

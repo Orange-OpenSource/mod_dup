@@ -1,0 +1,33 @@
+@startuml
+actor HTTPRequest
+box "frontal"
+    entity mod_dup
+    entity duplicator
+    entity PNS_WS
+end box
+
+box "frontal_bis" #LightBlue
+    entity mod_compare
+end box
+
+autonumber "<b>[00]"
+
+HTTPRequest --> mod_dup: Apache input filter
+activate mod_dup
+mod_dup --> mod_dup: Context enrichment
+mod_dup --> mod_dup: Filters:<b> MATCH
+mod_dup --> PNS_WS: Delegation to next handler (WS, mod_rewrite..)
+activate PNS_WS
+
+PNS_WS --> mod_dup: Collects the answer
+deactivate PNS_WS
+
+mod_dup --> duplicator: Prepares the request for duplication
+activate duplicator
+mod_dup --> HTTPRequest: Sends the request back to the client
+deactivate mod_dup
+duplicator --> mod_compare: Send duplicated\nrequest to\nmod_compare
+deactivate duplicator
+
+
+@enduml

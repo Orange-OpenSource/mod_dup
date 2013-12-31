@@ -1,7 +1,7 @@
 # mod_dup - duplicates apache requests
-# 
+#
 # Copyright (C) 2013 Orange
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,7 +18,13 @@ cmake_minimum_required(VERSION 2.8)
 
 include(../cmake/Include.cmake)
 
-file(GLOB mod_dup_SOURCE_FILES mod_dup.cc Log.cc RequestProcessor.cc RequestInfo.cc UrlCodec.cc)
+file(GLOB mod_dup_SOURCE_FILES
+  filters.cc
+  mod_dup.cc
+  Log.cc
+  RequestProcessor.cc
+  RequestInfo.cc
+  UrlCodec.cc)
 
 # Compile as library
 add_library(mod_dup MODULE ${mod_dup_SOURCE_FILES})

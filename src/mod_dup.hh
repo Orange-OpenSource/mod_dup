@@ -35,7 +35,12 @@
 #include "RequestProcessor.hh"
 #include "ThreadPool.hh"
 
+extern module AP_DECLARE_DATA dup_module;
+
 namespace DupModule {
+
+    extern RequestProcessor             *gProcessor;
+    extern ThreadPool<RequestInfo>      *gThreadPool;
 
 /*
  * Different duplication modes supported by mod_dup
@@ -43,9 +48,9 @@ namespace DupModule {
 namespace DuplicationType {
 
     enum eDuplicationType {
-        HEADER_ONLY = 0,            // Duplication only the HTTP HEADER of matching requests
-        COMPLETE_REQUEST = 1,       // Duplication HTTP HEADER AND BODY of matching requests
-        REQUEST_WITH_ANSWER = 2,    // Duplication HTTP REQUEST AND ANSWER of matching requests
+        HEADER_ONLY             = 0,    // Duplication only the HTTP HEADER of matching requests
+        COMPLETE_REQUEST        = 1,    // Duplication HTTP HEADER AND BODY of matching requests
+        REQUEST_WITH_ANSWER     = 2,    // Duplication HTTP REQUEST AND ANSWER of matching requests
     };
 
     /*
@@ -78,7 +83,6 @@ struct DupConf {
 
     unsigned int                               getNextReqId();
 };
-
 
 /**
  * @brief Initialize our the processor and thread pool pre-config
@@ -203,15 +207,29 @@ childInit(apr_pool_t *pPool, server_rec *pServer);
 const char*
 setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope);
 
-
 /**
  * @brief register hooks in apache
  * @param pPool the apache pool
  */
 void registerHooks(apr_pool_t *pPool);
 
-
+/**
+ * @brief Sets the duplication type
+ * @param pDupType duplication type as a string
+ */
 const char*
 setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType);
+
+/**
+ * @brief the input filter callback
+ */
+apr_status_t
+inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
+
+/** @brief the output filter callback
+ * Plugged only in REQUEST_WITH_ANSWER mode
+ */
+apr_status_t
+outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
 
 }
