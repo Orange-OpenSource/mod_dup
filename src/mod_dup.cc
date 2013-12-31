@@ -87,12 +87,11 @@ struct BodyHandler {
     int sent;
 };
 
-#define GET_CONF_FROM_REQUEST(request) reinterpret_cast<DupConf *>(ap_get_module_config(request->per_dir_config, &dup_module))
 apr_status_t
 analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
     request_rec *pRequest = pF->r;
     if (pRequest) {
-	struct DupConf *tConf = GET_CONF_FROM_REQUEST(pRequest);
+	struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
 	if (!tConf) {
             return OK;
 	}
