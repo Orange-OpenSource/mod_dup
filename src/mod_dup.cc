@@ -31,6 +31,7 @@
 #include <exception>
 #include <set>
 #include <sstream>
+#include <sys/syscall.h>
 
 #include "mod_dup.hh"
 
@@ -76,7 +77,30 @@ DupConf::DupConf()
 }
 
 unsigned int DupConf::getNextReqId() {
-    return rand();
+    // Thread-local static variables
+    // Makes sure the random pattern/sequence is different for each thread
+    static __thread bool lInitialized = false;
+    static __thread struct random_data lRD = { 0, 0, 0, 0, 0, 0, 0} ;
+    static __thread char lRSB[8];
+
+    // Initialized per thread
+    int lRet;
+    if ( ! lInitialized ) {
+        memset(lRSB,0, 8);
+        struct timespec lTimeSpec;
+        clock_gettime(CLOCK_MONOTONIC, &lTimeSpec);
+        // The seed is randomized using thread ID and nanoseconds
+        unsigned int lSeed = lTimeSpec.tv_nsec + (pid_t) syscall(SYS_gettid);
+
+        // init State must be different for all threads or each will answer the same sequence
+        lRet = initstate_r(lSeed, lRSB, 8, &lRD);
+        lInitialized = true;
+    }
+
+    // Thread-safe calls with thread local initialization
+    int lRandNum = 1;
+    lRet = random_r(&lRD, &lRandNum);
+    return lRandNum;
 }
 
 /**

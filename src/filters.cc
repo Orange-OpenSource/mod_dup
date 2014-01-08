@@ -56,10 +56,9 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
 
                 apr_table_t *headersIn = pRequest->headers_in;
                 volatile unsigned int rId = tConf->getNextReqId();
-                rId = tConf->getNextReqId();
                 std::string reqId = boost::lexical_cast<std::string>(rId);
-                apr_table_set(headersIn, "request_id", reqId.c_str());
-                //apr_table_set(pRequest->headers_out, "request_id", reqId.c_str());
+                apr_table_set(headersIn, "UNIQUE_ID", reqId.c_str());
+                //apr_table_set(pRequest->headers_out, "UNIQUE_ID", reqId.c_str());
 
                 // Asynchronous push
                 gThreadPool->push(RequestInfo(rId, tConf->dirName,

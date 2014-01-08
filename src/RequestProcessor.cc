@@ -23,6 +23,9 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/lexical_cast.hpp>
 #include <httpd.h>
+#include <iomanip>
+
+using namespace std;
 
 #include "RequestProcessor.hh"
 #include "mod_dup.hh"
