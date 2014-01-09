@@ -119,7 +119,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     request_rec *pRequest = pFilter->r;
     apr_table_t *headers = pRequest->headers_in;
-    const char *reqId = apr_table_get(headers, "request_id");
+    const char *reqId = apr_table_get(headers, "UNIQUE_ID");
     unsigned int rId = boost::lexical_cast<unsigned int>(reqId);
 
     apr_bucket *currentBucket;
