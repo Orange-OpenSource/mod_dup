@@ -394,6 +394,8 @@ sendInBody(CURL *curl, struct curl_slist *&slist, const std::string &toSend){
 static std::string *
 sendDupFormat(CURL *curl, const RequestInfo &rInfo, struct curl_slist *&slist){
 
+    // Adding HTTP HEADER to indicate that the request is duplicated with it's answer
+    slist = curl_slist_append(slist, "Duplication-Type: Response");
     //Computing dup format string
     std::stringstream ss;
     //Request body
