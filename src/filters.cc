@@ -23,8 +23,16 @@ namespace DupModule {
 
 struct InterFilterContext {
 
+    /*
+     * Returns the requestInfo object associated with the requestId
+     * Allocates the object if it does not exist
+     */
     RequestInfo *getRequestInfo(unsigned int requestId);
 
+    /*
+     * Erase the id from the map
+     * Does not delete the pointer
+     */
     void rmRequestInfo(unsigned int requestId);
 
     std::map<unsigned int, RequestInfo *>     mReqs;
@@ -115,11 +123,10 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_
     return analyseRequest(pFilter, pBrigade);
 }
 
+/*
+ * Request context used during brigade run
+ */
 struct RequestContext {
-
-    RequestContext() : tmpbb(NULL), req(NULL) {
-    }
-
     apr_bucket_brigade  *tmpbb;
     RequestInfo       *req;
 };
@@ -133,9 +140,8 @@ prepareRequestInfo(unsigned int rId, DupConf *tConf, request_rec *pRequest, Requ
     r.mArgs = pRequest->args ? pRequest->args : "";
 }
 
-void
+static void
 printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
-
     const char *reqId = apr_table_get(pRequest->headers_in, "UNIQUE_ID");
     Log::debug("### Pushing a request with ID: %s, body size:%s", reqId, boost::lexical_cast<std::string>(pBH->mBody.size()).c_str());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
@@ -147,10 +153,9 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     // Unique ID extraction
     request_rec *pRequest = pFilter->r;
-    apr_table_t *headers = pRequest->headers_in;
-    if (!headers)
+    if (!pRequest->headers_in)
         return ap_pass_brigade(pFilter->next, pBrigade);
-    const char *reqId = apr_table_get(headers, "UNIQUE_ID");
+    const char *reqId = apr_table_get(pRequest->headers_in, "UNIQUE_ID");
     if (!reqId)
         return ap_pass_brigade(pFilter->next, pBrigade);
     unsigned int rId = boost::lexical_cast<unsigned int>(reqId);

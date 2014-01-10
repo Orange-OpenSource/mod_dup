@@ -66,6 +66,7 @@ namespace DuplicationType {
     // Duplication type mismatch value error
     extern const char* c_ERROR_ON_STRING_VALUE;
 
+    // The current type used for duplication
     extern eDuplicationType value;
 };
 
@@ -74,13 +75,21 @@ namespace DuplicationType {
  */
 struct DupConf {
 
+
     DupConf();
 
+    /** @brief the current Filter and Subs application scope set by the DupApplicationScope directive */
     ApplicationScope::eApplicationScope         currentApplicationScope;
 
     char                                        *dirName;
+
+    /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
 
+    /*
+     * Returns the next random request ID
+     * method is reentrant
+     */
     unsigned int                               getNextReqId();
 };
 
