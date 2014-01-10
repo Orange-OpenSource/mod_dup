@@ -33,7 +33,7 @@ using namespace DupModule;
 void TestRequestProcessor::testRun()
 {
     RequestProcessor proc;
-    MultiThreadQueue<RequestInfo> queue;
+    MultiThreadQueue<const RequestInfo *> queue;
 
     DupConf conf;
     conf.currentApplicationScope = ApplicationScope::ALL;
@@ -42,8 +42,8 @@ void TestRequestProcessor::testRun()
     proc.addFilter("/toto", "INFO", "[my]+", conf);
 
     // This request won't go anywhere, but at least we exersize the loop in proc.run()
-    queue.push(RequestInfo(1,"/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&"));
-    queue.push(POISON_REQUEST);
+    queue.push(new RequestInfo(1,"/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&"));
+    queue.push(&POISON_REQUEST);
 
     // If the poison pill would not work, this call would hang forever
     proc.run(queue);
@@ -156,7 +156,7 @@ void TestRequestProcessor::testSubstitution()
 void TestRequestProcessor::init()
 {
     apr_initialize();
-    Log::init(NULL);
+    Log::init(0);
 }
 
 void TestRequestProcessor::testFilterBasic()

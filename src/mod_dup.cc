@@ -41,7 +41,7 @@ namespace alg = boost::algorithm;
 namespace DupModule {
 
 RequestProcessor *gProcessor;
-ThreadPool<RequestInfo> *gThreadPool;
+ThreadPool<const RequestInfo*> *gThreadPool;
 
 
 const char *gName = "Dup";
@@ -85,7 +85,7 @@ unsigned int DupConf::getNextReqId() {
 
     // Initialized per thread
     int lRet;
-    if ( ! lInitialized ) {
+    if (!lInitialized) {
         memset(lRSB,0, 8);
         struct timespec lTimeSpec;
         clock_gettime(CLOCK_MONOTONIC, &lTimeSpec);
@@ -125,7 +125,7 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
 int
 preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
     gProcessor = new RequestProcessor();
-    gThreadPool = new ThreadPool<RequestInfo>(boost::bind(&RequestProcessor::run, gProcessor, _1), POISON_REQUEST);
+    gThreadPool = new ThreadPool<const RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
     // Add the request timeout stat provider. Compose the lexical_cast with getTimeoutCount so that the resulting stat provider returns a string
     gThreadPool->addStat("#TmOut", boost::bind(boost::lexical_cast<std::string, unsigned int>,
                                                boost::bind(&RequestProcessor::getTimeoutCount, gProcessor)));
@@ -529,9 +529,7 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
-        ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
-    }
+    ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
 #endif
 }
 

@@ -61,7 +61,7 @@ apr_status_t 	apr_brigade_cleanup (void *){
 namespace DupModule {
 
 RequestProcessor *gProcessor;
-ThreadPool<RequestInfo> *gThreadPool;
+ThreadPool<const RequestInfo*> *gThreadPool;
 std::set<std::string> gActiveLocations;
 
 
@@ -104,7 +104,7 @@ void TestModDup::testInit()
     CPPUNIT_ASSERT(gProcessor);
     CPPUNIT_ASSERT(gThreadPool);
 
-    gThreadPool = new DummyThreadPool<RequestInfo>(boost::bind(&RequestProcessor::run, gProcessor, _1), POISON_REQUEST);
+    gThreadPool = new DummyThreadPool<const RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
 }
 
 void TestModDup::testInitAndCleanUp()
@@ -193,21 +193,21 @@ void TestModDup::testConfig()
         DupConf *lDoHandle = new DupConf();
 
 
-        CPPUNIT_ASSERT(setDestination(lParms, (void *) &lDoHandle, NULL));
-        CPPUNIT_ASSERT(setDestination(lParms, (void *) &lDoHandle, ""));
-        CPPUNIT_ASSERT(!setDestination(lParms, (void *) &lDoHandle, "localhost"));
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, NULL));
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, ""));
+        CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost"));
 
-        CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)&lDoHandle, "toto", "toto", "titi"));
-
-        // Invalid regexp
-        CPPUNIT_ASSERT(setSubstitute(lParms, (void *)&lDoHandle, "toto", "*t(oto", "titi"));
-
-        CPPUNIT_ASSERT(!setFilter(lParms, (void *)&lDoHandle, "titi", "toto"));
+        CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)lDoHandle, "toto", "toto", "titi"));
 
         // Invalid regexp
-        CPPUNIT_ASSERT(setFilter(lParms, (void *)&lDoHandle, "titi", "*toto"));
+        CPPUNIT_ASSERT(setSubstitute(lParms, (void *)lDoHandle, "toto", "*t(oto", "titi"));
 
-        CPPUNIT_ASSERT(!setActive(lParms, &lDoHandle));
+        CPPUNIT_ASSERT(!setFilter(lParms, (void *)lDoHandle, "titi", "toto"));
+
+        // Invalid regexp
+        CPPUNIT_ASSERT(setFilter(lParms, (void *)lDoHandle, "titi", "*toto"));
+
+        CPPUNIT_ASSERT(!setActive(lParms, lDoHandle));
 
         delete lParms->path;
 }

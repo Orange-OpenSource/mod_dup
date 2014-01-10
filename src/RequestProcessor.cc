@@ -392,16 +392,17 @@ sendInBody(CURL *curl, struct curl_slist *&slist, const std::string &toSend){
 }
 
 static std::string *
-sendDupFormat(CURL *curl, const RequestInfo &rInfo, struct curl_slist *&slist, const AnswerHolder &a){
+sendDupFormat(CURL *curl, const RequestInfo &rInfo, struct curl_slist *&slist){
 
     //Computing dup format string
     std::stringstream ss;
     //Request body
     ss << std::setfill('0') << std::setw(8) << rInfo.mBody.length() << rInfo.mBody;
-    // Answer header
-    ss << std::setfill('0') << std::setw(8) << a.m_header.length() << a.m_header;
+    // // Answer header
+    // TODO   ss << std::setfill('0') << std::setw(8) << a.mHeader.length() << a.mHeader;
+    ss << std::setfill('0') << "00000000";
     // Answer Body
-    ss << std::setfill('0') << std::setw(8) << a.m_body.length() << a.m_body;
+    ss << std::setfill('0') << std::setw(8) << rInfo.mAnswer.length() << rInfo.mAnswer;
     std::string *content = new std::string(ss.str());
     sendInBody(curl, slist, *content);
     return content;
@@ -413,21 +414,11 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     std::string uri = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
     curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
 
-    AnswerHolder *a = NULL;
-    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
-        // reply with answer mode check
-        // fetching the request answer object completed
-        a = getAnswer(rInfo.mId);
-        // Wait for the answer to be fetched
-        a->m_sync.lock();
-        Log::debug("*****Answer synced: %d", (int)a->m_body.length());
-    }
-
     // Sending body in plain or dup format according to the duplication need
     std::string *content = NULL;
     struct curl_slist *slist = NULL;
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
-        content = sendDupFormat(curl, rInfo, slist, *a);
+        content = sendDupFormat(curl, rInfo, slist);
     } else if (rInfo.hasBody()){
         sendInBody(curl, slist, rInfo.mBody);
     } else {
@@ -447,15 +438,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     } else if (err) {
         Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, uri.c_str());
     }
-
     delete content;
-    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
-        // remove answer from maps
-        rmAnswer(rInfo.mId);
-        // Clear the AnswerHolder existing struct
-        a->m_sync.unlock();
-        delete a;
-    }
 }
 
 /**
@@ -463,7 +446,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
  * @param pQueue the queue which gets filled with incoming requests
  */
 void
-RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
+RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
 {
     Log::debug("New worker thread started");
 
@@ -478,40 +461,21 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo> &pQueue)
     curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
 
     for (;;) {
-        RequestInfo lQueueItem = pQueue.pop();
-        if (lQueueItem.isPoison()) {
+        const RequestInfo *lQueueItem = pQueue.pop();
+        if (lQueueItem->isPoison()) {
             // Master tells us to stop
             Log::debug("Received poison pill. Exiting.");
             break;
         }
         const tFilter *matchedFilter;
-        if ((matchedFilter = processRequest(lQueueItem.mConfPath, lQueueItem))) {
+        RequestInfo &lRequest = *const_cast<RequestInfo *>(lQueueItem);
+        if ((matchedFilter = processRequest(lQueueItem->mConfPath, lRequest))) {
             __sync_fetch_and_add(&mDuplicatedCount, 1);
-            performCurlCall(lCurl, *matchedFilter, lQueueItem);
+            performCurlCall(lCurl, *matchedFilter, lRequest);
         }
+        delete lQueueItem;
     }
     curl_easy_cleanup(lCurl);
-}
-
-AnswerHolder *
-RequestProcessor::getAnswer(unsigned int requestId) {
-    AnswerHolder *ret = NULL;
-    boost::lock_guard<boost::mutex> guard(mAnswerSync);
-    std::map<unsigned int, AnswerHolder *>::iterator a;
-    a = mAnswers.find(requestId);
-    if (a == mAnswers.end()) {
-        ret = new AnswerHolder();
-        mAnswers[requestId] = ret;
-    }
-    else
-        ret = a->second;
-    return ret;
-}
-
-void
-RequestProcessor::rmAnswer(unsigned int requestId) {
-    boost::lock_guard<boost::mutex> guard(mAnswerSync);
-    mAnswers.erase(requestId);
 }
 
 tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationScope s)
@@ -555,23 +519,6 @@ tSubstitute::tSubstitute(const tSubstitute &other)
 }
 
 tSubstitute::~tSubstitute() {
-}
-
-AnswerHolder::AnswerHolder(const std::string &header, const std::string &body)
-    : m_header(header)
-    , m_body(body)
-    , m_sync() {
-    m_sync.lock();
-}
-
-AnswerHolder::AnswerHolder()
-    : m_header()
-    , m_body()
-    , m_sync() {
-    m_sync.lock();
-}
-
-AnswerHolder::~AnswerHolder() {
 }
 
 }

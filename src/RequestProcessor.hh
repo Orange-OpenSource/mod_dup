@@ -133,24 +133,6 @@ namespace DupModule {
         std::list<tSubstitute> mRawSubstitutions;
     };
 
-    struct AnswerHolder {
-
-        AnswerHolder(const std::string &header, const std::string &body);
-        AnswerHolder();
-
-        virtual ~AnswerHolder();
-
-        std::string     m_header;
-        std::string     m_body;
-
-        boost::mutex    m_sync;
-
-    private:
-        AnswerHolder(const AnswerHolder &other);
-        AnswerHolder& operator=(const AnswerHolder &other);
-
-    };
-
     /**
      * @brief RequestProcessor is responsible for processing and sending requests to their destination.
      * This is where all the business logic is configured and executed.
@@ -174,15 +156,13 @@ namespace DupModule {
         /** @brief The url codec */
         boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
 
-	std::map<unsigned int, AnswerHolder *>          mAnswers;
-        boost::mutex                                    mAnswerSync;
 
     public:
 	/**
 	 * @brief Constructs a RequestProcessor
 	 */
 	RequestProcessor() : mTimeout(0), mTimeoutCount(0),
-                             mDuplicatedCount(0) , mAnswerSync(){
+                             mDuplicatedCount(0) {
             setUrlCodec();
 	}
 
@@ -216,9 +196,6 @@ namespace DupModule {
          */
         void
         setUrlCodec(const std::string &pUrlCodec="default");
-
-        AnswerHolder*
-        getAnswer(unsigned int requestId);
 
         /**
          * @brief Add a filter for all requests on a given path
@@ -296,7 +273,7 @@ namespace DupModule {
          * @param pQueue the queue which gets filled with incoming requests
          */
         void
-        run(MultiThreadQueue<RequestInfo> &pQueue);
+        run(MultiThreadQueue<const RequestInfo *> &pQueue);
 
     private:
 
@@ -311,9 +288,6 @@ namespace DupModule {
                       std::list<tKeyVal> &pParsedArgs,
                       ApplicationScope::eApplicationScope scope,
                       std::string &result);
-
-        void
-        rmAnswer(unsigned int requestId);
 
     };
 }

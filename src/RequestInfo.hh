@@ -26,13 +26,11 @@ namespace DupModule {
     /**
      * @brief Contains information about the incoming request.
      */
-    class RequestInfo {
+    struct RequestInfo {
 
-    private:
 	/** @brief True if the request processor should stop ater seeing this object. */
 	bool mPoison;
-
-    public:
+	/** @brief The query unique ID. */
         unsigned int mId;
 	/** @brief The location (in the conf) which matched this query. */
 	std::string mConfPath;
@@ -42,6 +40,8 @@ namespace DupModule {
 	std::string mArgs;
 	/** @brief The body part of the query */
 	std::string mBody;
+	/** @brief The query answer */
+	std::string mAnswer;
 
 	/**
 	 * @brief Constructs the object using the three strings.
@@ -66,7 +66,7 @@ namespace DupModule {
 	 * @brief Returns wether the the request is poisonous
 	 * @return true if poisonous, false otherwhise
 	 */
-	bool isPoison();
+	bool isPoison() const;
     };
 
     static const RequestInfo POISON_REQUEST;

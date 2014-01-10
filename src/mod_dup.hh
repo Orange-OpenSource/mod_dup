@@ -39,8 +39,8 @@ extern module AP_DECLARE_DATA dup_module;
 
 namespace DupModule {
 
-    extern RequestProcessor             *gProcessor;
-    extern ThreadPool<RequestInfo>      *gThreadPool;
+    extern RequestProcessor                             *gProcessor;
+    extern ThreadPool<const RequestInfo *>              *gThreadPool;
 
 /*
  * Different duplication modes supported by mod_dup

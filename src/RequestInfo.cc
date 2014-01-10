@@ -47,8 +47,8 @@ RequestInfo::RequestInfo() :
  * @return true if poisonous, false otherwhise
  */
 bool
-RequestInfo::isPoison() {
-	return mPoison;
+RequestInfo::isPoison() const {
+    return mPoison;
 }
 
 }
