@@ -470,6 +470,11 @@ RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
     curl_easy_cleanup(lCurl);
 }
 
+int
+RequestProcessor::enrichContext() {
+
+}
+
 tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationScope s)
     : mScope(s)
     , mRegex(r) {

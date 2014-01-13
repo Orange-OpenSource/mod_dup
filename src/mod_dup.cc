@@ -105,6 +105,12 @@ unsigned int DupConf::getNextReqId() {
     return lRandNum;
 }
 
+apr_status_t DupConf::cleaner(void *self) {
+    DupConf *c = reinterpret_cast<DupConf *>(self);
+    c->~DupConf();
+    return 0;
+}
+
 /**
  * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it
  * @param pPool the apache pool on which to allocate data
@@ -116,6 +122,7 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
     void *addr= apr_pcalloc(pPool, sizeof(struct DupConf));
     new (addr) DupConf();
+    apr_pool_cleanup_register(pPool, addr, DupConf::cleaner,  NULL);
     return addr;
 }
 

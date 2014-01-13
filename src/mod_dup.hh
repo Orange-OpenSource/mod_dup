@@ -78,10 +78,13 @@ namespace DuplicationType {
 /**
  * A structure that holds the configuration specific to the location
  */
-struct DupConf {
+class DupConf {
 
+public:
 
     DupConf();
+
+    static apr_status_t cleaner(void *self);
 
     /** @brief the current Filter and Subs application scope set by the DupApplicationScope directive */
     ApplicationScope::eApplicationScope         currentApplicationScope;
