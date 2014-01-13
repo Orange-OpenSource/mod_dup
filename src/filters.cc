@@ -96,6 +96,8 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
             if ( APR_BUCKET_IS_EOS(b) ) {
 #endif
                 // TODO Do context enrichment synchronously
+                gProcessor->enrichContext();
+
                 pF->ctx = (void *)1;
                 break;
 #ifndef UNIT_TESTING

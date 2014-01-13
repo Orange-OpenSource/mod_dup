@@ -114,7 +114,7 @@ namespace DupModule {
     };
 
     /**
-     * Represents a raw substitution
+     * Context enrichment bean
      */
     struct tContextEnrichment : public tFilterBase{
 
@@ -313,6 +313,10 @@ namespace DupModule {
          */
         void
         run(MultiThreadQueue<const RequestInfo *> &pQueue);
+
+
+        int
+        enrichContext();
 
     private:
 
