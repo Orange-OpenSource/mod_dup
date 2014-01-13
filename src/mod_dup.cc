@@ -334,16 +334,35 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 const char*
 setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
-    assert(conf);
-
     if (lErrorMsg) {
         return lErrorMsg;
     }
+
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
+    assert(conf);
+
     try {
         gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, *conf);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
+    }
+    return NULL;
+}
+
+const char*
+setEnrichContext(cmd_parms* pParams, void* pCfg, const char *pVarName, const char* pMatchRegex, const char* pSetValue) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
+
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
+    assert(conf);
+
+    try {
+        gProcessor->addEnrichContext(pParams->path, pVarName, pMatchRegex, pSetValue, *conf);
+    } catch (boost::bad_expression) {
+        return "Invalid regular expression in EnrichContext definition.";
     }
     return NULL;
 }
@@ -379,12 +398,13 @@ setActive(cmd_parms* pParams, void* pCfg) {
 const char*
 setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
-    assert(conf);
-
     if (lErrorMsg) {
         return lErrorMsg;
     }
+
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
+    assert(conf);
+
     try {
         gProcessor->addFilter(pParams->path, pField, pFilter, *conf);
     } catch (boost::bad_expression) {
@@ -397,12 +417,12 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
 const char*
 setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
     const char *lErrorMsg = setActive(pParams, pCfg);
-    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
-    assert(conf);
-
     if (lErrorMsg) {
         return lErrorMsg;
     }
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
+    assert(conf);
+
     try {
         gProcessor->addRawFilter(pParams->path, pExpression, *conf);
     } catch (boost::bad_expression) {
@@ -446,78 +466,87 @@ command_rec gCmds[] = {
     //          void * extra data,
     //          overrides to allow in order to enable,
     //          help message),
-	AP_INIT_TAKE1("DupName",
-		reinterpret_cast<const char *(*)()>(&setName),
-		0,
-		OR_ALL,
-		"Set the program name for the stats log messages"),
-	AP_INIT_TAKE1("DupDuplicationType",
-		reinterpret_cast<const char *(*)()>(&setDuplicationType),
-		0,
-		OR_ALL,
-		"Sets the duplication type that will used for all the following filters declarations"),
-	AP_INIT_TAKE1("DupUrlCodec",
-		reinterpret_cast<const char *(*)()>(&setUrlCodec),
-		0,
-		OR_ALL,
-		"Set the url enc/decoding style for url arguments (default or apache)"),
-	AP_INIT_TAKE1("DupTimeout",
-		reinterpret_cast<const char *(*)()>(&setTimeout),
-		0,
-		OR_ALL,
-		"Set the timeout for outgoing requests in milliseconds."),
-	AP_INIT_TAKE2("DupThreads",
-		reinterpret_cast<const char *(*)()>(&setThreads),
-		0,
-		OR_ALL,
-		"Set the minimum and maximum number of threads per pool."),
-	AP_INIT_TAKE2("DupQueue",
-		reinterpret_cast<const char *(*)()>(&setQueue),
-		0,
-		OR_ALL,
-		"Set the minimum and maximum queue size for each thread pool."),
-	AP_INIT_TAKE1("DupDestination",
-		reinterpret_cast<const char *(*)()>(&setDestination),
-		0,
-		ACCESS_CONF,
-		"Set the destination for the duplicated requests. Format: host[:port]"),
-	AP_INIT_TAKE1("DupApplicationScope",
-                reinterpret_cast<const char *(*)()>(&setApplicationScope),
-                0,
-                ACCESS_CONF,
-                "Sets the application scope of the filters and subsitution rules that follow this declaration"),
-	AP_INIT_TAKE2("DupFilter",
-		reinterpret_cast<const char *(*)()>(&setFilter),
-		0,
-		ACCESS_CONF,
-		"Filter incoming request fields before duplicating them. "
-		"If one or more filters are specified, at least one of them has to match."),
-	AP_INIT_TAKE1("DupRawFilter",
-		reinterpret_cast<const char *(*)()>(&setRawFilter),
-		0,
-		ACCESS_CONF,
-		"Filter incoming request fields before duplicating them."
-		"1st Arg: BODY HEAD ALL, data to match with the regex"
-		"Simply performs a match with the specified REGEX."),
-	AP_INIT_TAKE2("DupRawSubstitute",
-		reinterpret_cast<const char *(*)()>(&setRawSubstitute),
-		0,
-		ACCESS_CONF,
-		"Filter incoming request fields before duplicating them."
-		"1st Arg: BODY HEAD ALL, data to match with the regex"
-		"Simply performs a match with the specified REGEX."),
-	AP_INIT_TAKE3("DupSubstitute",
-		reinterpret_cast<const char *(*)()>(&setSubstitute),
-		0,
-		ACCESS_CONF,
-		""),
-	AP_INIT_NO_ARGS("Dup",
-		reinterpret_cast<const char *(*)()>(&setActive),
-		0,
-		ACCESS_CONF,
-		"Duplicating requests on this location using the dup module. "
-		"This is only needed if no filter or substitution is defined."),
-        {0}
+    AP_INIT_TAKE1("DupName",
+                  reinterpret_cast<const char *(*)()>(&setName),
+                  0,
+                  OR_ALL,
+                  "Set the program name for the stats log messages"),
+    AP_INIT_TAKE1("DupDuplicationType",
+                  reinterpret_cast<const char *(*)()>(&setDuplicationType),
+                  0,
+                  OR_ALL,
+                  "Sets the duplication type that will used for all the following filters declarations"),
+    AP_INIT_TAKE1("DupUrlCodec",
+                  reinterpret_cast<const char *(*)()>(&setUrlCodec),
+                  0,
+                  OR_ALL,
+                  "Set the url enc/decoding style for url arguments (default or apache)"),
+    AP_INIT_TAKE1("DupTimeout",
+                  reinterpret_cast<const char *(*)()>(&setTimeout),
+                  0,
+                  OR_ALL,
+                  "Set the timeout for outgoing requests in milliseconds."),
+    AP_INIT_TAKE2("DupThreads",
+                  reinterpret_cast<const char *(*)()>(&setThreads),
+                  0,
+                  OR_ALL,
+                  "Set the minimum and maximum number of threads per pool."),
+    AP_INIT_TAKE2("DupQueue",
+                  reinterpret_cast<const char *(*)()>(&setQueue),
+                  0,
+                  OR_ALL,
+                  "Set the minimum and maximum queue size for each thread pool."),
+    AP_INIT_TAKE1("DupDestination",
+                  reinterpret_cast<const char *(*)()>(&setDestination),
+                  0,
+                  ACCESS_CONF,
+                  "Set the destination for the duplicated requests. Format: host[:port]"),
+    AP_INIT_TAKE1("DupApplicationScope",
+                  reinterpret_cast<const char *(*)()>(&setApplicationScope),
+                  0,
+                  ACCESS_CONF,
+                  "Sets the application scope of the filters and subsitution rules that follow this declaration"),
+    AP_INIT_TAKE2("DupFilter",
+                  reinterpret_cast<const char *(*)()>(&setFilter),
+                  0,
+                  ACCESS_CONF,
+                  "Filter incoming request fields before duplicating them. "
+                  "If one or more filters are specified, at least one of them has to match."),
+    AP_INIT_TAKE1("DupRawFilter",
+                  reinterpret_cast<const char *(*)()>(&setRawFilter),
+                  0,
+                  ACCESS_CONF,
+                  "Filter incoming request fields before duplicating them."
+                  "1st Arg: BODY HEAD ALL, data to match with the regex"
+                  "Simply performs a match with the specified REGEX."),
+    AP_INIT_TAKE2("DupRawSubstitute",
+                  reinterpret_cast<const char *(*)()>(&setRawSubstitute),
+                  0,
+                  ACCESS_CONF,
+                  "Filter incoming request fields before duplicating them."
+                  "1st Arg: BODY HEAD ALL, data to match with the regex"
+                  "Simply performs a match with the specified REGEX."),
+    AP_INIT_TAKE3("DupSubstitute",
+                  reinterpret_cast<const char *(*)()>(&setSubstitute),
+                  0,
+                  ACCESS_CONF,
+                  ""),
+    AP_INIT_TAKE3("DupEnrichContext",
+                  reinterpret_cast<const char *(*)()>(&setEnrichContext),
+                  0,
+                  ACCESS_CONF,
+                  "Enrich apache context with some variable."
+                  "Usage: DupEnrichContext VarName MatchRegex SetRegex"
+                  "VarName: The name of the variable to define"
+                  "MatchRegex: The regex that must match to define the variable"
+                  "SetRegex: The value to set if MatchRegex matches"),
+    AP_INIT_NO_ARGS("Dup",
+                    reinterpret_cast<const char *(*)()>(&setActive),
+                    0,
+                    ACCESS_CONF,
+                    "Duplicating requests on this location using the dup module. "
+                    "This is only needed if no filter or substitution is defined."),
+    {0}
 };
 
 /**

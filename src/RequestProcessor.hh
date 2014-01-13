@@ -30,6 +30,8 @@
 
 typedef void CURL;
 
+class TestRequestProcessor;
+
 namespace DupModule {
 
     class DupConf;
@@ -111,6 +113,23 @@ namespace DupModule {
         std::string mReplacement; /** The replacement value regex */
     };
 
+    /**
+     * Represents a raw substitution
+     */
+    struct tContextEnrichment : public tFilterBase{
+
+        tContextEnrichment(const std::string &varName,
+                           const std::string &matchregex,
+                           const std::string &setValue,
+                           ApplicationScope::eApplicationScope scope);
+
+        virtual ~tContextEnrichment();
+
+        std::string mVarName;   /** The variable name to set if it matches */
+        std::string mSetValue;  /** The value to set if it matches */
+    };
+
+
     /** @brief Maps a path to a substitution. Not a multimap because order matters. */
     typedef std::map<std::string, std::list<tSubstitute> > tFieldSubstitutionMap;
 
@@ -131,6 +150,10 @@ namespace DupModule {
 
         /** @brief The Raw Substitution list */
         std::list<tSubstitute> mRawSubstitutions;
+
+        /** @brief The Context enrichment list */
+        std::list<tContextEnrichment> mEnrichContext;
+
     };
 
     /**
@@ -140,6 +163,7 @@ namespace DupModule {
      */
     class RequestProcessor
     {
+
     private:
 	/** @brief Maps paths to their corresponding processing (filter and substitution) directives */
 	std::map<std::string, tRequestProcessorCommands> mCommands;
@@ -231,6 +255,21 @@ namespace DupModule {
                         const DupConf &pAssociatedConf);
 
         /**
+         * @brief EnrichContext instructions
+         * @param pPath the path of the request
+         * @param pVarName the name of the variable to declare
+         * @param pMatch the regexp that must match to declare the variable
+         * Regex scope if defined in the DupConf struct
+         * @param pSetValue the value to set to the variable if the regex matches
+         */
+        void
+        addEnrichContext(const std::string &pPath, const std::string &pVarName,
+                         const std::string &pMatch, const std::string &pSetValue,
+                         const DupConf &pAssociatedConf);
+
+
+
+        /**
          * @brief Schedule a Raw substitution on the value of all requests on a given path
          * @param pPath the path of the request
          * @param pField the field on which to do the substitution
@@ -262,8 +301,8 @@ namespace DupModule {
          * @brief Process a field. This includes filtering and executing substitutions
          * @param pConfPath the path of the configuration which is applied
          * @param pArgs the HTTP arguments/parameters of the incoming request
-         * @return true if the request should get duplicated, false otherwise.
-         * If and only if it returned true, pArgs will have all necessary substitutions applied.
+         * @return NULL if the request does not need to be duplicated, a pointer on the filter that matched otherwise.
+         * If and only if a filter matches, substitutions will be applied.
          */
         const tFilter *
         processRequest(const std::string &pConfPath, RequestInfo &pRequest);
@@ -278,10 +317,12 @@ namespace DupModule {
     private:
 
         bool
-        substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs);
+        substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands,
+                          std::list<tKeyVal> &pHeaderParsedArgs);
 
         const tFilter *
-        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, ApplicationScope::eApplicationScope scope);
+        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs,
+                       ApplicationScope::eApplicationScope scope);
 
         bool
         keySubstitute(tFieldSubstitutionMap &pSubs,
@@ -289,5 +330,8 @@ namespace DupModule {
                       ApplicationScope::eApplicationScope scope,
                       std::string &result);
 
+        friend class ::TestRequestProcessor;
     };
+
+
 }

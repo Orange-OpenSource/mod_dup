@@ -93,12 +93,6 @@ RequestProcessor::getDuplicatedCount() {
     return lCount;
 }
 
-/**
- * @brief Add a filter for all requests on a given path
- * @param pPath the path of the request
- * @param pField the field on which to do the substitution
- * @param pFilter a reg exp which has to match for this request to be duplicated
- */
 void
 RequestProcessor::addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
                             const DupConf &pAssociatedConf) {
@@ -115,13 +109,6 @@ RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFil
                                                    pAssociatedConf.currentDupDestination));
 }
 
-/**
- * @brief Schedule a substitution on the value of a given field of all requests on a given path
- * @param pPath the path of the request
- * @param pField the field on which to do the substitution
- * @param pMatch the regexp matching what should be replaced
- * @param pReplace the value which the match should be replaced with
- */
 void
 RequestProcessor::addSubstitution(const std::string &pPath, const std::string &pField, const std::string &pMatch,
                                   const std::string &pReplace,  const DupConf &pAssociatedConf) {
@@ -136,11 +123,14 @@ RequestProcessor::addRawSubstitution(const std::string &pPath, const std::string
                                                              pAssociatedConf.currentApplicationScope));
 }
 
-/**
- * @brief Parses arguments into key valye pairs. Also url-decodes values and converts keys to upper case.
- * @param pParsedArgs the list which should be filled with the key value pairs
- * @param pArgs the parameters part of the query
- */
+void
+RequestProcessor::addEnrichContext(const std::string &pPath, const std::string &pVarName,
+                                   const std::string &pMatch, const std::string &pSetValue,
+                                   const DupConf &pAssociatedConf) {
+    mCommands[pPath].mEnrichContext.push_back(tContextEnrichment(pVarName, pMatch, pSetValue,
+                                                                 pAssociatedConf.currentApplicationScope));
+}
+
 void
 RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &pArgs) {
     const boost::char_separator<char> lSep("&");
@@ -521,6 +511,18 @@ tSubstitute::tSubstitute(const tSubstitute &other)
 }
 
 tSubstitute::~tSubstitute() {
+}
+
+tContextEnrichment::tContextEnrichment(const std::string &varName,
+                                       const std::string &matchRegex,
+                                       const std::string &setValue,
+                                       ApplicationScope::eApplicationScope scope)
+    : tFilterBase(matchRegex, scope)
+    , mVarName(varName)
+    , mSetValue(setValue) {
+}
+
+tContextEnrichment::~tContextEnrichment() {
 }
 
 }
