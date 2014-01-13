@@ -53,6 +53,11 @@ namespace DupModule {
                     const std::string &pArgs, const std::string *body = 0);
 
 	/**
+	 * @brief Constructs a request initialising it's id
+	 */
+	RequestInfo(unsigned int id);
+
+	/**
 	 * @brief Constructs a poisonous object causing the processor to stop when read
 	 */
 	RequestInfo();

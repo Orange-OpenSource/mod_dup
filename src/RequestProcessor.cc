@@ -52,10 +52,6 @@ namespace ApplicationScope {
     }
 }
 
-/**
- * @brief Set the timeout
- * @param pTimeout the timeout in ms
- */
 void
 RequestProcessor::setTimeout(const unsigned int &pTimeout) {
     mTimeout = pTimeout;
@@ -66,10 +62,6 @@ RequestInfo::hasBody() const {
     return mBody.size();
 }
 
-/**
- * @brief Get the number of requests which timed out since last call to this method
- * @return The timeout count
- */
 const unsigned int
 RequestProcessor::getTimeoutCount() {
 	// Atomic read + reset
@@ -81,10 +73,6 @@ RequestProcessor::getTimeoutCount() {
 	return lTimeoutCount;
 }
 
-/**
- * @brief Get the number of requests that were duplicated since last call to this method
- * @return The duplicated count
- */
 const unsigned int
 RequestProcessor::getDuplicatedCount() {
     // Atomic read + reset
@@ -169,12 +157,6 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
     return NULL;
 }
 
-/**
- * @brief Returns wether or not the arguments match any of the filters
- * @param pParsedArgs the list with the argument key value pairs
- * @param pFilters the filters which should be applied
- * @return a pointer on the filter if matches, NULL otherwise
- */
 const tFilter *
 RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
 
@@ -472,7 +454,6 @@ RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
 
 int
 RequestProcessor::enrichContext() {
-
 }
 
 tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationScope s)

@@ -18,76 +18,38 @@
 
 #include "mod_dup.hh"
 
+#include <http_config.h>
+
 namespace DupModule {
 
-
-struct InterFilterContext {
-
-    /*
-     * Returns the requestInfo object associated with the requestId
-     * Allocates the object if it does not exist
-     */
-    RequestInfo *getRequestInfo(unsigned int requestId);
-
-    /*
-     * Erase the id from the map
-     * Does not delete the pointer
-     */
-    void rmRequestInfo(unsigned int requestId);
-
-    std::map<unsigned int, RequestInfo *>     mReqs;
-    boost::mutex                              mAnswerSync;
-
-};
-
-RequestInfo *
-InterFilterContext::getRequestInfo(unsigned int requestId) {
-    RequestInfo *ret = NULL;
-    boost::lock_guard<boost::mutex> guard(mAnswerSync);
-    std::map<unsigned int, RequestInfo *>::iterator a;
-    a = mReqs.find(requestId);
-    if (a == mReqs.end()) {
-        ret = new RequestInfo();
-        mReqs[requestId] = ret;
-    }
-    else
-        ret = a->second;
-    return ret;
-}
-
-void
-InterFilterContext::rmRequestInfo(unsigned int requestId) {
-    boost::lock_guard<boost::mutex> guard(mAnswerSync);
-    mReqs.erase(requestId);
-}
-
-
-static InterFilterContext interFilterContext;
-
-
 apr_status_t
-analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
+inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
+{
+    apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    if (lStatus != APR_SUCCESS) {
+        return lStatus;
+    }
     request_rec *pRequest = pF->r;
     if (pRequest) {
 	struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+	if (!tConf) {
+            return OK; // SHOULD NOT HAPPEN
+	}
         // Request ID extract
         apr_table_t *headersIn = pRequest->headers_in;
-	if (!tConf) {
-            return OK;
-	}
         // No context? new request
         if (!pF->ctx) {
-            // Set the request id
-            unsigned int rId = tConf->getNextReqId();
-            std::string reqId = boost::lexical_cast<std::string>(rId);
+            RequestInfo *info = new RequestInfo(tConf->getNextReqId());
+            std::string reqId = boost::lexical_cast<std::string>(info->mId);
             apr_table_set(headersIn, c_UNIQUE_ID, reqId.c_str());
             apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
-            pF->ctx = (void *)interFilterContext.getRequestInfo(rId);
+            ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
+            pF->ctx = info;
         } else if (pF->ctx == (void *)1) {
             return OK;
         }
         RequestInfo *pBH = static_cast<RequestInfo *>(pF->ctx);
-        // Body is stored only if the payload flag is activated
+        // TODO Body is stored only if the payload flag is activated
         for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
              b != APR_BRIGADE_SENTINEL(pB);
              b = APR_BUCKET_NEXT(b) ) {
@@ -97,7 +59,6 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
 #endif
                 // TODO Do context enrichment synchronously
                 gProcessor->enrichContext();
-
                 pF->ctx = (void *)1;
                 break;
 #ifndef UNIT_TESTING
@@ -113,16 +74,6 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
         }
     }
     return OK;
-}
-
-apr_status_t
-inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
-{
-    apr_status_t lStatus = ap_get_brigade(pFilter->next, pBrigade, pMode, pBlock, pReadbytes);
-    if (lStatus != APR_SUCCESS) {
-        return lStatus;
-    }
-    return analyseRequest(pFilter, pBrigade);
 }
 
 /*
@@ -171,7 +122,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         // Context init
         ctx = new RequestContext();
         pFilter->ctx = ctx;
-        ctx->req = interFilterContext.getRequestInfo(rId);
+        ctx->req = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
+        assert(ctx->req);
         ctx->tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
     } else if (ctx == (void *) -1) {
         return ap_pass_brigade(pFilter->next, pBrigade);
@@ -179,11 +131,11 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
         // Asynchronous push of request without the answer
-        RequestInfo *rH = interFilterContext.getRequestInfo(rId);
+        RequestInfo *rH = ctx->req;
         prepareRequestInfo(rId, tConf, pRequest, *rH);
         printRequest(pRequest, rH, tConf);
         gThreadPool->push(rH);
-        interFilterContext.rmRequestInfo(rId);
+        // TODO interFilterContext.rmRequestInfo(rId);
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
     // Asynchronous push of request WITH the answer
@@ -211,8 +163,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             prepareRequestInfo(rId, tConf, pRequest, *(ctx->req));
             printRequest(pRequest, ctx->req, tConf);
             gThreadPool->push(ctx->req);
-            interFilterContext.rmRequestInfo(rId);
-            delete (RequestContext *)pFilter->ctx;
+            // TODO interFilterContext.rmRequestInfo(rId);
+            //delete (RequestContext *)pFilter->ctx;
             pFilter->ctx = (void *) -1;
         }
         else {
