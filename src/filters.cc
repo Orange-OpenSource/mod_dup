@@ -80,8 +80,8 @@ analyseRequest(ap_filter_t *pF, apr_bucket_brigade *pB ) {
             // Set the request id
             unsigned int rId = tConf->getNextReqId();
             std::string reqId = boost::lexical_cast<std::string>(rId);
-            apr_table_set(headersIn, "UNIQUE_ID", reqId.c_str());
-            apr_table_set(pRequest->headers_out, "UNIQUE_ID", reqId.c_str());
+            apr_table_set(headersIn, c_UNIQUE_ID, reqId.c_str());
+            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
             pF->ctx = (void *)interFilterContext.getRequestInfo(rId);
         } else if (pF->ctx == (void *)1) {
             return OK;
@@ -142,7 +142,7 @@ prepareRequestInfo(unsigned int rId, DupConf *tConf, request_rec *pRequest, Requ
 
 static void
 printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
-    const char *reqId = apr_table_get(pRequest->headers_in, "UNIQUE_ID");
+    const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     Log::debug("### Pushing a request with ID: %s, body size:%s", reqId, boost::lexical_cast<std::string>(pBH->mBody.size()).c_str());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("### Request args: %s", pRequest->args);
@@ -155,7 +155,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
     if (!pRequest->headers_in)
         return ap_pass_brigade(pFilter->next, pBrigade);
-    const char *reqId = apr_table_get(pRequest->headers_in, "UNIQUE_ID");
+    const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     if (!reqId)
         return ap_pass_brigade(pFilter->next, pBrigade);
     unsigned int rId = boost::lexical_cast<unsigned int>(reqId);

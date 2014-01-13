@@ -42,6 +42,10 @@ namespace DupModule {
     extern RequestProcessor                             *gProcessor;
     extern ThreadPool<const RequestInfo *>              *gThreadPool;
 
+    /** The unique id HEADER attribute name */
+    extern const char* c_UNIQUE_ID;
+
+
 /*
  * Different duplication modes supported by mod_dup
  */
@@ -68,6 +72,7 @@ namespace DuplicationType {
 
     // The current type used for duplication
     extern eDuplicationType value;
+
 };
 
 /**

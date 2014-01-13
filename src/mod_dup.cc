@@ -46,6 +46,7 @@ ThreadPool<const RequestInfo*> *gThreadPool;
 
 const char *gName = "Dup";
 const char *c_COMPONENT_VERSION = "Dup/1.0";
+const char* c_UNIQUE_ID = "UNIQUE_ID";
 
 namespace DuplicationType {
 
@@ -84,7 +85,7 @@ unsigned int DupConf::getNextReqId() {
     static __thread char lRSB[8];
 
     // Initialized per thread
-    int lRet;
+    int lRet = 0;
     if (!lInitialized) {
         memset(lRSB,0, 8);
         struct timespec lTimeSpec;
@@ -93,13 +94,14 @@ unsigned int DupConf::getNextReqId() {
         unsigned int lSeed = lTimeSpec.tv_nsec + (pid_t) syscall(SYS_gettid);
 
         // init State must be different for all threads or each will answer the same sequence
-        lRet = initstate_r(lSeed, lRSB, 8, &lRD);
+        lRet |= initstate_r(lSeed, lRSB, 8, &lRD);
         lInitialized = true;
     }
-
     // Thread-safe calls with thread local initialization
     int lRandNum = 1;
-    lRet = random_r(&lRD, &lRandNum);
+    lRet |= random_r(&lRD, &lRandNum);
+    if (lRet)
+        Log::error(5, "Error on number randomisation");
     return lRandNum;
 }
 
