@@ -39,6 +39,11 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         if (!pF->ctx) {
             RequestInfo *info = new RequestInfo(tConf->getNextReqId());
             ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
+            // Copy Request ID in both headers
+            std::string reqId = boost::lexical_cast<std::string>(info->mId);
+            apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
+            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+            // Backup of info struct in the request context
             pF->ctx = info;
         } else if (pF->ctx == (void *)1) {
             return OK;
@@ -50,7 +55,8 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
              b = APR_BUCKET_NEXT(b) ) {
             // Metadata end of stream
             if ( APR_BUCKET_IS_EOS(b) ) {
-                // TODO Do context enrichment synchronously
+
+                // Synchronous context enrichment
                 gProcessor->enrichContext();
                 pF->ctx = (void *)1;
                 break;
@@ -172,12 +178,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             // TODO dissociate body from header if possible
             prepareRequestInfo(tConf, pRequest, *(ctx->req), true);
             printRequest(pRequest, ctx->req, tConf);
-
-            // std::string reqId = boost::lexical_cast<std::string>(info->mId);
-            // apr_table_set(headersIn, c_UNIQUE_ID, reqId.c_str());
-            // apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
-
-
             gThreadPool->push(ctx->req);
             delete ctx;
             pFilter->ctx = (void *) -1;
