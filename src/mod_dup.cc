@@ -108,6 +108,7 @@ unsigned int DupConf::getNextReqId() {
 apr_status_t DupConf::cleaner(void *self) {
     if (self) {
         DupConf *c = reinterpret_cast<DupConf *>(self);
+        assert(c);
         c->~DupConf();
     }
     return 0;
@@ -247,14 +248,6 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     return NULL;
 }
 
-/**
- * @brief Set the minimum and maximum number of threads
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pMin the minimum number of threads
- * @param pMax the maximum number of threads
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setThreads(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 	size_t lMin, lMax;
@@ -272,13 +265,6 @@ setThreads(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 	return NULL;
 }
 
-/**
- * @brief Set the timeout for outgoing requests
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pTimeout the timeout for outgoing requests in ms
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setTimeout(cmd_parms* pParams, void* pCfg, const char* pTimeout) {
     size_t lTimeout;
@@ -303,15 +289,6 @@ setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
     return NULL;
 }
 
-
-/**
- * @brief Set the minimum and maximum queue size
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pMin the minimum queue size
- * @param pMax the maximum queue size
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
     size_t lMin, lMax;
@@ -330,16 +307,6 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
     return NULL;
 }
 
-/**
- * @brief Add a substitution definition
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pScope the scope of the substitution (HEADER, BODY, ALL)
- * @param pField the field on which to do the substitution
- * @param pMatch the regexp matching what should be replaced
- * @param pReplace the value which the match should be replaced with
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -376,12 +343,6 @@ setEnrichContext(cmd_parms* pParams, void* pCfg, const char *pVarName, const cha
     return NULL;
 }
 
-/**
- * @brief Activate duplication
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @return NULL
- */
 const char*
 setActive(cmd_parms* pParams, void* pCfg) {
     struct DupConf *lConf = reinterpret_cast<DupConf *>(pCfg);
@@ -396,14 +357,6 @@ setActive(cmd_parms* pParams, void* pCfg) {
     return NULL;
 }
 
-/**
- * @brief Add a filter definition
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pField the field on which to do the substitution
- * @param pFilter a reg exp which has to match for this request to be duplicated
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -445,13 +398,13 @@ setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
  */
 apr_status_t
 cleanUp(void *) {
-	gThreadPool->stop();
-	delete gThreadPool;
-	gThreadPool = NULL;
+    gThreadPool->stop();
+    delete gThreadPool;
+    gThreadPool = NULL;
 
-	delete gProcessor;
-	gProcessor = NULL;
-	return APR_SUCCESS;
+    delete gProcessor;
+    gProcessor = NULL;
+    return APR_SUCCESS;
 }
 
 /**
