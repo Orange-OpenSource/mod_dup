@@ -106,8 +106,10 @@ unsigned int DupConf::getNextReqId() {
 }
 
 apr_status_t DupConf::cleaner(void *self) {
-    DupConf *c = reinterpret_cast<DupConf *>(self);
-    c->~DupConf();
+    if (self) {
+        DupConf *c = reinterpret_cast<DupConf *>(self);
+        c->~DupConf();
+    }
     return 0;
 }
 

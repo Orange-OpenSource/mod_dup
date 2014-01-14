@@ -49,25 +49,25 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
             return OK;
         }
         RequestInfo *pBH = static_cast<RequestInfo *>(pF->ctx);
-        // TODO Body is stored only if the payload flag is activated
         for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
              b != APR_BRIGADE_SENTINEL(pB);
              b = APR_BUCKET_NEXT(b) ) {
             // Metadata end of stream
             if ( APR_BUCKET_IS_EOS(b) ) {
-
                 // Synchronous context enrichment
                 gProcessor->enrichContext();
                 pF->ctx = (void *)1;
                 break;
             }
-            const char* lReqPart = NULL;
-            apr_size_t lLength = 0;
-            apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
-            if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
-                continue;
+            if (DuplicationType::value != DuplicationType::HEADER_ONLY) {
+                const char* lReqPart = NULL;
+                apr_size_t lLength = 0;
+                apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
+                if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
+                    continue;
+                }
+                pBH->mBody += std::string(lReqPart, lLength);
             }
-            pBH->mBody += std::string(lReqPart, lLength);
         }
     }
     return OK;
@@ -78,17 +78,17 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
  */
 class RequestContext {
 public:
-    apr_bucket_brigade  *tmpbb;
-    RequestInfo         *req; /** Req is pushed to requestprocessor for duplication and will be deleted later*/
+    apr_bucket_brigade  *mTmpBB;
+    RequestInfo         *mReq; /** Req is pushed to requestprocessor for duplication and will be deleted later*/
 
     RequestContext(ap_filter_t *pFilter) {
-        tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
-        req = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config, &dup_module));
-        assert(req);
+        mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
+        mReq = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config, &dup_module));
+        assert(mReq);
     }
 
     ~RequestContext() {
-        apr_brigade_cleanup(tmpbb);
+        apr_brigade_cleanup(mTmpBB);
     }
 };
 
@@ -121,7 +121,7 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r, bool w
 static void
 printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
     const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
-    Log::debug("### Pushing a request with ID: %s, body size:%s", reqId, boost::lexical_cast<std::string>(pBH->mBody.size()).c_str());
+    Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("### Request args: %s", pRequest->args);
 }
@@ -146,7 +146,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
         // Asynchronous push of request without the answer
-        RequestInfo *rH = ctx->req;
+        RequestInfo *rH = ctx->mReq;
         prepareRequestInfo(tConf, pRequest, *rH, false);
         printRequest(pRequest, rH, tConf);
         gThreadPool->push(rH);
@@ -163,27 +163,30 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
 
         if ((rv == APR_SUCCESS) && (data != NULL)) {
-            ctx->req->mAnswer.append(data, len);
+            ctx->mReq->mAnswer.append(data, len);
         }
         /* Remove bucket e from bb. */
         APR_BUCKET_REMOVE(currentBucket);
         /* Insert it into  temporary brigade. */
-        APR_BRIGADE_INSERT_HEAD(ctx->tmpbb, currentBucket);
+        APR_BRIGADE_INSERT_HEAD(ctx->mTmpBB, currentBucket);
         /* Pass brigade downstream. */
-        rv = ap_pass_brigade(pFilter->next, ctx->tmpbb);
-        // TODO if (rv) ...;
+        rv = ap_pass_brigade(pFilter->next, ctx->mTmpBB);
+        if (rv != APR_SUCCESS) {
+            // Something went wrongm no duplication performed
+            delete ctx;
+            pFilter->ctx = (void *) -1;
+            return rv;
+        }
         if (APR_BUCKET_IS_EOS(currentBucket)) {
-            apr_brigade_cleanup(ctx->tmpbb);
             // Pushing the answer to the processor
-            // TODO dissociate body from header if possible
-            prepareRequestInfo(tConf, pRequest, *(ctx->req), true);
-            printRequest(pRequest, ctx->req, tConf);
-            gThreadPool->push(ctx->req);
+            prepareRequestInfo(tConf, pRequest, *(ctx->mReq), true);
+            printRequest(pRequest, ctx->mReq, tConf);
+            gThreadPool->push(ctx->mReq);
             delete ctx;
             pFilter->ctx = (void *) -1;
         }
         else {
-            apr_brigade_cleanup(ctx->tmpbb);
+            apr_brigade_cleanup(ctx->mTmpBB);
         }
     }
     return OK;
