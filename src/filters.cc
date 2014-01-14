@@ -48,17 +48,13 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
              b != APR_BRIGADE_SENTINEL(pB);
              b = APR_BUCKET_NEXT(b) ) {
-#ifndef UNIT_TESTING
             // Metadata end of stream
             if ( APR_BUCKET_IS_EOS(b) ) {
-#endif
                 // TODO Do context enrichment synchronously
                 gProcessor->enrichContext();
                 pF->ctx = (void *)1;
                 break;
-#ifndef UNIT_TESTING
             }
-#endif
             const char* lReqPart = NULL;
             apr_size_t lLength = 0;
             apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
