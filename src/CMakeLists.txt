@@ -25,8 +25,18 @@ file(GLOB mod_dup_SOURCE_FILES
   RequestProcessor.cc
   RequestInfo.cc
   UrlCodec.cc)
+  
+file(GLOB mod_compare_SOURCE_FILES
+  filters_compare.cc
+  mod_compare.cc
+  Log.cc
+  RequestInfo.cc)
 
 # Compile as library
 add_library(mod_dup MODULE ${mod_dup_SOURCE_FILES})
 set_target_properties(mod_dup PROPERTIES PREFIX "")
 target_link_libraries(mod_dup ${APR_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
+
+add_library(mod_compare MODULE ${mod_compare_SOURCE_FILES})
+set_target_properties(mod_compare PROPERTIES PREFIX "")
+target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES})
