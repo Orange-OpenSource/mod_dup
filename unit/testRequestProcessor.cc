@@ -412,3 +412,33 @@ void TestRequestProcessor::testRawSubstitution()
     }
 
 }
+
+
+void TestRequestProcessor::testContextEnrichment()
+{
+    {
+        // Simple substitution on a header
+        // Body untouched
+        RequestProcessor proc;
+        std::string query;
+
+        query = "joker=robin";
+        std::string body = "mybody1test";
+        RequestInfo ri = RequestInfo(1,"/mypath", "/mypath/wb", query, &body);
+        DupConf conf;
+        conf.currentApplicationScope = ApplicationScope::HEADER;
+
+        proc.addEnrichContext("/mypath", "batman", "joker=robin", "bruce=wayne", conf);
+
+
+        tRequestProcessorCommands &c = proc.mCommands["/mypath"];
+
+        CPPUNIT_ASSERT(c.mEnrichContext.size() == 1);
+        tContextEnrichment &e = c.mEnrichContext.front();
+        CPPUNIT_ASSERT_EQUAL(e.mVarName, std::string("batman"));
+        CPPUNIT_ASSERT_EQUAL(e.mSetValue, std::string("bruce=wayne"));
+        CPPUNIT_ASSERT_EQUAL(e.mScope, ApplicationScope::HEADER);
+        CPPUNIT_ASSERT_EQUAL(e.mRegex.str(), std::string("joker=robin"));
+
+    }
+}

@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -30,6 +30,7 @@ class TestRequestProcessor :
 
     CPPUNIT_TEST_SUITE(TestRequestProcessor);
     CPPUNIT_TEST(init);
+
     CPPUNIT_TEST(testParseArgs);
     CPPUNIT_TEST(testFilter);
     CPPUNIT_TEST(testSubstitution);
@@ -37,6 +38,8 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testRun);
     CPPUNIT_TEST(testFilterBasic);
     CPPUNIT_TEST(testRawSubstitution);
+    CPPUNIT_TEST(testContextEnrichment);
+
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -49,4 +52,6 @@ public:
     void testRun();
     void testFilterBasic();
     void testRawSubstitution();
+    void testContextEnrichment();
+
 };

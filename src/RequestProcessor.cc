@@ -52,10 +52,6 @@ namespace ApplicationScope {
     }
 }
 
-/**
- * @brief Set the timeout
- * @param pTimeout the timeout in ms
- */
 void
 RequestProcessor::setTimeout(const unsigned int &pTimeout) {
     mTimeout = pTimeout;
@@ -66,10 +62,6 @@ RequestInfo::hasBody() const {
     return mBody.size();
 }
 
-/**
- * @brief Get the number of requests which timed out since last call to this method
- * @return The timeout count
- */
 const unsigned int
 RequestProcessor::getTimeoutCount() {
 	// Atomic read + reset
@@ -81,10 +73,6 @@ RequestProcessor::getTimeoutCount() {
 	return lTimeoutCount;
 }
 
-/**
- * @brief Get the number of requests that were duplicated since last call to this method
- * @return The duplicated count
- */
 const unsigned int
 RequestProcessor::getDuplicatedCount() {
     // Atomic read + reset
@@ -93,12 +81,6 @@ RequestProcessor::getDuplicatedCount() {
     return lCount;
 }
 
-/**
- * @brief Add a filter for all requests on a given path
- * @param pPath the path of the request
- * @param pField the field on which to do the substitution
- * @param pFilter a reg exp which has to match for this request to be duplicated
- */
 void
 RequestProcessor::addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
                             const DupConf &pAssociatedConf) {
@@ -115,13 +97,6 @@ RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFil
                                                    pAssociatedConf.currentDupDestination));
 }
 
-/**
- * @brief Schedule a substitution on the value of a given field of all requests on a given path
- * @param pPath the path of the request
- * @param pField the field on which to do the substitution
- * @param pMatch the regexp matching what should be replaced
- * @param pReplace the value which the match should be replaced with
- */
 void
 RequestProcessor::addSubstitution(const std::string &pPath, const std::string &pField, const std::string &pMatch,
                                   const std::string &pReplace,  const DupConf &pAssociatedConf) {
@@ -136,11 +111,14 @@ RequestProcessor::addRawSubstitution(const std::string &pPath, const std::string
                                                              pAssociatedConf.currentApplicationScope));
 }
 
-/**
- * @brief Parses arguments into key valye pairs. Also url-decodes values and converts keys to upper case.
- * @param pParsedArgs the list which should be filled with the key value pairs
- * @param pArgs the parameters part of the query
- */
+void
+RequestProcessor::addEnrichContext(const std::string &pPath, const std::string &pVarName,
+                                   const std::string &pMatch, const std::string &pSetValue,
+                                   const DupConf &pAssociatedConf) {
+    mCommands[pPath].mEnrichContext.push_back(tContextEnrichment(pVarName, pMatch, pSetValue,
+                                                                 pAssociatedConf.currentApplicationScope));
+}
+
 void
 RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &pArgs) {
     const boost::char_separator<char> lSep("&");
@@ -179,12 +157,6 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
     return NULL;
 }
 
-/**
- * @brief Returns wether or not the arguments match any of the filters
- * @param pParsedArgs the list with the argument key value pairs
- * @param pFilters the filters which should be applied
- * @return a pointer on the filter if matches, NULL otherwise
- */
 const tFilter *
 RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
 
@@ -400,9 +372,14 @@ sendDupFormat(CURL *curl, const RequestInfo &rInfo, struct curl_slist *&slist){
     std::stringstream ss;
     //Request body
     ss << std::setfill('0') << std::setw(8) << rInfo.mBody.length() << rInfo.mBody;
-    // // Answer header
-    // TODO   ss << std::setfill('0') << std::setw(8) << a.mHeader.length() << a.mHeader;
-    ss << std::setfill('0') << "00000000";
+
+    // Answer headers, Copy requestInfo out headers
+    std::string answerHeaders;
+    BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersOut) {
+        answerHeaders.append(v.first + std::string(": ") + v.second + "\n");
+    }
+    ss << std::setfill('0') << std::setw(8) << answerHeaders.length() << answerHeaders;
+
     // Answer Body
     ss << std::setfill('0') << std::setw(8) << rInfo.mAnswer.length() << rInfo.mAnswer;
     std::string *content = new std::string(ss.str());
@@ -419,6 +396,12 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     // Sending body in plain or dup format according to the duplication need
     std::string *content = NULL;
     struct curl_slist *slist = NULL;
+    // Copy request in headers
+    BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersIn) {
+        slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
+    }
+    // Setting mod-dup as the real agent for tracability
+    slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
         content = sendDupFormat(curl, rInfo, slist);
     } else if (rInfo.hasBody()){
@@ -480,28 +463,34 @@ RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
     curl_easy_cleanup(lCurl);
 }
 
-tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationScope s)
+int
+RequestProcessor::enrichContext() {
+    //TODO
+    return 0;
+}
+
+tElementBase::tElementBase(const std::string &r, ApplicationScope::eApplicationScope s)
     : mScope(s)
     , mRegex(r) {
 }
 
-tFilterBase::~tFilterBase() {
+tElementBase::~tElementBase() {
 }
 
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
                  const std::string &currentDupDestination)
-    : tFilterBase(regex, scope)
+    : tElementBase(regex, scope)
     , mDestination(currentDupDestination) {
 }
 
-tFilter::tFilter(const tFilter& other): tFilterBase(other) {
+tFilter::tFilter(const tFilter& other): tElementBase(other) {
     if (&other == this)
         return;
     mField = other.mField;
     mDestination = other.mDestination;
 }
 
-tFilterBase::tFilterBase(const tFilterBase &other) {
+tElementBase::tElementBase(const tElementBase &other) {
     if (&other == this)
         return;
     mScope = other.mScope;
@@ -509,18 +498,30 @@ tFilterBase::tFilterBase(const tFilterBase &other) {
 }
 
 tSubstitute::tSubstitute(const std::string &regex, const std::string &replacement, ApplicationScope::eApplicationScope scope)
-    : tFilterBase(regex, scope)
+    : tElementBase(regex, scope)
     , mReplacement(replacement){
 }
 
 tSubstitute::tSubstitute(const tSubstitute &other)
-    : tFilterBase(other){
+    : tElementBase(other){
     if (&other == this)
         return;
     mReplacement = other.mReplacement;
 }
 
 tSubstitute::~tSubstitute() {
+}
+
+tContextEnrichment::tContextEnrichment(const std::string &varName,
+                                       const std::string &matchRegex,
+                                       const std::string &setValue,
+                                       ApplicationScope::eApplicationScope scope)
+    : tElementBase(matchRegex, scope)
+    , mVarName(varName)
+    , mSetValue(setValue) {
+}
+
+tContextEnrichment::~tContextEnrichment() {
 }
 
 }

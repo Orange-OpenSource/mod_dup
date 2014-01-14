@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <list>
 #include <string>
 
 namespace DupModule {
@@ -43,6 +44,14 @@ namespace DupModule {
 	/** @brief The query answer */
 	std::string mAnswer;
 
+        typedef std::list<std::pair<std::string, std::string> > tHeaders;
+
+        /** @brief list that represents the headers of the incoming request */
+        tHeaders mHeadersIn;
+
+        /** @brief list that represents the headers of the request answer */
+        tHeaders mHeadersOut;
+
 	/**
 	 * @brief Constructs the object using the three strings.
 	 * @param pConfPath The location (in the conf) which matched this query
@@ -51,6 +60,11 @@ namespace DupModule {
 	 */
         RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath,
                     const std::string &pArgs, const std::string *body = 0);
+
+	/**
+	 * @brief Constructs a request initialising it's id
+	 */
+	RequestInfo(unsigned int id);
 
 	/**
 	 * @brief Constructs a poisonous object causing the processor to stop when read

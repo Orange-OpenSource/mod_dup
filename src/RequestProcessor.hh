@@ -30,6 +30,8 @@
 
 typedef void CURL;
 
+class TestRequestProcessor;
+
 namespace DupModule {
 
     class DupConf;
@@ -63,15 +65,15 @@ namespace DupModule {
     /**
      * Base class for filters and substitutions
      */
-    struct tFilterBase{
-
-        tFilterBase(const std::string &regex,
+    class tElementBase{
+    public:
+        tElementBase(const std::string &regex,
                     ApplicationScope::eApplicationScope scope);
 
-        tFilterBase(const tFilterBase &other);
+        tElementBase(const tElementBase &other);
 
 
-        virtual ~tFilterBase();
+        virtual ~tElementBase();
 
         ApplicationScope::eApplicationScope mScope;     /** The action of the filter */
         boost::regex mRegex;                            /** The matching regular expression */
@@ -80,8 +82,8 @@ namespace DupModule {
     /**
      * Represents a filter that applies on a key
      */
-    struct tFilter : public tFilterBase{
-
+    class tFilter : public tElementBase{
+    public:
         tFilter(const std::string &regex,
                 ApplicationScope::eApplicationScope scope,
                 const std::string &currentDupDestination);
@@ -98,8 +100,8 @@ namespace DupModule {
     /**
      * Represents a raw substitution
      */
-    struct tSubstitute : public tFilterBase{
-
+    class tSubstitute : public tElementBase{
+    public:
         tSubstitute(const std::string &regex,
                     const std::string &replacement,
                     ApplicationScope::eApplicationScope scope);
@@ -111,13 +113,30 @@ namespace DupModule {
         std::string mReplacement; /** The replacement value regex */
     };
 
+    /**
+     * Context enrichment bean
+     */
+    class tContextEnrichment : public tElementBase{
+    public:
+        tContextEnrichment(const std::string &varName,
+                           const std::string &matchregex,
+                           const std::string &setValue,
+                           ApplicationScope::eApplicationScope scope);
+
+        virtual ~tContextEnrichment();
+
+        std::string mVarName;   /** The variable name to set if it matches */
+        std::string mSetValue;  /** The value to set if it matches */
+    };
+
+
     /** @brief Maps a path to a substitution. Not a multimap because order matters. */
     typedef std::map<std::string, std::list<tSubstitute> > tFieldSubstitutionMap;
 
 
     /** @brief A container for the filter and substituion commands */
-    struct tRequestProcessorCommands {
-
+    class tRequestProcessorCommands {
+    public:
         /** @brief The list of filter commands
          * Indexed by the field on which they apply
          */
@@ -131,6 +150,10 @@ namespace DupModule {
 
         /** @brief The Raw Substitution list */
         std::list<tSubstitute> mRawSubstitutions;
+
+        /** @brief The Context enrichment list */
+        std::list<tContextEnrichment> mEnrichContext;
+
     };
 
     /**
@@ -140,6 +163,7 @@ namespace DupModule {
      */
     class RequestProcessor
     {
+
     private:
 	/** @brief Maps paths to their corresponding processing (filter and substitution) directives */
 	std::map<std::string, tRequestProcessorCommands> mCommands;
@@ -179,9 +203,6 @@ namespace DupModule {
 	 */
 	const unsigned int
 	getTimeoutCount();
-
-        void
-        performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
 
         /**
          * @brief Get the number of requests duplicated since last call to this method
@@ -231,6 +252,21 @@ namespace DupModule {
                         const DupConf &pAssociatedConf);
 
         /**
+         * @brief EnrichContext instructions
+         * @param pPath the path of the request
+         * @param pVarName the name of the variable to declare
+         * @param pMatch the regexp that must match to declare the variable
+         * Regex scope if defined in the DupConf struct
+         * @param pSetValue the value to set to the variable if the regex matches
+         */
+        void
+        addEnrichContext(const std::string &pPath, const std::string &pVarName,
+                         const std::string &pMatch, const std::string &pSetValue,
+                         const DupConf &pAssociatedConf);
+
+
+
+        /**
          * @brief Schedule a Raw substitution on the value of all requests on a given path
          * @param pPath the path of the request
          * @param pField the field on which to do the substitution
@@ -262,8 +298,8 @@ namespace DupModule {
          * @brief Process a field. This includes filtering and executing substitutions
          * @param pConfPath the path of the configuration which is applied
          * @param pArgs the HTTP arguments/parameters of the incoming request
-         * @return true if the request should get duplicated, false otherwise.
-         * If and only if it returned true, pArgs will have all necessary substitutions applied.
+         * @return NULL if the request does not need to be duplicated, a pointer on the filter that matched otherwise.
+         * If and only if a filter matches, substitutions will be applied.
          */
         const tFilter *
         processRequest(const std::string &pConfPath, RequestInfo &pRequest);
@@ -275,13 +311,23 @@ namespace DupModule {
         void
         run(MultiThreadQueue<const RequestInfo *> &pQueue);
 
+        /**
+         * @brief Define some environnement variables if the query matches the criteria defined
+         * using the DupEnrichContext directive
+         * @return the number of variables defined
+         */
+        int
+        enrichContext();
+
     private:
 
         bool
-        substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs);
+        substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands,
+                          std::list<tKeyVal> &pHeaderParsedArgs);
 
         const tFilter *
-        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, ApplicationScope::eApplicationScope scope);
+        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs,
+                       ApplicationScope::eApplicationScope scope);
 
         bool
         keySubstitute(tFieldSubstitutionMap &pSubs,
@@ -289,5 +335,11 @@ namespace DupModule {
                       ApplicationScope::eApplicationScope scope,
                       std::string &result);
 
+        void
+        performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
+
+        friend class ::TestRequestProcessor;
     };
+
+
 }

@@ -20,32 +20,24 @@
 
 namespace DupModule {
 
-/**
- * @brief Constructs the object using the three strings.
- * @param pConfPath The location (in the conf) which matched this query
- * @param pPath The path part of the request
- * @param pConfPath The parameters part of the query (without leading ?)
- */
-RequestInfo::RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *pBody) :
-    mPoison(false),
-    mId(id),
-    mConfPath(pConfPath),
-    mPath(pPath),
-    mArgs(pArgs){
+RequestInfo::RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *pBody)
+    : mPoison(false),
+      mId(id),
+      mConfPath(pConfPath),
+      mPath(pPath),
+      mArgs(pArgs) {
     if (pBody)
         mBody = *pBody;
 }
 
-/**
- * @brief Constructs a poisonous object causing the processor to stop when read
- */
+RequestInfo::RequestInfo(unsigned int id)
+    : mPoison(false),
+      mId(id) {
+}
+
 RequestInfo::RequestInfo() :
     mPoison(true) {}
 
-/**
- * @brief Returns wether the the request is poisonous
- * @return true if poisonous, false otherwhise
- */
 bool
 RequestInfo::isPoison() const {
     return mPoison;

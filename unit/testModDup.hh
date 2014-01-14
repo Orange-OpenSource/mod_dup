@@ -38,6 +38,7 @@ class TestModDup :
     CPPUNIT_TEST_SUITE(TestModDup);
     CPPUNIT_TEST(testInit);
     CPPUNIT_TEST(testConfig);
+    CPPUNIT_TEST(testContextEnrichment);
     CPPUNIT_TEST(testRequestHandler);
     CPPUNIT_TEST(testScope);
     CPPUNIT_TEST(testDuplicationType);
@@ -45,11 +46,13 @@ class TestModDup :
     CPPUNIT_TEST_SUITE_END();
 
 public:
-	cmd_parms* getParms();
-	void testInit();
-	void testInitAndCleanUp();
-	void testConfig();
-	void testRequestHandler();
-	void testScope();
-	void testDuplicationType();
+    cmd_parms* getParms();
+    void testInit();
+    void testInitAndCleanUp();
+    void testConfig();
+    void testRequestHandler();
+    void testScope();
+    void testDuplicationType();
+    void testContextEnrichment();
+
 };

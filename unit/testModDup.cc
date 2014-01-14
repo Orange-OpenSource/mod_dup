@@ -60,27 +60,27 @@ apr_status_t 	apr_brigade_cleanup (void *){
 
 namespace DupModule {
 
-RequestProcessor *gProcessor;
-ThreadPool<const RequestInfo*> *gThreadPool;
-std::set<std::string> gActiveLocations;
+    RequestProcessor *gProcessor;
+    ThreadPool<const RequestInfo*> *gThreadPool;
+    std::set<std::string> gActiveLocations;
 
 
-template <typename QueueT>
-class DummyThreadPool : public ThreadPool<QueueT> {
-public:
-    typedef boost::function1<void, MultiThreadQueue<QueueT> &> tQueueWorker;
+    template <typename QueueT>
+    class DummyThreadPool : public ThreadPool<QueueT> {
+    public:
+        typedef boost::function1<void, MultiThreadQueue<QueueT> &> tQueueWorker;
 
-    std::list<QueueT> mDummyQueued;
+        std::list<QueueT> mDummyQueued;
 
-    //DummyThreadPool(int pWorker, const QueueT &pPoisonItem) : ThreadPool<QueueT>(pWorker, pPoisonItem) {
-    DummyThreadPool(tQueueWorker pWorker, const QueueT &pPoisonItem) : ThreadPool<QueueT>(pWorker, pPoisonItem) {
-    }
+        //DummyThreadPool(int pWorker, const QueueT &pPoisonItem) : ThreadPool<QueueT>(pWorker, pPoisonItem) {
+        DummyThreadPool(tQueueWorker pWorker, const QueueT &pPoisonItem) : ThreadPool<QueueT>(pWorker, pPoisonItem) {
+        }
 
-    void
-    push(const QueueT &pItem) {
-        mDummyQueued.push_back(pItem);
-    }
-};
+        void
+        push(const QueueT &pItem) {
+            mDummyQueued.push_back(pItem);
+        }
+    };
 
 }
 
@@ -171,79 +171,99 @@ void TestModDup::testRequestHandler()
 void TestModDup::testConfig()
 {
 
-        CPPUNIT_ASSERT(setThreads(NULL, NULL, "", "1"));
-        CPPUNIT_ASSERT(setThreads(NULL, NULL, "1", ""));
-        CPPUNIT_ASSERT(setThreads(NULL, NULL, "2", "1"));
-        CPPUNIT_ASSERT(!setThreads(NULL, NULL, "1", "2"));
-        CPPUNIT_ASSERT(!setThreads(NULL, NULL, "0", "0"));
-        CPPUNIT_ASSERT(setThreads(NULL, NULL, "-1", "2"));
+    CPPUNIT_ASSERT(setThreads(NULL, NULL, "", "1"));
+    CPPUNIT_ASSERT(setThreads(NULL, NULL, "1", ""));
+    CPPUNIT_ASSERT(setThreads(NULL, NULL, "2", "1"));
+    CPPUNIT_ASSERT(!setThreads(NULL, NULL, "1", "2"));
+    CPPUNIT_ASSERT(!setThreads(NULL, NULL, "0", "0"));
+    CPPUNIT_ASSERT(setThreads(NULL, NULL, "-1", "2"));
 
 
-        CPPUNIT_ASSERT(setQueue(NULL, NULL, "", "1"));
-        CPPUNIT_ASSERT(setQueue(NULL, NULL, "1", ""));
-        CPPUNIT_ASSERT(setQueue(NULL, NULL, "2", "1"));
-        CPPUNIT_ASSERT(!setQueue(NULL, NULL, "1", "2"));
-        CPPUNIT_ASSERT(!setQueue(NULL, NULL, "0", "0"));
-        CPPUNIT_ASSERT(setQueue(NULL, NULL, "-1", "2"));
+    CPPUNIT_ASSERT(setQueue(NULL, NULL, "", "1"));
+    CPPUNIT_ASSERT(setQueue(NULL, NULL, "1", ""));
+    CPPUNIT_ASSERT(setQueue(NULL, NULL, "2", "1"));
+    CPPUNIT_ASSERT(!setQueue(NULL, NULL, "1", "2"));
+    CPPUNIT_ASSERT(!setQueue(NULL, NULL, "0", "0"));
+    CPPUNIT_ASSERT(setQueue(NULL, NULL, "-1", "2"));
 
-        cmd_parms * lParms = getParms();
-        lParms->path = new char[10];
-        strcpy(lParms->path, "/spp/main");
-        // Pointer to a boolean meant to activate the module on a given path
-        DupConf *lDoHandle = new DupConf();
+    cmd_parms * lParms = getParms();
+    lParms->path = new char[10];
+    strcpy(lParms->path, "/spp/main");
+    // Pointer to a boolean meant to activate the module on a given path
+    DupConf *lDoHandle = new DupConf();
 
 
-        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, NULL));
-        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, ""));
-        CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost"));
+    CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, NULL));
+    CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, ""));
+    CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost"));
 
-        CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)lDoHandle, "toto", "toto", "titi"));
+    CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)lDoHandle, "toto", "toto", "titi"));
 
-        // Invalid regexp
-        CPPUNIT_ASSERT(setSubstitute(lParms, (void *)lDoHandle, "toto", "*t(oto", "titi"));
+    // Invalid regexp
+    CPPUNIT_ASSERT(setSubstitute(lParms, (void *)lDoHandle, "toto", "*t(oto", "titi"));
 
-        CPPUNIT_ASSERT(!setFilter(lParms, (void *)lDoHandle, "titi", "toto"));
+    CPPUNIT_ASSERT(!setFilter(lParms, (void *)lDoHandle, "titi", "toto"));
 
-        // Invalid regexp
-        CPPUNIT_ASSERT(setFilter(lParms, (void *)lDoHandle, "titi", "*toto"));
+    // Invalid regexp
+    CPPUNIT_ASSERT(setFilter(lParms, (void *)lDoHandle, "titi", "*toto"));
 
-        CPPUNIT_ASSERT(!setActive(lParms, lDoHandle));
+    CPPUNIT_ASSERT(!setActive(lParms, lDoHandle));
 
-        delete lParms->path;
+    delete lParms->path;
 }
 
 void TestModDup::testScope()
 {
-        cmd_parms * lParms = getParms();
-        lParms->path = new char[10];
-        strcpy(lParms->path, "/spp/main");
-        DupConf *conf = new DupConf();
+    cmd_parms * lParms = getParms();
+    lParms->path = new char[10];
+    strcpy(lParms->path, "/spp/main");
+    DupConf *conf = new DupConf();
 
-        // Default value
-        CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->currentApplicationScope);
+    // Default value
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->currentApplicationScope);
 
-        // Switching to ALL
-        CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "ALL"));
-        CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->currentApplicationScope);
+    // Switching to ALL
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "ALL"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->currentApplicationScope);
 
-        // Incorrect value
-        CPPUNIT_ASSERT(setApplicationScope(lParms, (void *)conf, "incorrect_vALUE"));
+    // Incorrect value
+    CPPUNIT_ASSERT(setApplicationScope(lParms, (void *)conf, "incorrect_vALUE"));
 }
 
 void TestModDup::testDuplicationType()
 {
-        cmd_parms * lParms = getParms();
-        lParms->path = new char[10];
-        strcpy(lParms->path, "/spp/main");
-        DupConf *conf = new DupConf();
+    cmd_parms * lParms = getParms();
+    lParms->path = new char[10];
+    strcpy(lParms->path, "/spp/main");
+    DupConf *conf = new DupConf();
 
-        // Default value
-        CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, DuplicationType::value);
+    // Default value
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, DuplicationType::value);
 
-        // Switching to COMPLETE_REQUEST
-        CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)&conf, "COMPLETE_REQUEST"));
-        CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, DuplicationType::value);
+    // Switching to COMPLETE_REQUEST
+    CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)&conf, "COMPLETE_REQUEST"));
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, DuplicationType::value);
 
-        // Incorrect value
-        CPPUNIT_ASSERT(setDuplicationType(lParms, (void *)&conf, "incorrect_vALUE"));
+    // Incorrect value
+    CPPUNIT_ASSERT(setDuplicationType(lParms, (void *)&conf, "incorrect_vALUE"));
+}
+
+void TestModDup::testContextEnrichment()
+{
+
+    cmd_parms * lParms = getParms();
+    lParms->path = new char[10];
+    strcpy(lParms->path, "/spp/main");
+    // Pointer to a boolean meant to activate the module on a given path
+    DupConf *conf = new DupConf();
+
+
+    // Correct insert
+    CPPUNIT_ASSERT(!setEnrichContext(lParms, (void *)&conf,
+                                     "myVar", "toMatch", "toSet"));
+
+    // Invalid regex
+    CPPUNIT_ASSERT(setEnrichContext(lParms, (void *)&conf,
+                                     "myVar", "toM**(atch", "toSet"));
+
 }

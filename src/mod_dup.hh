@@ -42,6 +42,10 @@ namespace DupModule {
     extern RequestProcessor                             *gProcessor;
     extern ThreadPool<const RequestInfo *>              *gThreadPool;
 
+    /** The unique id HEADER attribute name */
+    extern const char* c_UNIQUE_ID;
+
+
 /*
  * Different duplication modes supported by mod_dup
  */
@@ -66,21 +70,34 @@ namespace DuplicationType {
     // Duplication type mismatch value error
     extern const char* c_ERROR_ON_STRING_VALUE;
 
+    // The current type used for duplication
     extern eDuplicationType value;
+
 };
 
 /**
  * A structure that holds the configuration specific to the location
  */
-struct DupConf {
+class DupConf {
+
+public:
 
     DupConf();
 
+    static apr_status_t cleaner(void *self);
+
+    /** @brief the current Filter and Subs application scope set by the DupApplicationScope directive */
     ApplicationScope::eApplicationScope         currentApplicationScope;
 
     char                                        *dirName;
+
+    /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
 
+    /*
+     * Returns the next random request ID
+     * method is reentrant
+     */
     unsigned int                               getNextReqId();
 };
 
@@ -163,6 +180,18 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax);
  */
 const char*
 setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace);
+
+/**
+ * @brief Add a substitution definition
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pVarName The name of the variable to define if the regex matches
+ * @param pMatchRegex the regex to apply to the currently defined scope
+ * @param pSetValue the regex reference to apply to set the value
+ * @return NULL if parameters are valid, otherwise a string describing the error
+ */
+const char*
+setEnrichContext(cmd_parms* pParams, void* pCfg, const char *pVarName, const char* pMatchRegex, const char* pSetValue);
 
 /**
  * @brief Add a filter definition
