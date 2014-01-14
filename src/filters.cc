@@ -86,7 +86,10 @@ public:
     }
 };
 
-
+/*
+ * Callback to iterate over the headers tables
+ * Pushes a copy of key => value in a list
+ */
 static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     RequestInfo::tHeaders *headers = reinterpret_cast<RequestInfo::tHeaders *>(d);
     headers->push_back(std::pair<std::string, std::string>(key, value));
@@ -107,7 +110,6 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r, bool w
         // Copy headers out
         apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersOut, pRequest->headers_out, NULL);
     }
-
 }
 
 static void

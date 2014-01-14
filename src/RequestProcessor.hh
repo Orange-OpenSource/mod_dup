@@ -204,9 +204,6 @@ namespace DupModule {
 	const unsigned int
 	getTimeoutCount();
 
-        void
-        performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
-
         /**
          * @brief Get the number of requests duplicated since last call to this method
          * @return The duplicated count
@@ -314,7 +311,11 @@ namespace DupModule {
         void
         run(MultiThreadQueue<const RequestInfo *> &pQueue);
 
-
+        /**
+         * @brief Define some environnement variables if the query matches the criteria defined
+         * using the DupEnrichContext directive
+         * @return the number of variables defined
+         */
         int
         enrichContext();
 
@@ -333,6 +334,9 @@ namespace DupModule {
                       std::list<tKeyVal> &pParsedArgs,
                       ApplicationScope::eApplicationScope scope,
                       std::string &result);
+
+        void
+        performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
 
         friend class ::TestRequestProcessor;
     };

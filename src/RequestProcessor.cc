@@ -372,9 +372,14 @@ sendDupFormat(CURL *curl, const RequestInfo &rInfo, struct curl_slist *&slist){
     std::stringstream ss;
     //Request body
     ss << std::setfill('0') << std::setw(8) << rInfo.mBody.length() << rInfo.mBody;
-    // // Answer header
-    // TODO   ss << std::setfill('0') << std::setw(8) << a.mHeader.length() << a.mHeader;
-    ss << std::setfill('0') << "00000000";
+
+    // Answer headers, Copy requestInfo out headers
+    std::string answerHeaders;
+    BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersOut) {
+        answerHeaders.append(v.first + std::string(": ") + v.second + "\n");
+    }
+    ss << std::setfill('0') << std::setw(8) << answerHeaders.length() << answerHeaders;
+
     // Answer Body
     ss << std::setfill('0') << std::setw(8) << rInfo.mAnswer.length() << rInfo.mAnswer;
     std::string *content = new std::string(ss.str());
@@ -391,6 +396,12 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     // Sending body in plain or dup format according to the duplication need
     std::string *content = NULL;
     struct curl_slist *slist = NULL;
+    // Copy request in headers
+    BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersIn) {
+        slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
+    }
+    // Setting mod-dup as the real agent for tracability
+    slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
     if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
         content = sendDupFormat(curl, rInfo, slist);
     } else if (rInfo.hasBody()){
@@ -454,6 +465,8 @@ RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
 
 int
 RequestProcessor::enrichContext() {
+    //TODO
+    return 0;
 }
 
 tElementBase::tElementBase(const std::string &r, ApplicationScope::eApplicationScope s)
