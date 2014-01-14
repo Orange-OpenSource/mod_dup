@@ -65,15 +65,15 @@ namespace DupModule {
     /**
      * Base class for filters and substitutions
      */
-    struct tFilterBase{
-
-        tFilterBase(const std::string &regex,
+    class tElementBase{
+    public:
+        tElementBase(const std::string &regex,
                     ApplicationScope::eApplicationScope scope);
 
-        tFilterBase(const tFilterBase &other);
+        tElementBase(const tElementBase &other);
 
 
-        virtual ~tFilterBase();
+        virtual ~tElementBase();
 
         ApplicationScope::eApplicationScope mScope;     /** The action of the filter */
         boost::regex mRegex;                            /** The matching regular expression */
@@ -82,8 +82,8 @@ namespace DupModule {
     /**
      * Represents a filter that applies on a key
      */
-    struct tFilter : public tFilterBase{
-
+    class tFilter : public tElementBase{
+    public:
         tFilter(const std::string &regex,
                 ApplicationScope::eApplicationScope scope,
                 const std::string &currentDupDestination);
@@ -100,8 +100,8 @@ namespace DupModule {
     /**
      * Represents a raw substitution
      */
-    struct tSubstitute : public tFilterBase{
-
+    class tSubstitute : public tElementBase{
+    public:
         tSubstitute(const std::string &regex,
                     const std::string &replacement,
                     ApplicationScope::eApplicationScope scope);
@@ -116,8 +116,8 @@ namespace DupModule {
     /**
      * Context enrichment bean
      */
-    struct tContextEnrichment : public tFilterBase{
-
+    class tContextEnrichment : public tElementBase{
+    public:
         tContextEnrichment(const std::string &varName,
                            const std::string &matchregex,
                            const std::string &setValue,
@@ -135,8 +135,8 @@ namespace DupModule {
 
 
     /** @brief A container for the filter and substituion commands */
-    struct tRequestProcessorCommands {
-
+    class tRequestProcessorCommands {
+    public:
         /** @brief The list of filter commands
          * Indexed by the field on which they apply
          */

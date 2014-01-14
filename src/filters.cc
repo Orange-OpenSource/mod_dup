@@ -35,14 +35,9 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
 	if (!tConf) {
             return OK; // SHOULD NOT HAPPEN
 	}
-        // Request ID extract
-        apr_table_t *headersIn = pRequest->headers_in;
         // No context? new request
         if (!pF->ctx) {
             RequestInfo *info = new RequestInfo(tConf->getNextReqId());
-            std::string reqId = boost::lexical_cast<std::string>(info->mId);
-            apr_table_set(headersIn, c_UNIQUE_ID, reqId.c_str());
-            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
             ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
             pF->ctx = info;
         } else if (pF->ctx == (void *)1) {
@@ -95,12 +90,28 @@ public:
     }
 };
 
-void
-prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
+
+static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+    RequestInfo::tHeaders *headers = reinterpret_cast<RequestInfo::tHeaders *>(d);
+    headers->push_back(std::pair<std::string, std::string>(key, value));
+    return 0;
+}
+
+static void
+prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r, bool withAnswer) {
+    // Basic
     r.mPoison = false;
     r.mConfPath = tConf->dirName;
     r.mPath = pRequest->uri;
     r.mArgs = pRequest->args ? pRequest->args : "";
+
+    // Copy headers in
+    apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
+    if (withAnswer) {
+        // Copy headers out
+        apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersOut, pRequest->headers_out, NULL);
+    }
+
 }
 
 static void
@@ -132,7 +143,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
         // Asynchronous push of request without the answer
         RequestInfo *rH = ctx->req;
-        prepareRequestInfo(tConf, pRequest, *rH);
+        prepareRequestInfo(tConf, pRequest, *rH, false);
         printRequest(pRequest, rH, tConf);
         gThreadPool->push(rH);
         delete ctx;
@@ -161,13 +172,20 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             apr_brigade_cleanup(ctx->tmpbb);
             // Pushing the answer to the processor
             // TODO dissociate body from header if possible
-            prepareRequestInfo(tConf, pRequest, *(ctx->req));
+            prepareRequestInfo(tConf, pRequest, *(ctx->req), true);
             printRequest(pRequest, ctx->req, tConf);
+
+            // std::string reqId = boost::lexical_cast<std::string>(info->mId);
+            // apr_table_set(headersIn, c_UNIQUE_ID, reqId.c_str());
+            // apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+
+
             gThreadPool->push(ctx->req);
             delete ctx;
             pFilter->ctx = (void *) -1;
         }
         else {
+            apr_brigade_cleanup(ctx->tmpbb);
         }
     }
     return OK;

@@ -456,28 +456,28 @@ int
 RequestProcessor::enrichContext() {
 }
 
-tFilterBase::tFilterBase(const std::string &r, ApplicationScope::eApplicationScope s)
+tElementBase::tElementBase(const std::string &r, ApplicationScope::eApplicationScope s)
     : mScope(s)
     , mRegex(r) {
 }
 
-tFilterBase::~tFilterBase() {
+tElementBase::~tElementBase() {
 }
 
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
                  const std::string &currentDupDestination)
-    : tFilterBase(regex, scope)
+    : tElementBase(regex, scope)
     , mDestination(currentDupDestination) {
 }
 
-tFilter::tFilter(const tFilter& other): tFilterBase(other) {
+tFilter::tFilter(const tFilter& other): tElementBase(other) {
     if (&other == this)
         return;
     mField = other.mField;
     mDestination = other.mDestination;
 }
 
-tFilterBase::tFilterBase(const tFilterBase &other) {
+tElementBase::tElementBase(const tElementBase &other) {
     if (&other == this)
         return;
     mScope = other.mScope;
@@ -485,12 +485,12 @@ tFilterBase::tFilterBase(const tFilterBase &other) {
 }
 
 tSubstitute::tSubstitute(const std::string &regex, const std::string &replacement, ApplicationScope::eApplicationScope scope)
-    : tFilterBase(regex, scope)
+    : tElementBase(regex, scope)
     , mReplacement(replacement){
 }
 
 tSubstitute::tSubstitute(const tSubstitute &other)
-    : tFilterBase(other){
+    : tElementBase(other){
     if (&other == this)
         return;
     mReplacement = other.mReplacement;
@@ -503,7 +503,7 @@ tContextEnrichment::tContextEnrichment(const std::string &varName,
                                        const std::string &matchRegex,
                                        const std::string &setValue,
                                        ApplicationScope::eApplicationScope scope)
-    : tFilterBase(matchRegex, scope)
+    : tElementBase(matchRegex, scope)
     , mVarName(varName)
     , mSetValue(setValue) {
 }

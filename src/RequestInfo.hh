@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <list>
 #include <string>
 
 namespace DupModule {
@@ -42,6 +43,14 @@ namespace DupModule {
 	std::string mBody;
 	/** @brief The query answer */
 	std::string mAnswer;
+
+        typedef std::list<std::pair<std::string, std::string> > tHeaders;
+
+        /** @brief list that represents the headers of the incoming request */
+        tHeaders mHeadersIn;
+
+        /** @brief list that represents the headers of the request answer */
+        tHeaders mHeadersOut;
 
 	/**
 	 * @brief Constructs the object using the three strings.
