@@ -45,6 +45,7 @@ ThreadPool<const RequestInfo*> *gThreadPool;
 
 
 const char *gName = "Dup";
+const char *gNameBody2Brigade = "DupBody2Brigade";
 const char *gNameOut = "DupOut";
 
 const char *c_COMPONENT_VERSION = "Dup/1.0";
@@ -515,6 +516,7 @@ command_rec gCmds[] = {
 
 // Register the dup filters
 static void insertInputFilter(request_rec *pRequest) {
+    ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
     ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
 }
 
@@ -529,6 +531,7 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
+    ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
     ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
     ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_FIRST);

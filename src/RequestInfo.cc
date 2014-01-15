@@ -26,18 +26,18 @@ RequestInfo::RequestInfo(unsigned int id, const std::string &pConfPath, const st
       mId(id),
       mConfPath(pConfPath),
       mPath(pPath),
-      mArgs(pArgs) {
+      mArgs(pArgs), transmitted(false) {
     if (pBody)
         mBody = *pBody;
 }
 
 RequestInfo::RequestInfo(unsigned int id)
     : mPoison(false),
-      mId(id) {
+      mId(id), transmitted(false) {
 }
 
 RequestInfo::RequestInfo() :
-    mPoison(true) {}
+    mPoison(true), transmitted(false) {}
 
 bool
 RequestInfo::isPoison() const {

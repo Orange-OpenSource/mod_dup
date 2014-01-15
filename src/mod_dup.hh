@@ -263,6 +263,11 @@ earlyHook(request_rec *r);
 apr_status_t
 inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
 
+
+apr_status_t
+inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
+
+
 /** @brief the output filter callback
  * Plugged only in REQUEST_WITH_ANSWER mode
  */

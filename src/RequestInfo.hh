@@ -45,6 +45,8 @@ namespace DupModule {
 	/** @brief The query answer */
 	std::string mAnswer;
 
+        bool transmitted;
+
         typedef std::list<std::pair<std::string, std::string> > tHeaders;
 
         /** @brief list that represents the headers of the incoming request */

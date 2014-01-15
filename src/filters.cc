@@ -100,16 +100,36 @@ earlyHook(request_rec *pRequest) {
     return DECLINED;;
 }
 
+apr_status_t
+inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
+{
+    Log::debug("@@@@ INPUT FILTER BODY2BRIGADE @@@\n");
+
+    request_rec *pRequest = pF->r;
+    // Retrieve request info from context
+    RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
+    assert(info);
+    Log::debug("@@@@ BODY retrieved: %s@@@\n", info->mBody.c_str());
+
+    if (!info->transmitted) {
+        apr_bucket_brigade *bb = apr_brigade_create(pF->r->pool, pF->c->bucket_alloc);
+        apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size());
+
+        apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
+        APR_BRIGADE_INSERT_TAIL(bb, e);
+        info->transmitted = true;
+        return ap_get_brigade(pF->next, bb, pMode, pBlock, pReadbytes);
+    }
+    else
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+}
 
 apr_status_t
 inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
     Log::debug("@@@@ INPUT FILTER @@@\n");
     request_rec *pRequest = pF->r;
-    // Retrieve request info from context
-    RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
-    assert(info);
-    Log::debug("@@@@ BODY retrieved: %s@@@\n", info->mBody.c_str());
+
     apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     if (lStatus != APR_SUCCESS) {
         return lStatus;
