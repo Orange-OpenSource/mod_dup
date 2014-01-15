@@ -40,8 +40,8 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
             apr_size_t len = 0;
             apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
             if (rv != APR_SUCCESS) {
-                // TODO
-                assert(0);
+                Log::error(42, "Bucket read failed, skipping the rest of the body");
+                return true;
             }
             if (len) {
                 content.append(data, len);
@@ -49,8 +49,8 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
         }
     }
     else {
-        // TODO error handling
-        assert(0);
+        Log::error(42, "Get brigade failed, skipping the rest of the body");
+        return true;
     }
     return false;
 }
