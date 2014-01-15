@@ -18,12 +18,10 @@
 
 #pragma once
 
-#include <httpd.h>
 #include <list>
 #include <string>
 
 namespace DupModule {
-
 
     /**
      * @brief Contains information about the incoming request.
@@ -44,8 +42,6 @@ namespace DupModule {
 	std::string mBody;
 	/** @brief The query answer */
 	std::string mAnswer;
-
-        bool transmitted;
 
         typedef std::list<std::pair<std::string, std::string> > tHeaders;
 
@@ -87,5 +83,5 @@ namespace DupModule {
 
     };
 
-    static const RequestInfo POISON_REQUEST;
+    static RequestInfo POISON_REQUEST;
 }

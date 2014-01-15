@@ -61,7 +61,7 @@ apr_status_t 	apr_brigade_cleanup (void *){
 namespace DupModule {
 
     RequestProcessor *gProcessor;
-    ThreadPool<const RequestInfo*> *gThreadPool;
+    ThreadPool<RequestInfo*> *gThreadPool;
     std::set<std::string> gActiveLocations;
 
 
@@ -104,7 +104,7 @@ void TestModDup::testInit()
     CPPUNIT_ASSERT(gProcessor);
     CPPUNIT_ASSERT(gThreadPool);
 
-    gThreadPool = new DummyThreadPool<const RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
+    gThreadPool = new DummyThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
 }
 
 void TestModDup::testInitAndCleanUp()

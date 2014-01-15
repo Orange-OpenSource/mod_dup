@@ -315,7 +315,8 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
  * If and only if it returned true, pArgs will have all necessary substitutions applied.
  */
 const tFilter *
-RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pRequest) {
+RequestProcessor::processRequest(RequestInfo &pRequest) {
+    const std::string &pConfPath = pRequest.mConfPath;
     std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(pConfPath);
 
     // No filters for this path
@@ -431,7 +432,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
  * @param pQueue the queue which gets filled with incoming requests
  */
 void
-RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
+RequestProcessor::run(MultiThreadQueue<RequestInfo *> &pQueue)
 {
     Log::debug("New worker thread started");
 
@@ -446,17 +447,16 @@ RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
     curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
 
     for (;;) {
-        const RequestInfo *lQueueItem = pQueue.pop();
+        RequestInfo *lQueueItem = pQueue.pop();
         if (lQueueItem->isPoison()) {
             // Master tells us to stop
             Log::debug("Received poison pill. Exiting.");
             break;
         }
         const tFilter *matchedFilter;
-        RequestInfo &lRequest = *const_cast<RequestInfo *>(lQueueItem);
-        if ((matchedFilter = processRequest(lQueueItem->mConfPath, lRequest))) {
+        if ((matchedFilter = processRequest(*lQueueItem))) {
             __sync_fetch_and_add(&mDuplicatedCount, 1);
-            performCurlCall(lCurl, *matchedFilter, lRequest);
+            performCurlCall(lCurl, *matchedFilter, *lQueueItem);
         }
         delete lQueueItem;
     }

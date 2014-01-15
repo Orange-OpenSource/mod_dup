@@ -302,14 +302,14 @@ namespace DupModule {
          * If and only if a filter matches, substitutions will be applied.
          */
         const tFilter *
-        processRequest(const std::string &pConfPath, RequestInfo &pRequest);
+        processRequest(RequestInfo &pRequest);
 
         /**
          * @brief Run the infinite loop which pops new requests of the given queue, processes them and sends the over to the configured destination
          * @param pQueue the queue which gets filled with incoming requests
          */
         void
-        run(MultiThreadQueue<const RequestInfo *> &pQueue);
+        run(MultiThreadQueue<RequestInfo *> &pQueue);
 
         /**
          * @brief Define some environnement variables if the query matches the criteria defined

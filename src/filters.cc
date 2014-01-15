@@ -65,8 +65,6 @@ public:
 
     RequestInfo         *mInfo;
     int                 mTransmitted;
-
-
 };
 
 int

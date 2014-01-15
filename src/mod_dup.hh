@@ -40,7 +40,7 @@ extern module AP_DECLARE_DATA dup_module;
 namespace DupModule {
 
     extern RequestProcessor                             *gProcessor;
-    extern ThreadPool<const RequestInfo *>              *gThreadPool;
+    extern ThreadPool<RequestInfo *>              *gThreadPool;
 
     /** The unique id HEADER attribute name */
     extern const char* c_UNIQUE_ID;
