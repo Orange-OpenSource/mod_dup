@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <httpd.h>
 #include <list>
 #include <string>
 
@@ -81,6 +82,13 @@ namespace DupModule {
 	 * @return true if poisonous, false otherwhise
 	 */
 	bool isPoison() const;
+
+        /*
+         * Delete a request info typically allocated on a pool
+         */
+        static apr_status_t
+        cleaner(void *self);
+
     };
 
     static const RequestInfo POISON_REQUEST;

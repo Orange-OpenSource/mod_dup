@@ -22,14 +22,99 @@
 
 namespace DupModule {
 
+const unsigned int max_bytes = 8192;
+
+static bool
+extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
+    if (ap_get_brigade(pRequest->input_filters,
+                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, max_bytes) == APR_SUCCESS) {
+        // Read brigade content
+        for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
+             b != APR_BRIGADE_SENTINEL(bb);
+             b = APR_BUCKET_NEXT(b) ) {
+            // Metadata end of stream
+            if (APR_BUCKET_IS_EOS(b)) {
+                return true;
+            }
+            const char *data = 0;
+            apr_size_t len = 0;
+            apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+            if (rv != APR_SUCCESS) {
+                // TODO
+                assert(0);
+            }
+            if (len) {
+                content.append(data, len);
+            }
+        }
+    }
+    else {
+        // TODO error handling
+        assert(0);
+    }
+    return false;
+}
+
+int
+earlyHook(request_rec *pRequest) {
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    if (!tConf) {
+        return OK; // SHOULD NOT HAPPEN
+    }
+
+    // Read body content from request_rec struct
+
+    Log::debug("@@@@ Early hook call @@@");
+
+    // Store the post in the request context
+    // Pool allocation and destruction registration
+    void *addr = apr_palloc(pRequest->connection->pool, sizeof(RequestInfo));
+    RequestInfo *info = new (addr) RequestInfo(tConf->getNextReqId());
+    // TODO   apr_pool_cleanup_register(pRequest->connection->pool, addr, RequestInfo::cleaner,  NULL);
+    // Backup in request context
+    ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
+
+    if (!pRequest->connection->pool) {
+        // TODO OUT OF MEMORY
+        assert(0);
+    }
+    if (!pRequest->connection->bucket_alloc) {
+        pRequest->connection->bucket_alloc = apr_bucket_alloc_create(pRequest->connection->pool);
+        if (!pRequest->connection->bucket_alloc) {
+            // TODO
+            assert(0);
+        }
+    }
+
+    apr_bucket_brigade *bb = apr_brigade_create(pRequest->connection->pool, pRequest->connection->bucket_alloc);
+    if (!bb) {
+        // TODO
+        assert(0);
+    }
+    while (!extractBrigadeContent(bb, pRequest, info->mBody)){
+        apr_brigade_cleanup(bb);
+    }
+    // Body read :)
+    Log::debug("@@@ Body read: %s\n", info->mBody.c_str());
+    apr_brigade_cleanup(bb);
+    return DECLINED;;
+}
+
+
 apr_status_t
 inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
+    Log::debug("@@@@ INPUT FILTER @@@\n");
+    request_rec *pRequest = pF->r;
+    // Retrieve request info from context
+    RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
+    assert(info);
+    Log::debug("@@@@ BODY retrieved: %s@@@\n", info->mBody.c_str());
     apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     if (lStatus != APR_SUCCESS) {
         return lStatus;
     }
-    request_rec *pRequest = pF->r;
+
     if (pRequest) {
 	struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
 	if (!tConf) {
@@ -87,8 +172,15 @@ public:
         assert(mReq);
     }
 
+    RequestContext()
+        : mTmpBB(NULL)
+        , mReq(NULL) {
+    }
+
     ~RequestContext() {
-        apr_brigade_cleanup(mTmpBB);
+        if (mTmpBB) {
+            apr_brigade_cleanup(mTmpBB);
+        }
     }
 };
 

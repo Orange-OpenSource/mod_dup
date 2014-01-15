@@ -249,6 +249,14 @@ void registerHooks(apr_pool_t *pPool);
 const char*
 setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType);
 
+/*
+ * Read the request body
+ * Enrich the request context for mod_rewrite
+ * Store the request body in the request context for further use with the input filter
+ */
+int
+earlyHook(request_rec *r);
+
 /**
  * @brief the input filter callback
  */
