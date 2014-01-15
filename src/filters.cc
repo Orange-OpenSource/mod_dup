@@ -287,7 +287,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         /* Pass brigade downstream. */
         rv = ap_pass_brigade(pFilter->next, ctx->mTmpBB);
         if (rv != APR_SUCCESS) {
-            // Something went wrongm no duplication performed
+            // Something went wrong, no duplication performed
             delete ctx;
             pFilter->ctx = (void *) -1;
             return rv;
