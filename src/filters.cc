@@ -55,69 +55,74 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
     return false;
 }
 
+class EarlyHookContext {
+public:
+
+    EarlyHookContext(DupConf *tConf)
+        : mTransmitted(0) {
+        mInfo = new RequestInfo(tConf->getNextReqId());
+    }
+
+    RequestInfo         *mInfo;
+    int                 mTransmitted;
+
+
+};
+
 int
 earlyHook(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
-    if (!tConf) {
-        return OK; // SHOULD NOT HAPPEN
-    }
-
+    assert(tConf);
     // Read body content from request_rec struct
-
-    Log::debug("@@@@ Early hook call @@@");
-
     // Store the post in the request context
     // Pool allocation and destruction registration
-    void *addr = apr_palloc(pRequest->connection->pool, sizeof(RequestInfo));
-    RequestInfo *info = new (addr) RequestInfo(tConf->getNextReqId());
-    // TODO   apr_pool_cleanup_register(pRequest->connection->pool, addr, RequestInfo::cleaner,  NULL);
+    void *addr = apr_palloc(pRequest->connection->pool, sizeof(EarlyHookContext));
+    EarlyHookContext *ctx = new (addr) EarlyHookContext(tConf);
+
+    apr_pool_cleanup_register(pRequest->connection->pool, addr, cleaner<EarlyHookContext>,  NULL);
     // Backup in request context
-    ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
+    ap_set_module_config(pRequest->request_config, &dup_module, (void *)ctx);
 
     if (!pRequest->connection->pool) {
-        // TODO OUT OF MEMORY
-        assert(0);
+        Log::error(42, "No connection pool associated to the request");
+        return DECLINED;
     }
     if (!pRequest->connection->bucket_alloc) {
         pRequest->connection->bucket_alloc = apr_bucket_alloc_create(pRequest->connection->pool);
         if (!pRequest->connection->bucket_alloc) {
-            // TODO
-            assert(0);
+            Log::error(42, "Request bucket allocation failed");
+            return DECLINED;
         }
     }
 
     apr_bucket_brigade *bb = apr_brigade_create(pRequest->connection->pool, pRequest->connection->bucket_alloc);
     if (!bb) {
-        // TODO
-        assert(0);
+        Log::error(42, "Bucket brigade allocation failed");
+        return DECLINED;
     }
-    while (!extractBrigadeContent(bb, pRequest, info->mBody)){
+    while (!extractBrigadeContent(bb, pRequest, ctx->mInfo->mBody)){
         apr_brigade_cleanup(bb);
     }
     // Body read :)
-    Log::debug("@@@ Body read: %s\n", info->mBody.c_str());
     apr_brigade_cleanup(bb);
-    return DECLINED;;
+    return DECLINED;
 }
 
 apr_status_t
 inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    Log::debug("@@@@ INPUT FILTER BODY2BRIGADE @@@\n");
-
     request_rec *pRequest = pF->r;
     // Retrieve request info from context
-    RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
-    assert(info);
-    Log::debug("@@@@ BODY retrieved: %s@@@\n", info->mBody.c_str());
+    EarlyHookContext *ctx = reinterpret_cast<EarlyHookContext *>(ap_get_module_config(pRequest->request_config, &dup_module));
+    assert(ctx);
+    RequestInfo *info =  ctx->mInfo;
 
-    if (!info->transmitted) {
+    if (!ctx->mTransmitted) {
         apr_bucket_brigade *bb = apr_brigade_create(pF->r->pool, pF->c->bucket_alloc);
         apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size());
-
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         APR_BRIGADE_INSERT_TAIL(bb, e);
-        info->transmitted = true;
+        ctx->mTransmitted = 1;
         return ap_get_brigade(pF->next, bb, pMode, pBlock, pReadbytes);
     }
     else
@@ -127,9 +132,7 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
 apr_status_t
 inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    Log::debug("@@@@ INPUT FILTER @@@\n");
     request_rec *pRequest = pF->r;
-
     apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     if (lStatus != APR_SUCCESS) {
         return lStatus;

@@ -84,8 +84,6 @@ public:
 
     DupConf();
 
-    static apr_status_t cleaner(void *self);
-
     /** @brief the current Filter and Subs application scope set by the DupApplicationScope directive */
     ApplicationScope::eApplicationScope         currentApplicationScope;
 
@@ -273,5 +271,17 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
  */
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
+
+template <class T>
+apr_status_t
+cleaner(void *self) {
+    if (self) {
+        T *elt = reinterpret_cast<T *>(self);
+        assert(elt);
+        elt->~T();
+    }
+    return 0;
+}
+
 
 }
