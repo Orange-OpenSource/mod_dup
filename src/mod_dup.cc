@@ -533,7 +533,7 @@ registerHooks(apr_pool_t *pPool) {
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
     ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
-    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
+    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_MIDDLE);
 #endif
 }
 
