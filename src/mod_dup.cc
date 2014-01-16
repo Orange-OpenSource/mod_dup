@@ -505,11 +505,17 @@ command_rec gCmds[] = {
     {0}
 };
 
+#ifndef UNIT_TESTING
 // Register the dup filters
 static void insertInputFilter(request_rec *pRequest) {
     ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
     ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
 }
+
+static void insertOutputFilter(request_rec *pRequest) {
+     ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+}
+#endif
 
 /**
  * @brief register hooks in apache
@@ -527,6 +533,7 @@ registerHooks(apr_pool_t *pPool) {
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
     ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
+    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
 #endif
 }
 
