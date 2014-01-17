@@ -201,7 +201,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
-    if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
+    if (gProcessor->highestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
         // Asynchronous push of request without the answer
         RequestInfo *rH = ctx->mReq;
         prepareRequestInfo(tConf, pRequest, *rH, false);

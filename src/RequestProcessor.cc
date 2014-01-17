@@ -87,14 +87,22 @@ RequestProcessor::addFilter(const std::string &pPath, const std::string &pField,
 
     mCommands[pPath].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
                                                                      tFilter(pFilter, pAssociatedConf.currentApplicationScope,
-                                                                             pAssociatedConf.currentDupDestination)));
+                                                                             pAssociatedConf.currentDupDestination,
+                                                                             pAssociatedConf.currentDuplicationType)));
+    if ((int)pAssociatedConf.currentDuplicationType > (int) mHighestDuplicationType) {
+        mHighestDuplicationType = pAssociatedConf.currentDuplicationType;
+    }
 }
 
 void
 RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFilter,
                                 const DupConf &pAssociatedConf) {
     mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, pAssociatedConf.currentApplicationScope,
-                                                   pAssociatedConf.currentDupDestination));
+                                                   pAssociatedConf.currentDupDestination,
+                                                   pAssociatedConf.currentDuplicationType));
+    if ((int)pAssociatedConf.currentDuplicationType > (int) mHighestDuplicationType) {
+        mHighestDuplicationType = pAssociatedConf.currentDuplicationType;
+    }
 }
 
 void
@@ -342,6 +350,17 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
     return matchedFilter;
 }
 
+RequestProcessor::RequestProcessor() :
+    mTimeout(0), mTimeoutCount(0),
+    mDuplicatedCount(0), mHighestDuplicationType(DuplicationType::HEADER_ONLY) {
+    setUrlCodec();
+}
+
+DuplicationType::eDuplicationType
+RequestProcessor::highestDuplicationType() const {
+    return mHighestDuplicationType;
+}
+
 void
 RequestProcessor::setUrlCodec(const std::string &pUrlCodec)
 {
@@ -403,7 +422,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     }
     // Setting mod-dup as the real agent for tracability
     slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
-    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+    if (gProcessor->highestDuplicationType() == DuplicationType::REQUEST_WITH_ANSWER) {
         content = sendDupFormat(curl, rInfo, slist);
     } else if (rInfo.hasBody()){
         sendInBody(curl, slist, rInfo.mBody);
@@ -478,9 +497,11 @@ tElementBase::~tElementBase() {
 }
 
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
-                 const std::string &currentDupDestination)
+                 const std::string &currentDupDestination,
+                 DuplicationType::eDuplicationType dupType)
     : tElementBase(regex, scope)
-    , mDestination(currentDupDestination) {
+    , mDestination(currentDupDestination)
+    , mDuplicationType(dupType) {
 }
 
 tFilter::tFilter(const tFilter& other): tElementBase(other) {

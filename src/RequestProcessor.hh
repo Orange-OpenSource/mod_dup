@@ -86,15 +86,17 @@ namespace DupModule {
     public:
         tFilter(const std::string &regex,
                 ApplicationScope::eApplicationScope scope,
-                const std::string &currentDupDestination);
+                const std::string &currentDupDestination,
+                DuplicationType::eDuplicationType dupType);
 
         tFilter(const tFilter& other);
 
         virtual ~tFilter(){}
 
-        std::string mField;                     /** The key or field the filter applies on */
-        std::string mDestination;               /** The host to duplicate the request to if the filter matches
-                                                    the destination in &lt;host>[:&lt;port>] format */
+        std::string mField;                                     /** The key or field the filter applies on */
+        std::string mDestination;                               /** The host to duplicate the request to if the filter matches
+                                                                    the destination in &lt;host>[:&lt;port>] format */
+        DuplicationType::eDuplicationType mDuplicationType;     /** The duplication type for this filter */
     };
 
     /**
@@ -180,15 +182,20 @@ namespace DupModule {
         /** @brief The url codec */
         boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
 
+        /** The highest duplication type registered */
+        DuplicationType::eDuplicationType               mHighestDuplicationType;
 
     public:
 	/**
 	 * @brief Constructs a RequestProcessor
 	 */
-	RequestProcessor() : mTimeout(0), mTimeoutCount(0),
-                             mDuplicatedCount(0) {
-            setUrlCodec();
-	}
+	RequestProcessor();
+
+        /*
+         * @brief Answer collection needed?
+         * @return true if one of the filters or raw filters duplicates with the answer
+         */
+        DuplicationType::eDuplicationType highestDuplicationType() const;
 
 	/**
 	 * @brief Set the timeout

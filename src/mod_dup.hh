@@ -39,41 +39,11 @@ extern module AP_DECLARE_DATA dup_module;
 
 namespace DupModule {
 
-    extern RequestProcessor                             *gProcessor;
+    extern RequestProcessor                       *gProcessor;
     extern ThreadPool<RequestInfo *>              *gThreadPool;
 
     /** The unique id HEADER attribute name */
     extern const char* c_UNIQUE_ID;
-
-
-/*
- * Different duplication modes supported by mod_dup
- */
-namespace DuplicationType {
-
-    enum eDuplicationType {
-        HEADER_ONLY             = 0,    // Duplication only the HTTP HEADER of matching requests
-        COMPLETE_REQUEST        = 1,    // Duplication HTTP HEADER AND BODY of matching requests
-        REQUEST_WITH_ANSWER     = 2,    // Duplication HTTP REQUEST AND ANSWER of matching requests
-    };
-
-    /*
-     * Converts the string representation of a DuplicationType into the enum value
-     */
-    eDuplicationType stringToEnum(const char *value) throw (std::exception);
-
-    // String representation of the Duplicationtype values
-    extern const char* c_HEADER_ONLY;
-    extern const char* c_COMPLETE_REQUEST;
-    extern const char* c_REQUEST_WITH_ANSWER;
-
-    // Duplication type mismatch value error
-    extern const char* c_ERROR_ON_STRING_VALUE;
-
-    // The current type used for duplication
-    extern eDuplicationType value;
-
-};
 
 /**
  * A structure that holds the configuration specific to the location
@@ -91,6 +61,9 @@ public:
 
     /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
+
+    /** @brief the current duplication type*/
+    DuplicationType::eDuplicationType          currentDuplicationType;
 
     /*
      * Returns the next random request ID

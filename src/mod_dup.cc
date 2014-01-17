@@ -70,13 +70,13 @@ namespace DuplicationType {
         }
         throw std::exception();
     }
-
-    eDuplicationType value = HEADER_ONLY;
 }
 
 DupConf::DupConf()
     : currentApplicationScope(ApplicationScope::HEADER)
-    , dirName(NULL) {
+    , dirName(NULL)
+    , currentDupDestination()
+    , currentDuplicationType(DuplicationType::HEADER_ONLY) {
     srand(time(NULL));
 }
 
@@ -273,17 +273,6 @@ setTimeout(cmd_parms* pParams, void* pCfg, const char* pTimeout) {
 }
 
 const char*
-setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
-    try {
-        DuplicationType::eDuplicationType v = DuplicationType::stringToEnum(pDupType);
-        DuplicationType::value = v;
-    } catch (std::exception e) {
-        return DuplicationType::c_ERROR_ON_STRING_VALUE;
-    }
-    return NULL;
-}
-
-const char*
 setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
     size_t lMin, lMax;
     try {
@@ -347,6 +336,24 @@ setActive(cmd_parms* pParams, void* pCfg) {
     if (!(lConf->dirName)) {
         lConf->dirName = (char *) apr_pcalloc(pParams->pool, sizeof(char) * (strlen(pParams->path) + 1));
         strcpy(lConf->dirName, pParams->path);
+    }
+    return NULL;
+}
+
+const char*
+setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
+
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
+    assert(conf);
+
+    try {
+        conf->currentDuplicationType = DuplicationType::stringToEnum(pDupType);
+    } catch (std::exception e) {
+        return DuplicationType::c_ERROR_ON_STRING_VALUE;
     }
     return NULL;
 }
@@ -427,11 +434,6 @@ command_rec gCmds[] = {
                   0,
                   OR_ALL,
                   "Set the program name for the stats log messages"),
-    AP_INIT_TAKE1("DupDuplicationType",
-                  reinterpret_cast<const char *(*)()>(&setDuplicationType),
-                  0,
-                  OR_ALL,
-                  "Sets the duplication type that will used for all the following filters declarations"),
     AP_INIT_TAKE1("DupUrlCodec",
                   reinterpret_cast<const char *(*)()>(&setUrlCodec),
                   0,
@@ -452,6 +454,11 @@ command_rec gCmds[] = {
                   0,
                   OR_ALL,
                   "Set the minimum and maximum queue size for each thread pool."),
+    AP_INIT_TAKE1("DupDuplicationType",
+                  reinterpret_cast<const char *(*)()>(&setDuplicationType),
+                  0,
+                  ACCESS_CONF,
+                  "Sets the duplication type that will used for all the following filters declarations"),
     AP_INIT_TAKE1("DupDestination",
                   reinterpret_cast<const char *(*)()>(&setDestination),
                   0,
