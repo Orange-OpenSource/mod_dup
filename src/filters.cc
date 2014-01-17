@@ -210,7 +210,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         RequestInfo *rH = ctx->mReq;
         prepareRequestInfo(tConf, pRequest, *rH, false);
         printRequest(pRequest, rH, tConf);
-        gThreadPool->push(rH);
+        gThreadPool->push(new RequestInfo(*rH));
         delete ctx;
         pFilter->ctx = (void *) -1;
         return ap_pass_brigade(pFilter->next, pBrigade);
@@ -242,7 +242,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             // Pushing the answer to the processor
             prepareRequestInfo(tConf, pRequest, *(ctx->mReq), true);
             printRequest(pRequest, ctx->mReq, tConf);
-            gThreadPool->push(ctx->mReq);
+            gThreadPool->push(new RequestInfo(*ctx->mReq));
             delete ctx;
             pFilter->ctx = (void *) -1;
         }
