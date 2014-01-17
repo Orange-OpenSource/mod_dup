@@ -29,6 +29,7 @@
 #include "UrlCodec.hh"
 
 typedef void CURL;
+struct request_rec;
 
 class TestRequestProcessor;
 
@@ -321,10 +322,12 @@ namespace DupModule {
         /**
          * @brief Define some environnement variables if the query matches the criteria defined
          * using the DupEnrichContext directive
+         * @param pRequest the apache request structure
+         * @param the RequestInfo internal struct containing the body
          * @return the number of variables defined
          */
         int
-        enrichContext();
+        enrichContext(request_rec *pRequest, const RequestInfo &rInfo);
 
     private:
 

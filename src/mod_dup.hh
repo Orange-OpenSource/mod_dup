@@ -38,6 +38,9 @@
 extern module AP_DECLARE_DATA dup_module;
 
 namespace DupModule {
+    extern const char *gName;
+    extern const char *gNameBody2Brigade;
+    extern const char *gNameOut;
 
     extern RequestProcessor                       *gProcessor;
     extern ThreadPool<RequestInfo *>              *gThreadPool;
@@ -255,6 +258,5 @@ cleaner(void *self) {
     }
     return 0;
 }
-
 
 }

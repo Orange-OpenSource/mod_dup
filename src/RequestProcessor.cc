@@ -165,6 +165,28 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
     return NULL;
 }
 
+template <class T>
+void applicationOn(const T &list, int &header, int &body) {
+    header = body = 0;
+    BOOST_FOREACH(const typename T::value_type &f, list) {
+        if (f.mScope & ApplicationScope::BODY)
+            body = true;
+        if (f.mScope & ApplicationScope::HEADER)
+            header = true;
+     }
+}
+
+template <class T>
+void applicationOnMap(const T &list, int &header, int &body) {
+    header = body = 0;
+    BOOST_FOREACH(const typename T::value_type &f, list) {
+        if (f.second.mScope & ApplicationScope::BODY)
+            body = true;
+        if (f.second.mScope & ApplicationScope::HEADER)
+            header = true;
+     }
+}
+
 const tFilter *
 RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
 
@@ -172,15 +194,8 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
     std::multimap<std::string, tFilter> &pFilters = pCommands.mFilters;
 
     // Key filter type detection
-    bool keyFilterOnHeader = false;
-    bool keyFilterOnBody = false;
-    typedef std::pair<const std::string, tFilter> value_type;
-    BOOST_FOREACH(value_type &f, pFilters) {
-        if (f.second.mScope & ApplicationScope::BODY)
-            keyFilterOnBody = true;
-        if (f.second.mScope & ApplicationScope::HEADER)
-            keyFilterOnHeader = true;
-     }
+    int keyFilterOnHeader, keyFilterOnBody;
+    applicationOnMap(pFilters, keyFilterOnHeader, keyFilterOnBody);
 
     Log::debug("Filters on body: %d | on header: %d", keyFilterOnBody, keyFilterOnHeader);
 
@@ -267,8 +282,8 @@ bool
 RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
     // Ideally we would use the pool from the apache request, but it's used in another thread
 
-    bool keySubOnBody = false, keySubOnHeader = false;
-
+    bool keySubOnBody, keySubOnHeader;
+    keySubOnBody = keySubOnHeader = false;
     // Detect the presence of the different key filters
     typedef std::pair<const std::string, std::list<tSubstitute> > value_type;
     BOOST_FOREACH(value_type &f, pCommands.mSubstitutions) {
@@ -480,9 +495,31 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo *> &pQueue)
     curl_easy_cleanup(lCurl);
 }
 
+
 int
-RequestProcessor::enrichContext() {
-    //TODO
+RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
+    std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(rInfo.mConfPath);
+
+    // No filters for this path
+    if (it == mCommands.end() || !it->second.mEnrichContext.size())
+        return 0;
+
+    std::list<tContextEnrichment> &cE = it->second.mEnrichContext;
+
+   // Iteration through context enrichment
+    BOOST_FOREACH(const tContextEnrichment &ctx, cE) {
+        if (ctx.mScope & ApplicationScope::HEADER) {
+            std::string toSet = regex_replace(rInfo.mArgs, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
+            apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+            Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+        }
+        if (ctx.mScope & ApplicationScope::BODY) {
+            std::string toSet = regex_replace(rInfo.mBody, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
+            apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+            Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+        }
+    }
+
     return 0;
 }
 

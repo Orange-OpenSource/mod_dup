@@ -43,7 +43,6 @@ namespace DupModule {
 RequestProcessor *gProcessor;
 ThreadPool<RequestInfo*> *gThreadPool;
 
-
 const char *gName = "Dup";
 const char *gNameBody2Brigade = "DupBody2Brigade";
 const char *gNameOut = "DupOut";
@@ -515,12 +514,14 @@ command_rec gCmds[] = {
 #ifndef UNIT_TESTING
 // Register the dup filters
 static void insertInputFilter(request_rec *pRequest) {
+    Log::debug("^^ INSERT HANDLER ^^ %llx", (long long unsigned int)pRequest);
+
     ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
     ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
 }
 
 static void insertOutputFilter(request_rec *pRequest) {
-     ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+    ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
 }
 #endif
 
