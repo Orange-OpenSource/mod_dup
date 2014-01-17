@@ -343,8 +343,6 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
         return NULL;
     }
 
-    Log::debug("Filter match");
-
     // We have a match, perform substitutions
     substituteRequest(pRequest, lCommands, lParsedArgs);
     return matchedFilter;
@@ -432,7 +430,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, NULL);
     }
 
-    Log::debug("---->>>> Duplicating: %s", uri.c_str());
+    Log::debug(">> Duplicating: %s", uri.c_str());
 
     int err = curl_easy_perform(curl);
     if (slist)

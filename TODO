@@ -1,0 +1,6 @@
+
+** TODO list **
+
+* HighestDuplicationType by location
+ Currently the highest duplication type is virtualhost level,
+   having it location level would avoid to copy unnecessary answers

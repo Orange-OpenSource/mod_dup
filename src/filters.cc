@@ -93,7 +93,7 @@ earlyHook(request_rec *pRequest) {
     apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
 
     // Synchronous context enrichment
-    // TODO gProcessor->enrichContext(ctx->mInfo);
+    //gProcessor->enrichContext(ctx->mInfo);
     return DECLINED;
 }
 
@@ -106,7 +106,9 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
     assert(info);
     if (!pF->ctx) {
         apr_bucket_brigade *bb = apr_brigade_create(pF->r->pool, pF->c->bucket_alloc);
-        apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size());
+        if (info->mBody.size()) {
+            apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size());
+        }
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         APR_BRIGADE_INSERT_TAIL(bb, e);
         pF->ctx = (void *) -1;
@@ -202,7 +204,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
 
     if (gProcessor->highestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
-        // Asynchronous push of request without the answer
+        // Asynchronous push of request WITHOUT the answer
         RequestInfo *rH = ctx->mReq;
         prepareRequestInfo(tConf, pRequest, *rH, false);
         printRequest(pRequest, rH, tConf);
