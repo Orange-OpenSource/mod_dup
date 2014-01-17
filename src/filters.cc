@@ -93,7 +93,9 @@ earlyHook(request_rec *pRequest) {
     apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
 
     // Synchronous context enrichment
-    //gProcessor->enrichContext(ctx->mInfo);
+    info->mConfPath = tConf->dirName;
+    info->mArgs = pRequest->args ? pRequest->args : "";
+    gProcessor->enrichContext(pRequest, *info);
     return DECLINED;
 }
 
