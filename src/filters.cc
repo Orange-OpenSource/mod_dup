@@ -60,6 +60,10 @@ int
 earlyHook(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     assert(tConf);
+    if (!tConf->dirName) {
+        return DECLINED;
+    }
+
     RequestInfo *info = new RequestInfo(tConf->getNextReqId());
     // Backup in request context
     ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
@@ -96,6 +100,16 @@ earlyHook(request_rec *pRequest) {
     info->mConfPath = tConf->dirName;
     info->mArgs = pRequest->args ? pRequest->args : "";
     gProcessor->enrichContext(pRequest, *info);
+
+    // If the request has a previous member
+    // It means it has been rewritten
+    if (pRequest->prev) {
+        RequestInfo *prev = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->prev->request_config,
+                                                                                 &dup_module));
+        if (prev) {
+            info->mBody = prev->mBody;
+        }
+    }
     return DECLINED;
 }
 

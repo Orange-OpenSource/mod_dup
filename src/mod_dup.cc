@@ -515,13 +515,20 @@ command_rec gCmds[] = {
 // Register the dup filters
 static void insertInputFilter(request_rec *pRequest) {
     Log::debug("^^ INSERT HANDLER ^^ %llx", (long long unsigned int)pRequest);
-
-    ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
-    ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    assert(tConf);
+    if (tConf->dirName) {
+        ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
+        ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
+    }
 }
 
 static void insertOutputFilter(request_rec *pRequest) {
-    ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    assert(tConf);
+    if (tConf->dirName) {
+        ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+    }
 }
 #endif
 

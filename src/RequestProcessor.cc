@@ -435,9 +435,9 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     }
     // Setting mod-dup as the real agent for tracability
     slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
-    if (gProcessor->highestDuplicationType() == DuplicationType::REQUEST_WITH_ANSWER) {
+    if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
         content = sendDupFormat(curl, rInfo, slist);
-    } else if (rInfo.hasBody()){
+    } else if (matchedFilter.mDuplicationType == DuplicationType::COMPLETE_REQUEST && rInfo.hasBody()) {
         sendInBody(curl, slist, rInfo.mBody);
     } else {
         // Regular GET case
@@ -495,7 +495,6 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo *> &pQueue)
     curl_easy_cleanup(lCurl);
 }
 
-
 int
 RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
     std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(rInfo.mConfPath);
@@ -503,24 +502,29 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
     // No filters for this path
     if (it == mCommands.end() || !it->second.mEnrichContext.size())
         return 0;
-
+    int count = 0;
     std::list<tContextEnrichment> &cE = it->second.mEnrichContext;
 
    // Iteration through context enrichment
     BOOST_FOREACH(const tContextEnrichment &ctx, cE) {
         if (ctx.mScope & ApplicationScope::HEADER) {
             std::string toSet = regex_replace(rInfo.mArgs, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
-            apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+            if (toSet.size()) {
+                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+                ++count;
+            }
             Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
         }
         if (ctx.mScope & ApplicationScope::BODY) {
             std::string toSet = regex_replace(rInfo.mBody, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
-            apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+            if (toSet.size()) {
+                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+                ++count;
+            }
             Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
         }
     }
-
-    return 0;
+    return count;
 }
 
 tElementBase::tElementBase(const std::string &r, ApplicationScope::eApplicationScope s)
@@ -544,6 +548,7 @@ tFilter::tFilter(const tFilter& other): tElementBase(other) {
         return;
     mField = other.mField;
     mDestination = other.mDestination;
+    mDuplicationType = other.mDuplicationType;
 }
 
 tElementBase::tElementBase(const tElementBase &other) {
