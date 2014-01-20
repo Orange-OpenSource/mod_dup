@@ -61,7 +61,6 @@ earlyHook(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     assert(tConf);
     RequestInfo *info = new RequestInfo(tConf->getNextReqId());
-    Log::debug("RequestInfo: id[%d] | Request: %llx", info->mId, (unsigned long long) pRequest);
     // Backup in request context
     ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
 
@@ -106,20 +105,10 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
     request_rec *pRequest = pF->r;
     // Retrieve request info from context
     RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
-    assert(info);
+    if (!info) {
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    }
     if (!pF->ctx) {
-        // Has the request body already been served?
-        if (pRequest->prev) {
-            Log::debug("PREV FOUND");
-            // RequestInfo *prevInfo = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->prev->request_config, &dup_module));
-            // if (prevInfo->served) {
-            //     Log::debug("ALREADY SERVED");
-                return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-            // }
-        }
-        Log::debug("------- SERVING IT");
-
-        info->served = true;
         apr_bucket_brigade *bb = apr_brigade_create(pF->r->pool, pF->c->bucket_alloc);
         if (info->mBody.size()) {
             apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size());
@@ -134,7 +123,6 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
 
 apr_status_t
 inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes) {
-    Log::debug("^^^^^^^^^^^^^^^^ INPUT FILTER HANDLER ");
     return  ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
 }
 
@@ -185,6 +173,16 @@ public:
         mReq = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config,
                                                                     &dup_module));
         assert(mReq);
+
+        // A previous request exists. It never be pushed, therefore we clean the requestinfo struct
+        if (pFilter->r->prev) {
+            RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->prev->request_config,
+                                                                    &dup_module));
+            if (info) {
+                delete info;
+                ap_set_module_config(pFilter->r->prev->request_config, &dup_module, NULL);
+            }
+        }
     }
 
     RequestContext()
@@ -201,7 +199,6 @@ public:
 
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::debug("&&&&&&&&&&&& OUTPUT FILTER HANDLER ");
     request_rec *pRequest = pFilter->r;
     if (!pRequest || !pRequest->per_dir_config)
         return ap_pass_brigade(pFilter->next, pBrigade);
