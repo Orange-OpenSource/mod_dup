@@ -107,12 +107,6 @@ unsigned int DupConf::getNextReqId() {
     return lRandNum;
 }
 
-/**
- * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it
- * @param pPool the apache pool on which to allocate data
- * @param pDirName the directory name for which to create data
- * @return a void pointer to newly allocated object
- */
 void *
 createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
@@ -122,11 +116,6 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
     return addr;
 }
 
-/**
- * @brief Initialize the processor and thread pool pre-config
- * @param pPool the apache pool
- * @return Always OK
- */
 int
 preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
     gProcessor = new RequestProcessor();
@@ -139,27 +128,13 @@ preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
     return OK;
 }
 
-/**
- * @brief Initialize logging post-config
- * @param pPool the apache pool
- * @param pServer the corresponding server record
- * @return Always OK
- */
 int
 postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec * pServer) {
     Log::init();
-
     ap_add_version_component(pPool, c_COMPONENT_VERSION) ;
     return OK;
 }
 
-/**
- * @brief Set the program name used in the stats messages
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pName the name to be used
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setName(cmd_parms* pParams, void* pCfg, const char* pName) {
     if (!pName || strlen(pName) == 0) {
@@ -169,13 +144,6 @@ setName(cmd_parms* pParams, void* pCfg, const char* pName) {
     return NULL;
 }
 
-/**
- * @brief Set the url enc/decoding style
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pUrlCodec the url enc/decoding style to use
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
     if (!pUrlCodec || strlen(pUrlCodec) == 0) {
@@ -185,13 +153,6 @@ setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
     return NULL;
 }
 
-/**
- * @brief Set the destination host and port
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pDestionation the destination in <host>[:<port>] format
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -375,7 +336,6 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
     return NULL;
 }
 
-
 const char*
 setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -393,9 +353,6 @@ setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
     return NULL;
 }
 
-/**
- * @brief Clean up before the child exits
- */
 apr_status_t
 cleanUp(void *) {
     gThreadPool->stop();
@@ -407,11 +364,6 @@ cleanUp(void *) {
     return APR_SUCCESS;
 }
 
-/**
- * @brief init curl and our own thread pool on child init
- * @param pPool the apache pool
- * @param pServer the apache server record
- */
 void
 childInit(apr_pool_t *pPool, server_rec *pServer) {
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -514,7 +466,6 @@ command_rec gCmds[] = {
 #ifndef UNIT_TESTING
 // Register the dup filters
 static void insertInputFilter(request_rec *pRequest) {
-    Log::debug("^^ INSERT HANDLER ^^ %llx", (long long unsigned int)pRequest);
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     assert(tConf);
     if (tConf->dirName) {
