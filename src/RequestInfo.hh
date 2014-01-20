@@ -43,6 +43,10 @@ namespace DupModule {
 	std::string mBody;
 	/** @brief The query answer */
 	std::string mAnswer;
+    /** @brief The header part of the answer */
+    std::string mResponseHeader;
+    /** @brief The body part of the answer */
+    std::string mResponseBody;
 
         typedef std::list<std::pair<std::string, std::string> > tHeaders;
 
