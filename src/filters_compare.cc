@@ -27,6 +27,21 @@ const char *c_UNIQUE_ID = "UNIQUE_ID";
 
 namespace CompareModule {
 
+
+static void
+printRequest(request_rec *pRequest, std::string pBody, CompareConf *tConf) {
+    const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
+    Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBody.size());
+    Log::debug("### Uri:%s", pRequest->uri);
+    Log::debug("### Request args: %s", pRequest->args);
+}
+
+/**
+ * @brief extract the request body, the header answer and the response answer
+ * @param pReqInfo object containing the request infos
+ * @param lReqBody body of the request
+ * @return a http status
+ */
 static apr_status_t serializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody)
 {
     int BAD_REQUEST = 400;
@@ -65,10 +80,16 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         return lStatus;
     }
     request_rec *pRequest = pF->r;
+    const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
+    if (strcmp("answer", lDupType) != 0)
+    {
+        return DECLINED;
+    }
+
     if (pRequest) {
         struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
         if (!tConf) {
-                return OK; // SHOULD NOT HAPPEN
+                return DECLINED; // SHOULD NOT HAPPEN
         }
         // No context? new request
         if (!pF->ctx) {
@@ -83,6 +104,7 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         } else if (pF->ctx == (void *)1) {
             return OK;
         }
+
         DupModule::RequestInfo *pBH = static_cast<DupModule::RequestInfo *>(pF->ctx);
         for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
              b != APR_BRIGADE_SENTINEL(pB);
@@ -104,11 +126,16 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
 
         std::string lReqBody;
         apr_status_t lStatus =  serializeBody(*pBH, lReqBody);
+        std::stringstream lStringSize;
+        lStringSize << lReqBody.size();
+        apr_table_set(pRequest->headers_in, "Content-Length", lStringSize.str().c_str());
         apr_brigade_write(pB, ap_filter_flush, pF, lReqBody.c_str(), lReqBody.length() );
+
+        printRequest(pRequest, lReqBody, tConf);
 
         return lStatus;
     }
-    return OK;
+    return DECLINED;
 }
 
 /*
@@ -134,13 +161,13 @@ public:
  * Callback to iterate over the headers tables
  * Pushes a copy of key => value in a list
  */
-static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+/*static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     DupModule::RequestInfo::tHeaders *headers = reinterpret_cast<DupModule::RequestInfo::tHeaders *>(d);
     headers->push_back(std::pair<std::string, std::string>(key, value));
     return 0;
-}
+}*/
 
-static void
+/*static void
 prepareRequestInfo(CompareConf *tConf, request_rec *pRequest, DupModule::RequestInfo &r, bool withAnswer) {
     // Basic
     r.mPoison = false;
@@ -153,17 +180,9 @@ prepareRequestInfo(CompareConf *tConf, request_rec *pRequest, DupModule::Request
         // Copy headers out
         apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersOut, pRequest->headers_out, NULL);
     }
-}
+}*/
 
-static void
-printRequest(request_rec *pRequest, DupModule::RequestInfo *pBH, CompareConf *tConf) {
-    const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
-    Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
-    Log::debug("### Uri:%s", pRequest->uri);
-    Log::debug("### Request args: %s", pRequest->args);
-}
-
-apr_status_t
+/*apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
     if (!pRequest || !pRequest->per_dir_config)
@@ -180,7 +199,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     } else if (ctx == (void *) -1) {
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
-    /*
     if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
         // Asynchronous push of request without the answer
         DupModule::RequestInfo *rH = ctx->req;
@@ -222,8 +240,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             apr_brigade_cleanup(ctx->tmpbb);
         }
     }
-    */
     return OK;
-}
+}*/
 
 };

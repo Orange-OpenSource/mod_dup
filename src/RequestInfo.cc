@@ -16,6 +16,7 @@
 * limitations under the License.
 */
 
+#include <assert.h>
 #include "RequestInfo.hh"
 
 namespace DupModule {
@@ -36,11 +37,13 @@ RequestInfo::RequestInfo(unsigned int id)
 }
 
 RequestInfo::RequestInfo() :
-    mPoison(true) {}
+    mPoison(true){
+}
 
 bool
 RequestInfo::isPoison() const {
     return mPoison;
 }
+
 
 }

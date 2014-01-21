@@ -41,10 +41,12 @@ namespace alg = boost::algorithm;
 namespace DupModule {
 
 RequestProcessor *gProcessor;
-ThreadPool<const RequestInfo*> *gThreadPool;
-
+ThreadPool<RequestInfo*> *gThreadPool;
 
 const char *gName = "Dup";
+const char *gNameBody2Brigade = "DupBody2Brigade";
+const char *gNameOut = "DupOut";
+
 const char *c_COMPONENT_VERSION = "Dup/1.0";
 const char* c_UNIQUE_ID = "UNIQUE_ID";
 
@@ -67,13 +69,13 @@ namespace DuplicationType {
         }
         throw std::exception();
     }
-
-    eDuplicationType value = HEADER_ONLY;
 }
 
 DupConf::DupConf()
     : currentApplicationScope(ApplicationScope::HEADER)
-    , dirName(NULL) {
+    , dirName(NULL)
+    , currentDupDestination()
+    , currentDuplicationType(DuplicationType::HEADER_ONLY) {
     srand(time(NULL));
 }
 
@@ -105,12 +107,6 @@ unsigned int DupConf::getNextReqId() {
     return lRandNum;
 }
 
-apr_status_t DupConf::cleaner(void *self) {
-    DupConf *c = reinterpret_cast<DupConf *>(self);
-    c->~DupConf();
-    return 0;
-}
-
 /**
  * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it
  * @param pPool the apache pool on which to allocate data
@@ -120,9 +116,9 @@ apr_status_t DupConf::cleaner(void *self) {
 void *
 createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
-    void *addr= apr_pcalloc(pPool, sizeof(struct DupConf));
+    void *addr= apr_palloc(pPool, sizeof(class DupConf));
     new (addr) DupConf();
-    apr_pool_cleanup_register(pPool, addr, DupConf::cleaner,  NULL);
+    apr_pool_cleanup_register(pPool, addr, cleaner<DupConf>,  NULL);
     return addr;
 }
 
@@ -134,7 +130,7 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
 int
 preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
     gProcessor = new RequestProcessor();
-    gThreadPool = new ThreadPool<const RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
+    gThreadPool = new ThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
     // Add the request timeout stat provider. Compose the lexical_cast with getTimeoutCount so that the resulting stat provider returns a string
     gThreadPool->addStat("#TmOut", boost::bind(boost::lexical_cast<std::string, unsigned int>,
                                                boost::bind(&RequestProcessor::getTimeoutCount, gProcessor)));
@@ -245,14 +241,6 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     return NULL;
 }
 
-/**
- * @brief Set the minimum and maximum number of threads
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pMin the minimum number of threads
- * @param pMax the maximum number of threads
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setThreads(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 	size_t lMin, lMax;
@@ -270,13 +258,6 @@ setThreads(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 	return NULL;
 }
 
-/**
- * @brief Set the timeout for outgoing requests
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pTimeout the timeout for outgoing requests in ms
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setTimeout(cmd_parms* pParams, void* pCfg, const char* pTimeout) {
     size_t lTimeout;
@@ -290,26 +271,6 @@ setTimeout(cmd_parms* pParams, void* pCfg, const char* pTimeout) {
     return NULL;
 }
 
-const char*
-setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
-    try {
-        DuplicationType::eDuplicationType v = DuplicationType::stringToEnum(pDupType);
-        DuplicationType::value = v;
-    } catch (std::exception e) {
-        return DuplicationType::c_ERROR_ON_STRING_VALUE;
-    }
-    return NULL;
-}
-
-
-/**
- * @brief Set the minimum and maximum queue size
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pMin the minimum queue size
- * @param pMax the maximum queue size
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
     size_t lMin, lMax;
@@ -328,16 +289,6 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
     return NULL;
 }
 
-/**
- * @brief Add a substitution definition
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pScope the scope of the substitution (HEADER, BODY, ALL)
- * @param pField the field on which to do the substitution
- * @param pMatch the regexp matching what should be replaced
- * @param pReplace the value which the match should be replaced with
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
 const char*
 setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -374,12 +325,6 @@ setEnrichContext(cmd_parms* pParams, void* pCfg, const char *pVarName, const cha
     return NULL;
 }
 
-/**
- * @brief Activate duplication
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @return NULL
- */
 const char*
 setActive(cmd_parms* pParams, void* pCfg) {
     struct DupConf *lConf = reinterpret_cast<DupConf *>(pCfg);
@@ -394,14 +339,24 @@ setActive(cmd_parms* pParams, void* pCfg) {
     return NULL;
 }
 
-/**
- * @brief Add a filter definition
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pField the field on which to do the substitution
- * @param pFilter a reg exp which has to match for this request to be duplicated
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
+const char*
+setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
+
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
+    assert(conf);
+
+    try {
+        conf->currentDuplicationType = DuplicationType::stringToEnum(pDupType);
+    } catch (std::exception e) {
+        return DuplicationType::c_ERROR_ON_STRING_VALUE;
+    }
+    return NULL;
+}
+
 const char*
 setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -443,13 +398,13 @@ setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
  */
 apr_status_t
 cleanUp(void *) {
-	gThreadPool->stop();
-	delete gThreadPool;
-	gThreadPool = NULL;
+    gThreadPool->stop();
+    delete gThreadPool;
+    gThreadPool = NULL;
 
-	delete gProcessor;
-	gProcessor = NULL;
-	return APR_SUCCESS;
+    delete gProcessor;
+    gProcessor = NULL;
+    return APR_SUCCESS;
 }
 
 /**
@@ -478,11 +433,6 @@ command_rec gCmds[] = {
                   0,
                   OR_ALL,
                   "Set the program name for the stats log messages"),
-    AP_INIT_TAKE1("DupDuplicationType",
-                  reinterpret_cast<const char *(*)()>(&setDuplicationType),
-                  0,
-                  OR_ALL,
-                  "Sets the duplication type that will used for all the following filters declarations"),
     AP_INIT_TAKE1("DupUrlCodec",
                   reinterpret_cast<const char *(*)()>(&setUrlCodec),
                   0,
@@ -503,6 +453,11 @@ command_rec gCmds[] = {
                   0,
                   OR_ALL,
                   "Set the minimum and maximum queue size for each thread pool."),
+    AP_INIT_TAKE1("DupDuplicationType",
+                  reinterpret_cast<const char *(*)()>(&setDuplicationType),
+                  0,
+                  ACCESS_CONF,
+                  "Sets the duplication type that will used for all the following filters declarations"),
     AP_INIT_TAKE1("DupDestination",
                   reinterpret_cast<const char *(*)()>(&setDestination),
                   0,
@@ -556,6 +511,27 @@ command_rec gCmds[] = {
     {0}
 };
 
+#ifndef UNIT_TESTING
+// Register the dup filters
+static void insertInputFilter(request_rec *pRequest) {
+    Log::debug("^^ INSERT HANDLER ^^ %llx", (long long unsigned int)pRequest);
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    assert(tConf);
+    if (tConf->dirName) {
+        ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
+        ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
+    }
+}
+
+static void insertOutputFilter(request_rec *pRequest) {
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    assert(tConf);
+    if (tConf->dirName) {
+        ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+    }
+}
+#endif
+
 /**
  * @brief register hooks in apache
  * @param pPool the apache pool
@@ -567,7 +543,12 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
+    ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
+    ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
+    static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
+    ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_FIRST);
+    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
+    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_MIDDLE);
 #endif
 }
 

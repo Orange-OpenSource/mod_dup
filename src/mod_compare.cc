@@ -49,7 +49,6 @@ const char* c_UNIQUE_ID = "UNIQUE_ID";
 
 
 CompareConf::CompareConf() {
-    srand(time(NULL));
 }
 
 
@@ -214,7 +213,7 @@ registerHooks(apr_pool_t *pPool) {
 #ifndef UNIT_TESTING
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
+    //ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
 #endif
 }
 

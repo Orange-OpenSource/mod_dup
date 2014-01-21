@@ -29,6 +29,7 @@
 #include "UrlCodec.hh"
 
 typedef void CURL;
+struct request_rec;
 
 class TestRequestProcessor;
 
@@ -86,15 +87,17 @@ namespace DupModule {
     public:
         tFilter(const std::string &regex,
                 ApplicationScope::eApplicationScope scope,
-                const std::string &currentDupDestination);
+                const std::string &currentDupDestination,
+                DuplicationType::eDuplicationType dupType);
 
         tFilter(const tFilter& other);
 
         virtual ~tFilter(){}
 
-        std::string mField;                     /** The key or field the filter applies on */
-        std::string mDestination;               /** The host to duplicate the request to if the filter matches
-                                                    the destination in &lt;host>[:&lt;port>] format */
+        std::string mField;                                     /** The key or field the filter applies on */
+        std::string mDestination;                               /** The host to duplicate the request to if the filter matches
+                                                                    the destination in &lt;host>[:&lt;port>] format */
+        DuplicationType::eDuplicationType mDuplicationType;     /** The duplication type for this filter */
     };
 
     /**
@@ -180,15 +183,20 @@ namespace DupModule {
         /** @brief The url codec */
         boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
 
+        /** The highest duplication type registered */
+        DuplicationType::eDuplicationType               mHighestDuplicationType;
 
     public:
 	/**
 	 * @brief Constructs a RequestProcessor
 	 */
-	RequestProcessor() : mTimeout(0), mTimeoutCount(0),
-                             mDuplicatedCount(0) {
-            setUrlCodec();
-	}
+	RequestProcessor();
+
+        /*
+         * @brief Answer collection needed?
+         * @return true if one of the filters or raw filters duplicates with the answer
+         */
+        DuplicationType::eDuplicationType highestDuplicationType() const;
 
 	/**
 	 * @brief Set the timeout
@@ -302,22 +310,24 @@ namespace DupModule {
          * If and only if a filter matches, substitutions will be applied.
          */
         const tFilter *
-        processRequest(const std::string &pConfPath, RequestInfo &pRequest);
+        processRequest(RequestInfo &pRequest);
 
         /**
          * @brief Run the infinite loop which pops new requests of the given queue, processes them and sends the over to the configured destination
          * @param pQueue the queue which gets filled with incoming requests
          */
         void
-        run(MultiThreadQueue<const RequestInfo *> &pQueue);
+        run(MultiThreadQueue<RequestInfo *> &pQueue);
 
         /**
          * @brief Define some environnement variables if the query matches the criteria defined
          * using the DupEnrichContext directive
+         * @param pRequest the apache request structure
+         * @param the RequestInfo internal struct containing the body
          * @return the number of variables defined
          */
         int
-        enrichContext();
+        enrichContext(request_rec *pRequest, const RequestInfo &rInfo);
 
     private:
 

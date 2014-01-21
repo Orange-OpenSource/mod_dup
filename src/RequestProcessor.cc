@@ -87,14 +87,22 @@ RequestProcessor::addFilter(const std::string &pPath, const std::string &pField,
 
     mCommands[pPath].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
                                                                      tFilter(pFilter, pAssociatedConf.currentApplicationScope,
-                                                                             pAssociatedConf.currentDupDestination)));
+                                                                             pAssociatedConf.currentDupDestination,
+                                                                             pAssociatedConf.currentDuplicationType)));
+    if ((int)pAssociatedConf.currentDuplicationType > (int) mHighestDuplicationType) {
+        mHighestDuplicationType = pAssociatedConf.currentDuplicationType;
+    }
 }
 
 void
 RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFilter,
                                 const DupConf &pAssociatedConf) {
     mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, pAssociatedConf.currentApplicationScope,
-                                                   pAssociatedConf.currentDupDestination));
+                                                   pAssociatedConf.currentDupDestination,
+                                                   pAssociatedConf.currentDuplicationType));
+    if ((int)pAssociatedConf.currentDuplicationType > (int) mHighestDuplicationType) {
+        mHighestDuplicationType = pAssociatedConf.currentDuplicationType;
+    }
 }
 
 void
@@ -157,6 +165,28 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
     return NULL;
 }
 
+template <class T>
+void applicationOn(const T &list, int &header, int &body) {
+    header = body = 0;
+    BOOST_FOREACH(const typename T::value_type &f, list) {
+        if (f.mScope & ApplicationScope::BODY)
+            body = true;
+        if (f.mScope & ApplicationScope::HEADER)
+            header = true;
+     }
+}
+
+template <class T>
+void applicationOnMap(const T &list, int &header, int &body) {
+    header = body = 0;
+    BOOST_FOREACH(const typename T::value_type &f, list) {
+        if (f.second.mScope & ApplicationScope::BODY)
+            body = true;
+        if (f.second.mScope & ApplicationScope::HEADER)
+            header = true;
+     }
+}
+
 const tFilter *
 RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
 
@@ -164,15 +194,8 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
     std::multimap<std::string, tFilter> &pFilters = pCommands.mFilters;
 
     // Key filter type detection
-    bool keyFilterOnHeader = false;
-    bool keyFilterOnBody = false;
-    typedef std::pair<const std::string, tFilter> value_type;
-    BOOST_FOREACH(value_type &f, pFilters) {
-        if (f.second.mScope & ApplicationScope::BODY)
-            keyFilterOnBody = true;
-        if (f.second.mScope & ApplicationScope::HEADER)
-            keyFilterOnHeader = true;
-     }
+    int keyFilterOnHeader, keyFilterOnBody;
+    applicationOnMap(pFilters, keyFilterOnHeader, keyFilterOnBody);
 
     Log::debug("Filters on body: %d | on header: %d", keyFilterOnBody, keyFilterOnHeader);
 
@@ -259,8 +282,8 @@ bool
 RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
     // Ideally we would use the pool from the apache request, but it's used in another thread
 
-    bool keySubOnBody = false, keySubOnHeader = false;
-
+    bool keySubOnBody, keySubOnHeader;
+    keySubOnBody = keySubOnHeader = false;
     // Detect the presence of the different key filters
     typedef std::pair<const std::string, std::list<tSubstitute> > value_type;
     BOOST_FOREACH(value_type &f, pCommands.mSubstitutions) {
@@ -315,7 +338,8 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
  * If and only if it returned true, pArgs will have all necessary substitutions applied.
  */
 const tFilter *
-RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pRequest) {
+RequestProcessor::processRequest(RequestInfo &pRequest) {
+    const std::string &pConfPath = pRequest.mConfPath;
     std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(pConfPath);
 
     // No filters for this path
@@ -334,11 +358,20 @@ RequestProcessor::processRequest(const std::string &pConfPath, RequestInfo &pReq
         return NULL;
     }
 
-    Log::debug("Filter match");
-
     // We have a match, perform substitutions
     substituteRequest(pRequest, lCommands, lParsedArgs);
     return matchedFilter;
+}
+
+RequestProcessor::RequestProcessor() :
+    mTimeout(0), mTimeoutCount(0),
+    mDuplicatedCount(0), mHighestDuplicationType(DuplicationType::HEADER_ONLY) {
+    setUrlCodec();
+}
+
+DuplicationType::eDuplicationType
+RequestProcessor::highestDuplicationType() const {
+    return mHighestDuplicationType;
 }
 
 void
@@ -402,9 +435,9 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     }
     // Setting mod-dup as the real agent for tracability
     slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
-    if (DuplicationType::value == DuplicationType::REQUEST_WITH_ANSWER) {
+    if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
         content = sendDupFormat(curl, rInfo, slist);
-    } else if (rInfo.hasBody()){
+    } else if (matchedFilter.mDuplicationType == DuplicationType::COMPLETE_REQUEST && rInfo.hasBody()) {
         sendInBody(curl, slist, rInfo.mBody);
     } else {
         // Regular GET case
@@ -412,7 +445,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, NULL);
     }
 
-    Log::debug("---->>>> Duplicating: %s", uri.c_str());
+    Log::debug(">> Duplicating: %s", uri.c_str());
 
     int err = curl_easy_perform(curl);
     if (slist)
@@ -431,7 +464,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
  * @param pQueue the queue which gets filled with incoming requests
  */
 void
-RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
+RequestProcessor::run(MultiThreadQueue<RequestInfo *> &pQueue)
 {
     Log::debug("New worker thread started");
 
@@ -446,17 +479,16 @@ RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
     curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
 
     for (;;) {
-        const RequestInfo *lQueueItem = pQueue.pop();
+        RequestInfo *lQueueItem = pQueue.pop();
         if (lQueueItem->isPoison()) {
             // Master tells us to stop
             Log::debug("Received poison pill. Exiting.");
             break;
         }
         const tFilter *matchedFilter;
-        RequestInfo &lRequest = *const_cast<RequestInfo *>(lQueueItem);
-        if ((matchedFilter = processRequest(lQueueItem->mConfPath, lRequest))) {
+        if ((matchedFilter = processRequest(*lQueueItem))) {
             __sync_fetch_and_add(&mDuplicatedCount, 1);
-            performCurlCall(lCurl, *matchedFilter, lRequest);
+            performCurlCall(lCurl, *matchedFilter, *lQueueItem);
         }
         delete lQueueItem;
     }
@@ -464,9 +496,35 @@ RequestProcessor::run(MultiThreadQueue<const RequestInfo *> &pQueue)
 }
 
 int
-RequestProcessor::enrichContext() {
-    //TODO
-    return 0;
+RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
+    std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(rInfo.mConfPath);
+
+    // No filters for this path
+    if (it == mCommands.end() || !it->second.mEnrichContext.size())
+        return 0;
+    int count = 0;
+    std::list<tContextEnrichment> &cE = it->second.mEnrichContext;
+
+   // Iteration through context enrichment
+    BOOST_FOREACH(const tContextEnrichment &ctx, cE) {
+        if (ctx.mScope & ApplicationScope::HEADER) {
+            std::string toSet = regex_replace(rInfo.mArgs, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
+            if (toSet.size()) {
+                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+                ++count;
+            }
+            Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+        }
+        if (ctx.mScope & ApplicationScope::BODY) {
+            std::string toSet = regex_replace(rInfo.mBody, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
+            if (toSet.size()) {
+                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+                ++count;
+            }
+            Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+        }
+    }
+    return count;
 }
 
 tElementBase::tElementBase(const std::string &r, ApplicationScope::eApplicationScope s)
@@ -478,9 +536,11 @@ tElementBase::~tElementBase() {
 }
 
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
-                 const std::string &currentDupDestination)
+                 const std::string &currentDupDestination,
+                 DuplicationType::eDuplicationType dupType)
     : tElementBase(regex, scope)
-    , mDestination(currentDupDestination) {
+    , mDestination(currentDupDestination)
+    , mDuplicationType(dupType) {
 }
 
 tFilter::tFilter(const tFilter& other): tElementBase(other) {
@@ -488,6 +548,7 @@ tFilter::tFilter(const tFilter& other): tElementBase(other) {
         return;
     mField = other.mField;
     mDestination = other.mDestination;
+    mDuplicationType = other.mDuplicationType;
 }
 
 tElementBase::tElementBase(const tElementBase &other) {

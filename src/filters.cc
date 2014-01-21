@@ -22,75 +22,123 @@
 
 namespace DupModule {
 
-apr_status_t
-inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
-{
-    apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-    if (lStatus != APR_SUCCESS) {
-        return lStatus;
-    }
-    request_rec *pRequest = pF->r;
-    if (pRequest) {
-	struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
-	if (!tConf) {
-            return OK; // SHOULD NOT HAPPEN
-	}
-        // No context? new request
-        if (!pF->ctx) {
-            RequestInfo *info = new RequestInfo(tConf->getNextReqId());
-            ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
-            // Copy Request ID in both headers
-            std::string reqId = boost::lexical_cast<std::string>(info->mId);
-            apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
-            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
-            // Backup of info struct in the request context
-            pF->ctx = info;
-        } else if (pF->ctx == (void *)1) {
-            return OK;
-        }
-        RequestInfo *pBH = static_cast<RequestInfo *>(pF->ctx);
-        for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
-             b != APR_BRIGADE_SENTINEL(pB);
+const unsigned int max_bytes = 8192;
+
+static bool
+extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
+    if (ap_get_brigade(pRequest->input_filters,
+                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, max_bytes) == APR_SUCCESS) {
+        // Read brigade content
+        for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
+             b != APR_BRIGADE_SENTINEL(bb);
              b = APR_BUCKET_NEXT(b) ) {
             // Metadata end of stream
-            if ( APR_BUCKET_IS_EOS(b) ) {
-                // Synchronous context enrichment
-                gProcessor->enrichContext();
-                pF->ctx = (void *)1;
-                break;
+            if (APR_BUCKET_IS_EOS(b)) {
+                return true;
             }
-            if (DuplicationType::value != DuplicationType::HEADER_ONLY) {
-                const char* lReqPart = NULL;
-                apr_size_t lLength = 0;
-                apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
-                if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
-                    continue;
-                }
-                pBH->mBody += std::string(lReqPart, lLength);
+            const char *data = 0;
+            apr_size_t len = 0;
+            apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+            if (rv != APR_SUCCESS) {
+                Log::error(42, "Bucket read failed, skipping the rest of the body");
+                return true;
+            }
+            if (len) {
+                content.append(data, len);
             }
         }
     }
-    return OK;
+    else {
+        Log::error(42, "Get brigade failed, skipping the rest of the body");
+        return true;
+    }
+    return false;
 }
 
-/*
- * Request context used during brigade run
- */
-class RequestContext {
-public:
-    apr_bucket_brigade  *tmpbb;
-    RequestInfo         *req; /** Req is pushed to requestprocessor for duplication and will be deleted later*/
 
-    RequestContext(ap_filter_t *pFilter) {
-        tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
-        req = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config, &dup_module));
-        assert(req);
+int
+earlyHook(request_rec *pRequest) {
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    assert(tConf);
+    if (!tConf->dirName) {
+        return DECLINED;
     }
 
-    ~RequestContext() {
-        apr_brigade_cleanup(tmpbb);
+    RequestInfo *info = new RequestInfo(tConf->getNextReqId());
+    // Backup in request context
+    ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
+
+    if (!pRequest->connection->pool) {
+        Log::error(42, "No connection pool associated to the request");
+        return DECLINED;
     }
-};
+    if (!pRequest->connection->bucket_alloc) {
+        pRequest->connection->bucket_alloc = apr_bucket_alloc_create(pRequest->connection->pool);
+        if (!pRequest->connection->bucket_alloc) {
+            Log::error(42, "Request bucket allocation failed");
+            return DECLINED;
+        }
+    }
+
+    apr_bucket_brigade *bb = apr_brigade_create(pRequest->connection->pool, pRequest->connection->bucket_alloc);
+    if (!bb) {
+        Log::error(42, "Bucket brigade allocation failed");
+        return DECLINED;
+    }
+    while (!extractBrigadeContent(bb, pRequest, info->mBody)){
+        apr_brigade_cleanup(bb);
+    }
+    apr_brigade_cleanup(bb);
+    // Body read :)
+
+    // Copy Request ID in both headers
+    std::string reqId = boost::lexical_cast<std::string>(info->mId);
+    apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
+    apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+
+    // Synchronous context enrichment
+    info->mConfPath = tConf->dirName;
+    info->mArgs = pRequest->args ? pRequest->args : "";
+    gProcessor->enrichContext(pRequest, *info);
+
+    // If the request has a previous member
+    // It means it has been rewritten
+    if (pRequest->prev) {
+        RequestInfo *prev = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->prev->request_config,
+                                                                                 &dup_module));
+        if (prev) {
+            info->mBody = prev->mBody;
+        }
+    }
+    return DECLINED;
+}
+
+apr_status_t
+inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
+{
+    request_rec *pRequest = pF->r;
+    // Retrieve request info from context
+    RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
+    if (!info) {
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    }
+    if (!pF->ctx) {
+        apr_bucket_brigade *bb = apr_brigade_create(pF->r->pool, pF->c->bucket_alloc);
+        if (info->mBody.size()) {
+            apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size());
+        }
+        apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
+        APR_BRIGADE_INSERT_TAIL(bb, e);
+        pF->ctx = (void *) -1;
+        return ap_get_brigade(pF->next, bb, pMode, pBlock, pReadbytes);
+    }
+    return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+}
+
+apr_status_t
+inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes) {
+    return  ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+}
 
 /*
  * Callback to iterate over the headers tables
@@ -126,6 +174,43 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
     Log::debug("### Request args: %s", pRequest->args);
 }
 
+/*
+ * Request context used during brigade run
+ */
+class RequestContext {
+public:
+    apr_bucket_brigade  *mTmpBB;
+    RequestInfo         *mReq; /** Req is pushed to requestprocessor for duplication and will be deleted later*/
+
+    RequestContext(ap_filter_t *pFilter) {
+        mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
+        mReq = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config,
+                                                                    &dup_module));
+        assert(mReq);
+
+        // A previous request exists. It never be pushed, therefore we clean the requestinfo struct
+        if (pFilter->r->prev) {
+            RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->prev->request_config,
+                                                                    &dup_module));
+            if (info) {
+                delete info;
+                ap_set_module_config(pFilter->r->prev->request_config, &dup_module, NULL);
+            }
+        }
+    }
+
+    RequestContext()
+        : mTmpBB(NULL)
+        , mReq(NULL) {
+    }
+
+    ~RequestContext() {
+        if (mTmpBB) {
+            apr_brigade_cleanup(mTmpBB);
+        }
+    }
+};
+
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
@@ -138,15 +223,19 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (ctx == NULL) {
         // Context init
         ctx = new RequestContext(pFilter);
+        if (ctx->mReq->mAnswer.size()) {
+            // Happens after a rewrite
+            pFilter->ctx = (void *) -1;
+            return ap_pass_brigade(pFilter->next, pBrigade);
+        }
         pFilter->ctx = ctx;
-
     } else if (ctx == (void *) -1) {
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
-    if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
-        // Asynchronous push of request without the answer
-        RequestInfo *rH = ctx->req;
+    if (gProcessor->highestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
+        // Asynchronous push of request WITHOUT the answer
+        RequestInfo *rH = ctx->mReq;
         prepareRequestInfo(tConf, pRequest, *rH, false);
         printRequest(pRequest, rH, tConf);
         gThreadPool->push(rH);
@@ -163,26 +252,30 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
 
         if ((rv == APR_SUCCESS) && (data != NULL)) {
-            ctx->req->mAnswer.append(data, len);
+            ctx->mReq->mAnswer.append(data, len);
         }
         /* Remove bucket e from bb. */
         APR_BUCKET_REMOVE(currentBucket);
         /* Insert it into  temporary brigade. */
-        APR_BRIGADE_INSERT_HEAD(ctx->tmpbb, currentBucket);
+        APR_BRIGADE_INSERT_HEAD(ctx->mTmpBB, currentBucket);
         /* Pass brigade downstream. */
-        rv = ap_pass_brigade(pFilter->next, ctx->tmpbb);
-        // TODO if (rv) ...;
+        rv = ap_pass_brigade(pFilter->next, ctx->mTmpBB);
+        if (rv != APR_SUCCESS) {
+            // Something went wrong, no duplication performed
+            delete ctx;
+            pFilter->ctx = (void *) -1;
+            return rv;
+        }
         if (APR_BUCKET_IS_EOS(currentBucket)) {
-            apr_brigade_cleanup(ctx->tmpbb);
             // Pushing the answer to the processor
-            prepareRequestInfo(tConf, pRequest, *(ctx->req), true);
-            printRequest(pRequest, ctx->req, tConf);
-            gThreadPool->push(ctx->req);
+            prepareRequestInfo(tConf, pRequest, *(ctx->mReq), true);
+            printRequest(pRequest, ctx->mReq, tConf);
+            gThreadPool->push(ctx->mReq);
             delete ctx;
             pFilter->ctx = (void *) -1;
         }
         else {
-            apr_brigade_cleanup(ctx->tmpbb);
+            apr_brigade_cleanup(ctx->mTmpBB);
         }
     }
     return OK;

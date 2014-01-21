@@ -97,8 +97,8 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_
 /** @brief the output filter callback
  * Plugged only in REQUEST_WITH_ANSWER mode
  */
-apr_status_t
-outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
+/*apr_status_t
+outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);*/
 
 /**
  * @brief Set the list of errors to ignore in the comparison of headers
