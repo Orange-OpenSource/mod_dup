@@ -18,10 +18,12 @@
 
 #include "mod_compare.hh"
 #include "RequestInfo.hh"
+#include "CassandraDiff.h"
 
 #include <http_config.h>
 #include <assert.h>
 #include <stdexcept>
+#include <boost/thread/detail/singleton.hpp>
 
 const char *c_UNIQUE_ID = "UNIQUE_ID";
 
@@ -31,9 +33,43 @@ namespace CompareModule {
 static void
 printRequest(request_rec *pRequest, std::string pBody, CompareConf *tConf) {
     const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
-    Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBody.size());
+    Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
     Log::debug("### Uri:%s", pRequest->uri);
     Log::debug("### Request args: %s", pRequest->args);
+}
+
+/**
+ * @brief write response differences in a file
+ * @param
+ */
+void writeDifferences()
+{
+
+}
+
+/**
+ * @brief check if there is a difference for a set in Cassandra
+ * @param pUniqueID the UNIQUE_ID of the request to check
+ * @return true if there are differences, false otherwise
+ */
+bool checkCassandraDiff(std::string &pUniqueID)
+{
+    typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
+
+    CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
+    boost::lock_guard<boost::mutex>  lLock(lDiff.getMutex());
+
+    std::pair <tMultiMapDiff::iterator, tMultiMapDiff::iterator> lPairIter;
+    lPairIter = lDiff.equal_range(pUniqueID);
+    if ( lPairIter.first ==  lPairIter.second )
+    {
+        return false;
+    }
+
+    writeDifferences();
+    lDiff.erase(pUniqueID);
+
+    return true;
 }
 
 /**
@@ -144,12 +180,9 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
 class RequestContext {
 public:
     apr_bucket_brigade  *tmpbb;
-    DupModule::RequestInfo         *req; /** Req is pushed to requestprocessor for duplication and will be deleted later*/
 
     RequestContext(ap_filter_t *pFilter) {
         tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
-        req = reinterpret_cast<DupModule::RequestInfo *>(ap_get_module_config(pFilter->r->request_config, &compare_module));
-        assert(req);
     }
 
     ~RequestContext() {
@@ -161,64 +194,53 @@ public:
  * Callback to iterate over the headers tables
  * Pushes a copy of key => value in a list
  */
-/*static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
-    DupModule::RequestInfo::tHeaders *headers = reinterpret_cast<DupModule::RequestInfo::tHeaders *>(d);
-    headers->push_back(std::pair<std::string, std::string>(key, value));
-    return 0;
-}*/
+static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+    std::string *lResHeaderLocalWS = reinterpret_cast<std::string *>(d);
 
-/*static void
-prepareRequestInfo(CompareConf *tConf, request_rec *pRequest, DupModule::RequestInfo &r, bool withAnswer) {
-    // Basic
-    r.mPoison = false;
-    r.mPath = pRequest->uri;
-    r.mArgs = pRequest->args ? pRequest->args : "";
+    lResHeaderLocalWS->append(key);
+    lResHeaderLocalWS->append(": ");
+    lResHeaderLocalWS->append(value);
+    lResHeaderLocalWS->append("\n");
 
-    // Copy headers in
-    apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
-    if (withAnswer) {
-        // Copy headers out
-        apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersOut, pRequest->headers_out, NULL);
-    }
-}*/
+    return 1;
+}
 
-/*apr_status_t
+apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
     if (!pRequest || !pRequest->per_dir_config)
+    {
         return ap_pass_brigade(pFilter->next, pBrigade);
+    }
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     assert(tConf);
     // Request answer analyse
     RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
-    if (ctx == NULL) {
+    if (ctx == NULL)
+    {
         // Context init
         ctx = new RequestContext(pFilter);
         pFilter->ctx = ctx;
 
-    } else if (ctx == (void *) -1) {
+    }
+    else if (ctx == (void *) -1)
+    {
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
-    if (DuplicationType::value != DuplicationType::REQUEST_WITH_ANSWER) {
-        // Asynchronous push of request without the answer
-        DupModule::RequestInfo *rH = ctx->req;
-        prepareRequestInfo(tConf, pRequest, *rH, false);
-        printRequest(pRequest, rH, tConf);
-        gThreadPool->push(rH);
-        delete ctx;
-        pFilter->ctx = (void *) -1;
-        return ap_pass_brigade(pFilter->next, pBrigade);
-    }
+
+    DupModule::RequestInfo *req = reinterpret_cast<DupModule::RequestInfo *>(ap_get_module_config(pFilter->r->request_config, &compare_module));
     // Asynchronous push of request WITH the answer
     apr_bucket *currentBucket;
-    while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade)) {
+    while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade))
+    {
         const char *data;
         apr_size_t len;
         apr_status_t rv;
         rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
 
-        if ((rv == APR_SUCCESS) && (data != NULL)) {
-            ctx->req->mAnswer.append(data, len);
+        if ((rv == APR_SUCCESS) && (data != NULL))
+        {
+            req->mDupResponseBody.append(data, len);
         }
         // Remove bucket e from bb.
         APR_BUCKET_REMOVE(currentBucket);
@@ -227,20 +249,36 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         // Pass brigade downstream.
         rv = ap_pass_brigade(pFilter->next, ctx->tmpbb);
         // TODO if (rv) ...;
-        if (APR_BUCKET_IS_EOS(currentBucket)) {
+        if (APR_BUCKET_IS_EOS(currentBucket))
+        {
+            Log::debug("il body della risposta duplicata e': %s", req->mResponseBody.c_str());
             apr_brigade_cleanup(ctx->tmpbb);
-            // Pushing the answer to the processor
-            prepareRequestInfo(tConf, pRequest, *(ctx->req), true);
-            printRequest(pRequest, ctx->req, tConf);
-            gThreadPool->push(ctx->req);
             delete ctx;
             pFilter->ctx = (void *) -1;
+
+            std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
+            if ( checkCassandraDiff(lUniqueID) )
+            {
+                return OK;
+            }
+
+            //check headers
+            apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
+            Log::debug("header della risposta duplicata e': %s", req->mResponseHeader.c_str());
+
+
+            //if makeComparison( pOrigin, lResHeaderDup, &pDiffList, &pIgnoreList );
+            // return OK
+            ///if makeComparison( pOrigin, lResBodyDup, &pDiffList, &pIgnoreList );
+            // return OK
+            //write differencies
+            //
         }
         else {
             apr_brigade_cleanup(ctx->tmpbb);
         }
     }
     return OK;
-}*/
+}
 
 };

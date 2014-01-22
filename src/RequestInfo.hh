@@ -71,6 +71,11 @@ namespace DupModule {
     std::string mResponseHeader;
     /** @brief The body part of the answer */
     std::string mResponseBody;
+    /** @brief The header part of the answer of the duplicated request */
+    std::string mDupResponseHeader;
+    /** @brief The body part of the answer of the duplicated request*/
+    std::string mDupResponseBody;
+
 
         typedef std::list<std::pair<std::string, std::string> > tHeaders;
 
