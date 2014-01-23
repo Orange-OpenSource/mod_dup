@@ -24,12 +24,14 @@ file(GLOB mod_dup_SOURCE_FILES
   Log.cc
   RequestProcessor.cc
   RequestInfo.cc
+  Utils.cc
   UrlCodec.cc)
   
 file(GLOB mod_compare_SOURCE_FILES
   filters_compare.cc
   mod_compare.cc
   Log.cc
+  Utils.cc
   RequestInfo.cc)
 
 # Compile as library

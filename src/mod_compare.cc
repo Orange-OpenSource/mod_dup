@@ -52,34 +52,6 @@ CompareConf::CompareConf() {
 }
 
 
-unsigned int CompareConf::getNextReqId() {
-    // Thread-local static variables
-    // Makes sure the random pattern/sequence is different for each thread
-    static __thread bool lInitialized = false;
-    static __thread struct random_data lRD = { 0, 0, 0, 0, 0, 0, 0} ;
-    static __thread char lRSB[8];
-
-    // Initialized per thread
-    int lRet = 0;
-    if (!lInitialized) {
-        memset(lRSB,0, 8);
-        struct timespec lTimeSpec;
-        clock_gettime(CLOCK_MONOTONIC, &lTimeSpec);
-        // The seed is randomized using thread ID and nanoseconds
-        unsigned int lSeed = lTimeSpec.tv_nsec + (pid_t) syscall(SYS_gettid);
-
-        // init State must be different for all threads or each will answer the same sequence
-        lRet |= initstate_r(lSeed, lRSB, 8, &lRD);
-        lInitialized = true;
-    }
-    // Thread-safe calls with thread local initialization
-    int lRandNum = 1;
-    lRet |= random_r(&lRD, &lRandNum);
-    if (lRet)
-        Log::error(5, "Error on number randomisation");
-    return lRandNum;
-}
-
 apr_status_t CompareConf::cleaner(void *self) {
     CompareConf *c = reinterpret_cast<CompareConf *>(self);
     c->~CompareConf();
@@ -116,70 +88,78 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
 }
 
 /**
- * @brief Set the list of errors to ignore in the comparison of headers
+ * @brief Set the list of errors which stop the comparison
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
- * @param pList the list of errors separated by ','
+ * @param pListType the type of list (Header or Body)
+ * @param pValue the value to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setHeaderIgnoreList(cmd_parms* pParams, void* pCfg, const char* pList) {
-    if (!pList || strlen(pList) == 0) {
-        return "Missing header ignore list";
+setStopList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue) {
+    if (!pValue || strlen(pValue) == 0) {
+        return "Missing stop value";
+    }
+
+    if (!pListType || strlen(pListType) == 0) {
+        return "Missing ignore list";
     }
 
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-    std::string lList(pList);
-    boost::char_separator<char> lSep(",");
-    typedef boost::tokenizer< boost::char_separator<char> > t_tokenizer;
-    t_tokenizer lTok(lList, lSep);
-    unsigned int lErr;
+    std::string lListType(pListType);
+    std::string lValue(pValue);
 
-    for (t_tokenizer::iterator lIter = lTok.begin(); lIter != lTok.end(); ++lIter)
+    if (strcmp("Header", pListType) == 0)
     {
-        try
-        {
-            lErr = boost::lexical_cast<unsigned int>(*lIter);
-        } catch (boost::bad_lexical_cast)
-        {
-            return "Invalid value for the header ignore list.";
-        }
-        lConf->mHeaderIgnoreList.push_back( lErr );
+        lConf->mHeaderStopList.push_back(lValue);
     }
+    else if(strcmp("Body", pListType) == 0)
+    {
+        lConf->mBodyStopList.push_back(lValue);
+    }
+    else
+    {
+        return "Invalid value for the list type";
+    }
+
     return NULL;
 }
 
 /**
- * @brief Set the list of errors to ignore in the comparison of bodies
+ * @brief Set the list of errors to ignore in the comparison
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
- * @param pList the list of errors separated by ','
+ * @param pListType the type of list (Header or Body)
+ * @param pValue the value to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setBodyIgnoreList(cmd_parms* pParams, void* pCfg, const char* pList) {
-    if (!pList || strlen(pList) == 0) {
-        return "Missing body ignore list";
+setIgnoreList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue) {
+    if (!pValue || strlen(pValue) == 0) {
+        return "Missing stop value";
+    }
+
+    if (!pListType || strlen(pListType) == 0) {
+        return "Missing ignore list";
     }
 
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-    std::string lList(pList);
-    boost::char_separator<char> lSep(",");
-    typedef boost::tokenizer< boost::char_separator<char> > t_tokenizer;
-    t_tokenizer lTok(lList, lSep);
-    unsigned int lErr;
+    std::string lListType(pListType);
+    std::string lValue(pValue);
 
-    for (t_tokenizer::iterator lIter = lTok.begin(); lIter != lTok.end(); ++lIter)
+    if (strcmp("Header", pListType) == 0)
     {
-        try
-        {
-            lErr = boost::lexical_cast<unsigned int>(*lIter);
-        } catch (boost::bad_lexical_cast)
-        {
-            return "Invalid value for the header ignore list.";
-        }
-        lConf->mBodyIgnoreList.push_back( lErr );
+        lConf->mHeaderIgnoreList.push_back(lValue);
     }
+    else if(strcmp("Body", pListType) == 0)
+    {
+        lConf->mBodyIgnoreList.push_back(lValue);
+    }
+    else
+    {
+        return "Invalid value for the list type";
+    }
+
     return NULL;
 }
 
@@ -191,16 +171,16 @@ command_rec gCmds[] = {
     //          void * extra data,
     //          overrides to allow in order to enable,
     //          help message),
-        AP_INIT_TAKE1("HeaderIgnoreList",
-                    reinterpret_cast<const char *(*)()>(&setHeaderIgnoreList),
+        AP_INIT_TAKE2("CompareStop",
+                    reinterpret_cast<const char *(*)()>(&setStopList),
                     0,
                     ACCESS_CONF,
-                    "List of errors to ignore in the comparison of headers."),
-        AP_INIT_TAKE1("BodyIgnoreList",
-                    reinterpret_cast<const char *(*)()>(&setBodyIgnoreList),
+                    "List of errors which stop the comparison."),
+        AP_INIT_TAKE2("CompareIgnore",
+                    reinterpret_cast<const char *(*)()>(&setIgnoreList),
                     0,
                     ACCESS_CONF,
-                    "List of errors to ignore in the comparison of bodies."),
+                    "List of errors to ignore in the comparison."),
     {0}
 };
 

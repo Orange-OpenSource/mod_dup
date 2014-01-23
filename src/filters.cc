@@ -17,6 +17,7 @@
 */
 
 #include "mod_dup.hh"
+#include "Utils.hh"
 
 #include <http_config.h>
 
@@ -64,7 +65,7 @@ earlyHook(request_rec *pRequest) {
         return DECLINED;
     }
 
-    RequestInfo *info = new RequestInfo(tConf->getNextReqId());
+    RequestInfo *info = new RequestInfo(getNextReqId());
     // Backup in request context
     ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
 

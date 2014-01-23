@@ -79,33 +79,6 @@ DupConf::DupConf()
     srand(time(NULL));
 }
 
-unsigned int DupConf::getNextReqId() {
-    // Thread-local static variables
-    // Makes sure the random pattern/sequence is different for each thread
-    static __thread bool lInitialized = false;
-    static __thread struct random_data lRD = { 0, 0, 0, 0, 0, 0, 0} ;
-    static __thread char lRSB[8];
-
-    // Initialized per thread
-    int lRet = 0;
-    if (!lInitialized) {
-        memset(lRSB,0, 8);
-        struct timespec lTimeSpec;
-        clock_gettime(CLOCK_MONOTONIC, &lTimeSpec);
-        // The seed is randomized using thread ID and nanoseconds
-        unsigned int lSeed = lTimeSpec.tv_nsec + (pid_t) syscall(SYS_gettid);
-
-        // init State must be different for all threads or each will answer the same sequence
-        lRet |= initstate_r(lSeed, lRSB, 8, &lRD);
-        lInitialized = true;
-    }
-    // Thread-safe calls with thread local initialization
-    int lRandNum = 1;
-    lRet |= random_r(&lRD, &lRandNum);
-    if (lRet)
-        Log::error(5, "Error on number randomisation");
-    return lRandNum;
-}
 
 /**
  * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it

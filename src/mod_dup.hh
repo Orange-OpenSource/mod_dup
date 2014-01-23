@@ -68,11 +68,6 @@ public:
     /** @brief the current duplication type*/
     DuplicationType::eDuplicationType          currentDuplicationType;
 
-    /*
-     * Returns the next random request ID
-     * method is reentrant
-     */
-    unsigned int                               getNextReqId();
 };
 
 /**

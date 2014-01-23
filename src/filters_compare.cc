@@ -19,6 +19,7 @@
 #include "mod_compare.hh"
 #include "RequestInfo.hh"
 #include "CassandraDiff.h"
+#include "Utils.hh"
 
 #include <http_config.h>
 #include <assert.h>
@@ -78,7 +79,7 @@ bool checkCassandraDiff(std::string &pUniqueID)
  * @param lReqBody body of the request
  * @return a http status
  */
-static apr_status_t serializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody)
+static apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody)
 {
     int BAD_REQUEST = 400;
     size_t lBodyReqSize, lHeaderResSize, lBodyResSize;
@@ -116,62 +117,65 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         return lStatus;
     }
     request_rec *pRequest = pF->r;
-    const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
-    if (strcmp("answer", lDupType) != 0)
+    if (!pRequest)
     {
         return DECLINED;
     }
 
-    if (pRequest) {
-        struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
-        if (!tConf) {
-                return DECLINED; // SHOULD NOT HAPPEN
-        }
-        // No context? new request
-        if (!pF->ctx) {
-            DupModule::RequestInfo *info = new DupModule::RequestInfo(tConf->getNextReqId());
-            ap_set_module_config(pRequest->request_config, &compare_module, (void *)info);
-            // Copy Request ID in both headers
-            std::string reqId = boost::lexical_cast<std::string>(info->mId);
-            apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
-            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
-            // Backup of info struct in the request context
-            pF->ctx = info;
-        } else if (pF->ctx == (void *)1) {
-            return OK;
-        }
-
-        DupModule::RequestInfo *pBH = static_cast<DupModule::RequestInfo *>(pF->ctx);
-        for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
-             b != APR_BRIGADE_SENTINEL(pB);
-             b = APR_BUCKET_NEXT(b) ) {
-            // Metadata end of stream
-            if ( APR_BUCKET_IS_EOS(b) ) {
-                pF->ctx = (void *)1;
-                break;
-            }
-            const char* lReqPart = NULL;
-            apr_size_t lLength = 0;
-            apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
-            if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
-                continue;
-            }
-            pBH->mBody += std::string(lReqPart, lLength);
-        }
-        apr_brigade_cleanup(pB);
-
-        std::string lReqBody;
-        apr_status_t lStatus =  serializeBody(*pBH, lReqBody);
-        std::stringstream lStringSize;
-        lStringSize << lReqBody.size();
-        apr_table_set(pRequest->headers_in, "Content-Length", lStringSize.str().c_str());
-        apr_brigade_write(pB, ap_filter_flush, pF, lReqBody.c_str(), lReqBody.length() );
-
-        printRequest(pRequest, lReqBody, tConf);
-
-        return lStatus;
+    const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
+    if (( lDupType == NULL ) || ( strcmp("answer", lDupType) != 0) )
+    {
+        return DECLINED;
     }
-    return DECLINED;
+
+
+    struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    if (!tConf) {
+            return DECLINED; // SHOULD NOT HAPPEN
+    }
+    // No context? new request
+    if (!pF->ctx) {
+        DupModule::RequestInfo *info = new DupModule::RequestInfo(getNextReqId());
+        ap_set_module_config(pRequest->request_config, &compare_module, (void *)info);
+        // Copy Request ID in both headers
+        std::string reqId = boost::lexical_cast<std::string>(info->mId);
+        apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
+        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+        // Backup of info struct in the request context
+        pF->ctx = info;
+    } else if (pF->ctx == (void *)1) {
+        return OK;
+    }
+
+    DupModule::RequestInfo *pBH = static_cast<DupModule::RequestInfo *>(pF->ctx);
+    for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
+         b != APR_BRIGADE_SENTINEL(pB);
+         b = APR_BUCKET_NEXT(b) ) {
+        // Metadata end of stream
+        if ( APR_BUCKET_IS_EOS(b) ) {
+            pF->ctx = (void *)1;
+            break;
+        }
+        const char* lReqPart = NULL;
+        apr_size_t lLength = 0;
+        apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
+        if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
+            continue;
+        }
+        pBH->mBody += std::string(lReqPart, lLength);
+    }
+    apr_brigade_cleanup(pB);
+
+    std::string lReqBody;
+    lStatus =  deserializeBody(*pBH, lReqBody);
+    std::stringstream lStringSize;
+    lStringSize << lReqBody.size();
+    apr_table_set(pRequest->headers_in, "Content-Length", lStringSize.str().c_str());
+    apr_brigade_write(pB, ap_filter_flush, pF, lReqBody.c_str(), lReqBody.length() );
+
+    printRequest(pRequest, lReqBody, tConf);
+
+    return lStatus;
 }
 
 /*
@@ -212,6 +216,13 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     {
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
+
+    const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
+    if ( ( lDupType == NULL ) || ( strcmp("answer", lDupType) != 0) )
+    {
+        return DECLINED;
+    }
+
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     assert(tConf);
     // Request answer analyse
@@ -251,7 +262,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         // TODO if (rv) ...;
         if (APR_BUCKET_IS_EOS(currentBucket))
         {
-            Log::debug("il body della risposta duplicata e': %s", req->mResponseBody.c_str());
             apr_brigade_cleanup(ctx->tmpbb);
             delete ctx;
             pFilter->ctx = (void *) -1;
@@ -264,7 +274,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
             //check headers
             apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
-            Log::debug("header della risposta duplicata e': %s", req->mResponseHeader.c_str());
 
 
             //if makeComparison( pOrigin, lResHeaderDup, &pDiffList, &pIgnoreList );

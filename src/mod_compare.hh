@@ -48,14 +48,10 @@ public:
 
     static apr_status_t cleaner(void *self);
 
-    /*
-     * Returns the next random request ID
-     * method is reentrant
-     */
-    unsigned int getNextReqId();
-
-    std::list< unsigned int > mHeaderIgnoreList;
-    std::list< unsigned int > mBodyIgnoreList;
+    std::vector< std::string > mHeaderIgnoreList;
+    std::vector< std::string > mBodyIgnoreList;
+    std::vector< std::string > mHeaderStopList;
+    std::vector< std::string > mBodyStopList;
 };
 
 /**
@@ -101,24 +97,26 @@ apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
 
 /**
- * @brief Set the list of errors to ignore in the comparison of headers
+ * @brief Set the list of errors to ignore in the comparison
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
- * @param pList the list of errors separated by ','
+ * @param pListType the type of list (Header or Body)
+ * @param pValue the value to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setHeaderIgnoreList(cmd_parms* pParams, void* pCfg, const char* pList);
+setIgnoreList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
 
 /**
- * @brief Set the list of errors to ignore in the comparison of bodies
+ * @brief Set the list of errors who stop the comparison
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
- * @param pList the list of errors separated by ','
+ * @param pListType the type of list (Header or Body)
+ * @param pValue the value to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setBodyIgnoreList(cmd_parms* pParams, void* pCfg, const char* pList);
+setStopList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
 
 }
 
