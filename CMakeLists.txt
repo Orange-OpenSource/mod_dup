@@ -83,7 +83,7 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     set(COVERAGE_INFO_FILE ${COVERDIR}/all.info)
     set(COVERAGE_HTML_DIR ${COVERDIR}/html CACHE STRING "genhtml output directory" FORCE)
     set(COVERAGE_HISTORY_PATH ${COVERDIR}/all.history.csv CACHE STRING "Path to the coverage history file" FORCE)
-    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} --coverage)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     target_link_libraries(gcov)
 
     # Run the binary for coverage of the exception in AccessLogParser in case of redirection instead of pipe
