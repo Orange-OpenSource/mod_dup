@@ -20,6 +20,7 @@
 
 #include <list>
 #include <string>
+#include <map>
 
 namespace DupModule {
 
@@ -72,7 +73,7 @@ namespace DupModule {
     /** @brief The body part of the answer */
     std::string mResponseBody;
     /** @brief The header part of the answer of the duplicated request */
-    std::string mDupResponseHeader;
+    std::map<std::string, std::string> mDupResponseHeader;
     /** @brief The body part of the answer of the duplicated request*/
     std::string mDupResponseBody;
 

@@ -25,8 +25,11 @@
 #include <assert.h>
 #include <stdexcept>
 #include <boost/thread/detail/singleton.hpp>
+#include <math.h>
 
 const char *c_UNIQUE_ID = "UNIQUE_ID";
+const size_t SECTION_SIZE_CHARS = 8 ;
+unsigned const MAX_SECTION_SIZE  = pow(10, static_cast<double>(SECTION_SIZE_CHARS))-1;
 
 namespace CompareModule {
 
@@ -53,7 +56,7 @@ void writeDifferences()
  * @param pUniqueID the UNIQUE_ID of the request to check
  * @return true if there are differences, false otherwise
  */
-bool checkCassandraDiff(std::string &pUniqueID)
+void checkCassandraDiff(std::string &pUniqueID)
 {
     typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
 
@@ -64,19 +67,45 @@ bool checkCassandraDiff(std::string &pUniqueID)
     lPairIter = lDiff.equal_range(pUniqueID);
     if ( lPairIter.first ==  lPairIter.second )
     {
-        return false;
+        return;
     }
 
     writeDifferences();
     lDiff.erase(pUniqueID);
+
+}
+
+/**
+ * @brief convert a substring of pString in size_t
+ * @param pString the string from which to extract a substring to convert
+ * @param pLength the length calculated
+ * @return true if the conversion gets success, false otherwise
+ */
+bool getLength(const std::string pString, const size_t pFirst, size_t &pLength )
+{
+    try
+    {
+        pLength =   boost::lexical_cast<unsigned int>( pString.substr(pFirst,SECTION_SIZE_CHARS));
+    }
+    catch (boost::bad_lexical_cast &)
+    {
+        Log::error(12, "Invalid size value");
+        return false;
+    }
+
+    if( pLength > MAX_SECTION_SIZE)
+    {
+        Log::error(12, "Value of length out of range");
+        return false;
+    }
 
     return true;
 }
 
 /**
  * @brief extract the request body, the header answer and the response answer
- * @param pReqInfo object containing the request infos
- * @param lReqBody body of the request
+ * @param pReqInfo info of the original request
+ * @param lReqBody deserialized body to pass on to the next apache module
  * @return a http status
  */
 static apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody)
@@ -84,20 +113,32 @@ static apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::strin
     int BAD_REQUEST = 400;
     size_t lBodyReqSize, lHeaderResSize, lBodyResSize;
 
+    if ( pReqInfo.mBody.size() < 3*SECTION_SIZE_CHARS )
+    {
+        Log::error(11, "Unexpected body format");
+        return BAD_REQUEST;
+    }
+
+    if ( !getLength( pReqInfo.mBody, 0, lBodyReqSize ) )
+    {
+        return BAD_REQUEST;
+    }
+
+    if ( !getLength( pReqInfo.mBody, SECTION_SIZE_CHARS+lBodyReqSize, lHeaderResSize ))
+    {
+        return BAD_REQUEST;
+    }
+
+    if ( !getLength( pReqInfo.mBody, 2*SECTION_SIZE_CHARS + lBodyReqSize + lHeaderResSize, lBodyResSize ) )
+    {
+        return BAD_REQUEST;
+    }
+
     try
     {
-        lBodyReqSize =   boost::lexical_cast<unsigned int>( pReqInfo.mBody.substr(0,8));
-        lHeaderResSize = boost::lexical_cast<unsigned int>( pReqInfo.mBody.substr(8+lBodyReqSize,8));
-        lBodyResSize = boost::lexical_cast<unsigned int>( pReqInfo.mBody.substr(16 + lBodyReqSize + lHeaderResSize,8));
-
-        lReqBody = pReqInfo.mBody.substr(8,lBodyReqSize);
-        pReqInfo.mResponseHeader = pReqInfo.mBody.substr(16 + lBodyReqSize,lHeaderResSize);
-        pReqInfo.mResponseBody = pReqInfo.mBody.substr(24 + lBodyReqSize +  lHeaderResSize, lBodyResSize);
-    }
-    catch (boost::bad_lexical_cast &)
-    {
-        Log::error(12, "Invalid size value");
-        return BAD_REQUEST;
+        lReqBody = pReqInfo.mBody.substr(SECTION_SIZE_CHARS,lBodyReqSize);
+        pReqInfo.mResponseHeader = pReqInfo.mBody.substr(2*SECTION_SIZE_CHARS + lBodyReqSize,lHeaderResSize);
+        pReqInfo.mResponseBody = pReqInfo.mBody.substr(3*SECTION_SIZE_CHARS + lBodyReqSize +  lHeaderResSize, lBodyResSize);
     }
     catch ( const std::out_of_range &oor)
     {
@@ -179,32 +220,13 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
 }
 
 /*
- * Request context used during brigade run
- */
-class RequestContext {
-public:
-    apr_bucket_brigade  *tmpbb;
-
-    RequestContext(ap_filter_t *pFilter) {
-        tmpbb = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
-    }
-
-    ~RequestContext() {
-        apr_brigade_cleanup(tmpbb);
-    }
-};
-
-/*
  * Callback to iterate over the headers tables
  * Pushes a copy of key => value in a list
  */
 static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
-    std::string *lResHeaderLocalWS = reinterpret_cast<std::string *>(d);
+    std::map< std::string, std::string> *lResHeaderLocalWS = reinterpret_cast< std::map< std::string, std::string> *>(d);
 
-    lResHeaderLocalWS->append(key);
-    lResHeaderLocalWS->append(": ");
-    lResHeaderLocalWS->append(value);
-    lResHeaderLocalWS->append("\n");
+    (*lResHeaderLocalWS)[std::string(key)] = std::string(value);
 
     return 1;
 }
@@ -225,21 +247,21 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     assert(tConf);
-    // Request answer analyse
-    RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
-    if (ctx == NULL)
-    {
-        // Context init
-        ctx = new RequestContext(pFilter);
-        pFilter->ctx = ctx;
 
-    }
-    else if (ctx == (void *) -1)
+    if (pFilter->ctx == (void *) -1)
     {
+        apr_brigade_cleanup(pBrigade);
+        apr_table_set(pRequest->headers_out, "Content-Length", "0");
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     DupModule::RequestInfo *req = reinterpret_cast<DupModule::RequestInfo *>(ap_get_module_config(pFilter->r->request_config, &compare_module));
+    if ( req == NULL)
+    {
+        apr_brigade_cleanup(pBrigade);
+        apr_table_set(pRequest->headers_out, "Content-Length", "0");
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
     // Asynchronous push of request WITH the answer
     apr_bucket *currentBucket;
     while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade))
@@ -255,38 +277,28 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         }
         // Remove bucket e from bb.
         APR_BUCKET_REMOVE(currentBucket);
-        // Insert it into  temporary brigade.
-        APR_BRIGADE_INSERT_HEAD(ctx->tmpbb, currentBucket);
-        // Pass brigade downstream.
-        rv = ap_pass_brigade(pFilter->next, ctx->tmpbb);
-        // TODO if (rv) ...;
+
         if (APR_BUCKET_IS_EOS(currentBucket))
         {
-            apr_brigade_cleanup(ctx->tmpbb);
-            delete ctx;
+            apr_brigade_cleanup(pBrigade);
+            apr_table_set(pRequest->headers_out, "Content-Length", "0");
+            rv =  ap_pass_brigade(pFilter->next, pBrigade);
             pFilter->ctx = (void *) -1;
 
             std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
-            if ( checkCassandraDiff(lUniqueID) )
-            {
-                return OK;
-            }
+            checkCassandraDiff(lUniqueID);
 
             //check headers
             apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
-
-
-            //if makeComparison( pOrigin, lResHeaderDup, &pDiffList, &pIgnoreList );
+            //sttring =  makeComparison( pOrigin, lResHeaderDup, &pDiffList, &pIgnoreList );
             // return OK
             ///if makeComparison( pOrigin, lResBodyDup, &pDiffList, &pIgnoreList );
             // return OK
             //write differencies
             //
         }
-        else {
-            apr_brigade_cleanup(ctx->tmpbb);
-        }
     }
+
     return OK;
 }
 
