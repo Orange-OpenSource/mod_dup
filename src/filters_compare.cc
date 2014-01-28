@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <boost/thread/detail/singleton.hpp>
 #include <math.h>
+#include <boost/tokenizer.hpp>
 
 const char *c_UNIQUE_ID = "UNIQUE_ID";
 const size_t SECTION_SIZE_CHARS = 8 ;
@@ -112,6 +113,7 @@ static apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::strin
 {
     int BAD_REQUEST = 400;
     size_t lBodyReqSize, lHeaderResSize, lBodyResSize;
+    std::string lResponseHeader;
 
     if ( pReqInfo.mBody.size() < 3*SECTION_SIZE_CHARS )
     {
@@ -137,13 +139,28 @@ static apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::strin
     try
     {
         lReqBody = pReqInfo.mBody.substr(SECTION_SIZE_CHARS,lBodyReqSize);
-        pReqInfo.mResponseHeader = pReqInfo.mBody.substr(2*SECTION_SIZE_CHARS + lBodyReqSize,lHeaderResSize);
+        lResponseHeader = pReqInfo.mBody.substr(2*SECTION_SIZE_CHARS + lBodyReqSize,lHeaderResSize);
         pReqInfo.mResponseBody = pReqInfo.mBody.substr(3*SECTION_SIZE_CHARS + lBodyReqSize +  lHeaderResSize, lBodyResSize);
     }
     catch ( const std::out_of_range &oor)
     {
         Log::error(13, "Out of range error: %s", oor.what());
         return BAD_REQUEST;
+    }
+
+    //deserialize the response header in a map
+    std::string lDelim(": ");
+    std::string lLine;
+    std::stringstream lHeader;
+    lHeader << lResponseHeader;
+
+    while (std::getline(lHeader, lLine) )
+    {
+        size_t lPos = 0;
+        lPos = lLine.find(lDelim);
+        std::string lKey = lLine.substr( 0, lPos );
+        std::string lValue = lLine.substr( lPos + lDelim.size(), lLine.size() - lPos - lDelim.size() );
+        pReqInfo.mResponseHeader[lKey] = lValue;
     }
 
     return OK;
@@ -290,12 +307,10 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
             //check headers
             apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
-            //sttring =  makeComparison( pOrigin, lResHeaderDup, &pDiffList, &pIgnoreList );
-            // return OK
-            ///if makeComparison( pOrigin, lResBodyDup, &pDiffList, &pIgnoreList );
-            // return OK
-            //write differencies
-            //
+            // call the comparison function for the header (map, map)
+            // write differences
+            // call the comparison function for the body
+            // write differences
         }
     }
 
