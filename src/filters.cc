@@ -65,7 +65,11 @@ earlyHook(request_rec *pRequest) {
         return DECLINED;
     }
 
+<<<<<<< HEAD
     RequestInfo *info = new RequestInfo(getNextReqId());
+=======
+    RequestInfo *info = new RequestInfo(tConf->getNextReqId());
+>>>>>>> response
     // Backup in request context
     ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
 

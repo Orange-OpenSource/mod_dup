@@ -40,9 +40,9 @@ set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 #-----------------------------------------------------------------------------
 
 if(DEBUG)
-  set(CMAKE_CXX_FLAGS "-g -O2 -Wall -std=c++0x")
+	set(CMAKE_CXX_FLAGS "-g -O2 -Wall -std=c++0x -fPIC")
 else()
-  set(CMAKE_CXX_FLAGS "-O2 -Wall -std=c++0x")
+	set(CMAKE_CXX_FLAGS "-O2 -Wall -std=c++0x -fPIC")
 endif()
 
 if(BUILD_COVERAGE)
@@ -80,10 +80,7 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     set(COVERDIR ${CMAKE_BINARY_DIR}/measures/coverage CACHE STRING "Path to the coverage results" FORCE)
     set(COVERAGE_TOP_DIR ${CMAKE_BINARY_DIR})
     set(TEMP_DIR ${CMAKE_BINARY_DIR}/temp)
-    set(COVERAGE_INFO_FILE ${COVERDIR}/all.info)
-    set(COVERAGE_HTML_DIR ${COVERDIR}/html CACHE STRING "genhtml output directory" FORCE)
-    set(COVERAGE_HISTORY_PATH ${COVERDIR}/all.history.csv CACHE STRING "Path to the coverage history file" FORCE)
-    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} --coverage)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     target_link_libraries(gcov)
 
     # Run the binary for coverage of the exception in AccessLogParser in case of redirection instead of pipe
@@ -110,12 +107,22 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     add_custom_target(coverage-clean
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-clean.cmake)
 
+    # Functional test coverage
+    set(COVERDIR ${CMAKE_BINARY_DIR}/measures/functional CACHE STRING "Path to the coverage results" FORCE)
+
+    configure_file(${INPUT_CMAKE_DIR}/coverage-test.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional.cmake IMMEDIATE @ONLY)
+    add_custom_target(coverage-functional
+        COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-functional.cmake)
+
+    configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional-clean.cmake IMMEDIATE @ONLY)
+    add_custom_target(coverage-functional-clean
+        COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-functional-clean.cmake)
 endif()
 
 
-#if(DEBUG)
+if(DEBUG)
   add_definitions(-DDEBUG)
-#endif()
+endif()
 
 # add the binary tree to the search path for include files
 include_directories("${PROJECT_BINARY_DIR}")
@@ -130,3 +137,12 @@ if(BUILD_UNIT_TESTS)
 endif()
 
 add_subdirectory(docs)
+
+file(GLOB mod_keyring_metrics src/*.cc src/*.hh)
+
+add_custom_target(metrics
+COMMAND mkdir -p ${CMAKE_BINARY_DIR}/measures/complexity
+COMMAND pmccabe -vc ${mod_keyring_metrics} 2>/dev/null > ${CMAKE_BINARY_DIR}/measures/complexity/metrics.details.csv;
+COMMAND pmccabe -vTF ${mod_keyring_metrics} 2>/dev/null > ${CMAKE_BINARY_DIR}/measures/complexity/metrics.glob.csv;
+COMMENT "Calculating McCabe Cyclomatic Complexity\nwritten to ${CMAKE_SOURCE_DIR}/measures/complexity/"
+)

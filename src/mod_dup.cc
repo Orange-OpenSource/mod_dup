@@ -79,7 +79,6 @@ DupConf::DupConf()
     srand(time(NULL));
 }
 
-
 /**
  * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it
  * @param pPool the apache pool on which to allocate data
@@ -121,7 +120,6 @@ preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
 int
 postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec * pServer) {
     Log::init();
-
     ap_add_version_component(pPool, c_COMPONENT_VERSION) ;
     return OK;
 }
@@ -348,7 +346,6 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
     return NULL;
 }
 
-
 const char*
 setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -366,9 +363,6 @@ setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
     return NULL;
 }
 
-/**
- * @brief Clean up before the child exits
- */
 apr_status_t
 cleanUp(void *) {
     gThreadPool->stop();
@@ -380,11 +374,6 @@ cleanUp(void *) {
     return APR_SUCCESS;
 }
 
-/**
- * @brief init curl and our own thread pool on child init
- * @param pPool the apache pool
- * @param pServer the apache server record
- */
 void
 childInit(apr_pool_t *pPool, server_rec *pServer) {
 	curl_global_init(CURL_GLOBAL_ALL);
