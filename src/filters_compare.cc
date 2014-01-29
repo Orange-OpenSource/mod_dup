@@ -35,8 +35,9 @@ unsigned const MAX_SECTION_SIZE  = pow(10, static_cast<double>(SECTION_SIZE_CHAR
 namespace CompareModule {
 
 
-static void
-printRequest(request_rec *pRequest, std::string pBody, CompareConf *tConf) {
+void
+printRequest(request_rec *pRequest, std::string pBody)
+{
     const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
     Log::debug("### Uri:%s", pRequest->uri);
@@ -57,7 +58,7 @@ void writeDifferences()
  * @param pUniqueID the UNIQUE_ID of the request to check
  * @return true if there are differences, false otherwise
  */
-void checkCassandraDiff(std::string &pUniqueID)
+bool checkCassandraDiff(std::string &pUniqueID)
 {
     typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
 
@@ -68,11 +69,13 @@ void checkCassandraDiff(std::string &pUniqueID)
     lPairIter = lDiff.equal_range(pUniqueID);
     if ( lPairIter.first ==  lPairIter.second )
     {
-        return;
+        return false;
     }
 
     writeDifferences();
     lDiff.erase(pUniqueID);
+
+    return true;
 
 }
 
@@ -109,33 +112,30 @@ bool getLength(const std::string pString, const size_t pFirst, size_t &pLength )
  * @param lReqBody deserialized body to pass on to the next apache module
  * @return a http status
  */
-static apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody)
+apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody)
 {
     int BAD_REQUEST = 400;
     size_t lBodyReqSize, lHeaderResSize, lBodyResSize;
     std::string lResponseHeader;
-
     if ( pReqInfo.mBody.size() < 3*SECTION_SIZE_CHARS )
     {
         Log::error(11, "Unexpected body format");
         return BAD_REQUEST;
     }
-
     if ( !getLength( pReqInfo.mBody, 0, lBodyReqSize ) )
     {
         return BAD_REQUEST;
     }
-
     if ( !getLength( pReqInfo.mBody, SECTION_SIZE_CHARS+lBodyReqSize, lHeaderResSize ))
     {
         return BAD_REQUEST;
     }
+    lResponseHeader = pReqInfo.mBody.substr(2*SECTION_SIZE_CHARS + lBodyReqSize,lHeaderResSize);
 
     if ( !getLength( pReqInfo.mBody, 2*SECTION_SIZE_CHARS + lBodyReqSize + lHeaderResSize, lBodyResSize ) )
     {
         return BAD_REQUEST;
     }
-
     try
     {
         lReqBody = pReqInfo.mBody.substr(SECTION_SIZE_CHARS,lBodyReqSize);
@@ -148,16 +148,21 @@ static apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::strin
         return BAD_REQUEST;
     }
 
+
     //deserialize the response header in a map
     std::string lDelim(": ");
     std::string lLine;
     std::stringstream lHeader;
     lHeader << lResponseHeader;
-
     while (std::getline(lHeader, lLine) )
     {
         size_t lPos = 0;
         lPos = lLine.find(lDelim);
+        if (lPos == std::string::npos)
+        {
+            Log::error(13, "Invalid Header format ");
+            return BAD_REQUEST;
+        }
         std::string lKey = lLine.substr( 0, lPos );
         std::string lValue = lLine.substr( lPos + lDelim.size(), lLine.size() - lPos - lDelim.size() );
         pReqInfo.mResponseHeader[lKey] = lValue;
@@ -228,10 +233,11 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
     lStatus =  deserializeBody(*pBH, lReqBody);
     std::stringstream lStringSize;
     lStringSize << lReqBody.size();
+#ifndef UNIT_TESTING
     apr_table_set(pRequest->headers_in, "Content-Length", lStringSize.str().c_str());
     apr_brigade_write(pB, ap_filter_flush, pF, lReqBody.c_str(), lReqBody.length() );
-
-    printRequest(pRequest, lReqBody, tConf);
+#endif
+    printRequest(pRequest, lReqBody);
 
     return lStatus;
 }

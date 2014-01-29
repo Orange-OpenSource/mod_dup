@@ -26,7 +26,7 @@ include_directories("../src/")
 include_directories(".")
 
 # UNIT TESTS
-file(GLOB lib_SOURCE_FILES ../src/mod_dup.cc ../src/Log.cc ../src/RequestProcessor.cc ../src/RequestInfo.cc ../src/UrlCodec.cc)
+file(GLOB lib_SOURCE_FILES ../src/mod_dup.cc ../src/mod_compare.cc ../src/filters_compare.cc ../src/Utils.cc ../src/Log.cc ../src/RequestProcessor.cc ../src/RequestInfo.cc ../src/UrlCodec.cc)
 
 add_library(mod_dup_lib SHARED ApacheStubs.cc ApacheCopyPaste.cc urlCodec.cc ${lib_SOURCE_FILES})
 set_target_properties(mod_dup_lib PROPERTIES PREFIX "")
@@ -38,6 +38,7 @@ file(GLOB mod_dup_test_SOURCE_FILES	testThreadPool.cc
   testLog.cc
   testUrlCodec.cc
   testModDup.cc
+  testModCompare.cc
   testRunner.cc)
 
 add_executable(mod_dup_test ${mod_dup_test_SOURCE_FILES})

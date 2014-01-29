@@ -32,6 +32,7 @@
 #include <list>
 
 #include "Log.hh"
+#include "RequestInfo.hh"
 
 extern module AP_DECLARE_DATA compare_module;
 
@@ -117,6 +118,15 @@ setIgnoreList(cmd_parms* pParams, void* pCfg, const char* pListType, const char*
  */
 const char*
 setStopList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
+
+void
+printRequest(request_rec *pRequest, std::string pBody);
+
+bool checkCassandraDiff(std::string &pUniqueID);
+
+bool getLength(const std::string pString, const size_t pFirst, size_t &pLength );
+
+apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody);
 
 }
 
