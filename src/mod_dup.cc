@@ -33,6 +33,7 @@
 #include <sstream>
 #include <sys/syscall.h>
 
+
 #include "mod_dup.hh"
 
 namespace alg = boost::algorithm;
@@ -51,31 +52,15 @@ const char *c_COMPONENT_VERSION = "Dup/1.0";
 const char* c_UNIQUE_ID = "UNIQUE_ID";
 
 namespace DuplicationType {
-
-    const char* c_HEADER_ONLY =                 "HEADER_ONLY";
-    const char* c_COMPLETE_REQUEST =            "COMPLETE_REQUEST";
-    const char* c_REQUEST_WITH_ANSWER =         "REQUEST_WITH_ANSWER";
-    const char* c_ERROR_ON_STRING_VALUE =       "Invalid Duplication Type Value. Supported Values: HEADER_ONLY | COMPLETE_REQUEST | REQUEST_WITH_ANSWER" ;
-
-    eDuplicationType stringToEnum(const char *value) throw (std::exception){
-        if (!strcmp(value, c_HEADER_ONLY)) {
-            return HEADER_ONLY;
-        }
-        if (!strcmp(value, c_COMPLETE_REQUEST)) {
-            return COMPLETE_REQUEST;
-        }
-        if (!strcmp(value, c_REQUEST_WITH_ANSWER)) {
-            return REQUEST_WITH_ANSWER;
-        }
-        throw std::exception();
-    }
-}
+    extern const char* c_ERROR_ON_STRING_VALUE;   
+};
 
 DupConf::DupConf()
     : currentApplicationScope(ApplicationScope::HEADER)
     , dirName(NULL)
     , currentDupDestination()
-    , currentDuplicationType(DuplicationType::HEADER_ONLY) {
+    , mCurrentDuplicationType(DuplicationType::NONE)
+    , mHighestDuplicationType(DuplicationType::NONE) {
     srand(time(NULL));
 }
 
@@ -106,6 +91,15 @@ unsigned int DupConf::getNextReqId() {
         Log::error(5, "Error on number randomisation");
     return lRandNum;
 }
+
+void DupConf::setCurrentDuplicationType(DuplicationType::eDuplicationType dt)
+{
+    mCurrentDuplicationType = dt;
+    if ( dt > mHighestDuplicationType ) {
+        mHighestDuplicationType = dt;
+    }
+}
+
 
 void *
 createDirConfig(apr_pool_t *pPool, char *pDirName)
@@ -311,7 +305,7 @@ setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
     assert(conf);
 
     try {
-        conf->currentDuplicationType = DuplicationType::stringToEnum(pDupType);
+        conf->setCurrentDuplicationType(DuplicationType::stringToEnum(pDupType));
     } catch (std::exception e) {
         return DuplicationType::c_ERROR_ON_STRING_VALUE;
     }
@@ -494,8 +488,12 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
+    
+    // Here we want to be almost the last filter
     ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
-    ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_CONNECTION);
+    
+    // And now one of the first
+    ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
     ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);

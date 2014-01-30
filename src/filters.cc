@@ -61,8 +61,10 @@ earlyHook(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     assert(tConf);
     if (!tConf->dirName) {
+//        Log::warn(1,"declined earlyHook in directory %s %p", pRequest->uri, pRequest);
         return DECLINED;
     }
+//    Log::warn(1,"in earlyHook in directory %s %p", pRequest->uri, pRequest);
 
     RequestInfo *info = new RequestInfo(tConf->getNextReqId());
     // Backup in request context
@@ -88,6 +90,7 @@ earlyHook(request_rec *pRequest) {
     while (!extractBrigadeContent(bb, pRequest, info->mBody)){
         apr_brigade_cleanup(bb);
     }
+//    Log::warn(1,"Extracted body: %s", info->mBody.c_str());
     apr_brigade_cleanup(bb);
     // Body read :)
 
@@ -113,6 +116,10 @@ earlyHook(request_rec *pRequest) {
     return DECLINED;
 }
 
+
+/**
+ * Reinject the body we saved in earlyHook into a brigade
+ */
 apr_status_t
 inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
@@ -124,8 +131,11 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
     }
     if (!pF->ctx) {
         apr_bucket_brigade *bb = apr_brigade_create(pF->r->pool, pF->c->bucket_alloc);
-        if (info->mBody.size()) {
-            apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size());
+        if (! info->mBody.empty()) {
+            // Log::warn(1,"Reinjecting a body in a brigade: %s",  info->mBody.c_str());
+            if ( apr_brigade_write(bb, NULL, NULL, info->mBody.c_str(), info->mBody.size()) != APR_SUCCESS ) {
+                // Log::warn(1,"Failed to write a body in a brigade: %s",  info->mBody.c_str());                
+            }
         }
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         APR_BRIGADE_INSERT_TAIL(bb, e);
@@ -145,9 +155,10 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
  * Pushes a copy of key => value in a list
  */
 static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+    // Log::warn(1,"key %s, value %s", key, value);
     RequestInfo::tHeaders *headers = reinterpret_cast<RequestInfo::tHeaders *>(d);
     headers->push_back(std::pair<std::string, std::string>(key, value));
-    return 0;
+    return 1;
 }
 
 static void
@@ -211,13 +222,28 @@ public:
     }
 };
 
+
+/**
+ * Here we can get the response body and finally duplicate or not
+ */
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
     if (!pRequest || !pRequest->per_dir_config)
         return ap_pass_brigade(pFilter->next, pBrigade);
+    
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
-    assert(tConf);
+    if ( (! tConf) || (! tConf->dirName) ) {
+         // Log::warn(1,"exiting outputFilterHandler in directory %s %p", pRequest->uri, pRequest);
+         return ap_pass_brigade(pFilter->next, pBrigade);       
+    }
+    // Log::warn(1,"doing outputFilterHandler in directory %s %p", pRequest->uri, pRequest);
+
+    if ( tConf->getHighestDuplicationType() == DuplicationType::NONE ) {
+        // Log::warn(1,"exiting outputFilterHandler because of dup type NONE in directory %s %p", pRequest->uri, pRequest);
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+        
     // Request answer analyse
     RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
     if (ctx == NULL) {
@@ -233,7 +259,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
-    if (gProcessor->highestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
+    // We need to get the highest one as we haven't matched which rule it is yet
+    if (tConf->getHighestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
         // Asynchronous push of request WITHOUT the answer
         RequestInfo *rH = ctx->mReq;
         prepareRequestInfo(tConf, pRequest, *rH, false);

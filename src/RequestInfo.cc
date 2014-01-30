@@ -18,8 +18,37 @@
 
 #include <assert.h>
 #include "RequestInfo.hh"
+#include <string.h>
 
 namespace DupModule {
+    
+    namespace DuplicationType {
+            // String representation of the Duplicationtype values
+        const char* c_NONE =                        "NONE";
+        const char* c_HEADER_ONLY =                 "HEADER_ONLY";
+        const char* c_COMPLETE_REQUEST =            "COMPLETE_REQUEST";
+        const char* c_REQUEST_WITH_ANSWER =         "REQUEST_WITH_ANSWER";
+        /// Duplication type mismatch value error
+        const char* c_ERROR_ON_STRING_VALUE =       "Invalid Duplication Type Value. Supported Values: HEADER_ONLY | COMPLETE_REQUEST | REQUEST_WITH_ANSWER" ;
+
+        eDuplicationType stringToEnum(const char *value) throw (std::exception){
+            if (!strcmp(value, c_NONE)) {
+                return NONE;
+            }
+            if (!strcmp(value, c_HEADER_ONLY)) {
+                return HEADER_ONLY;
+            }
+            if (!strcmp(value, c_COMPLETE_REQUEST)) {
+                return COMPLETE_REQUEST;
+            }
+            if (!strcmp(value, c_REQUEST_WITH_ANSWER)) {
+                return REQUEST_WITH_ANSWER;
+            }
+            throw std::exception();
+        }
+        
+    };
+
 
 RequestInfo::RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *pBody)
     : mPoison(false),

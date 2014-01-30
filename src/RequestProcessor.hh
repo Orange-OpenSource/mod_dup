@@ -183,20 +183,11 @@ namespace DupModule {
         /** @brief The url codec */
         boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
 
-        /** The highest duplication type registered */
-        DuplicationType::eDuplicationType               mHighestDuplicationType;
-
     public:
 	/**
 	 * @brief Constructs a RequestProcessor
 	 */
 	RequestProcessor();
-
-        /*
-         * @brief Answer collection needed?
-         * @return true if one of the filters or raw filters duplicates with the answer
-         */
-        DuplicationType::eDuplicationType highestDuplicationType() const;
 
 	/**
 	 * @brief Set the timeout
