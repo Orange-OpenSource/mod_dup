@@ -68,6 +68,10 @@ namespace DupModule {
     std::string mBody;
     /** @brief The query answer */
     std::string mAnswer;
+    /** @brief The header part of the query */
+    std::map< std::string, std::string > mReqHeader;
+    /** @brief The header part of the query */
+    std::string mReqBody;
     /** @brief The header part of the answer */
     std::map< std::string, std::string >  mResponseHeader;
     /** @brief The body part of the answer */

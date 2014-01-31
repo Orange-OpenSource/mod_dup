@@ -30,6 +30,8 @@
 #include <queue>
 #include <unistd.h>
 #include <list>
+#include <fstream>
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 #include "Log.hh"
 #include "RequestInfo.hh"
@@ -37,6 +39,8 @@
 extern module AP_DECLARE_DATA compare_module;
 
 namespace CompareModule {
+extern std::ofstream gFile;
+extern boost::interprocess::named_mutex gMutex;//(boost::interprocess::open_or_create, "global_mutex");
 
 /**
  * A class that holds the configuration specific to the location
@@ -53,6 +57,7 @@ public:
     std::vector< std::string > mBodyIgnoreList;
     std::vector< std::string > mHeaderStopList;
     std::vector< std::string > mBodyStopList;
+
 };
 
 /**
@@ -126,7 +131,15 @@ bool checkCassandraDiff(std::string &pUniqueID);
 
 bool getLength(const std::string pString, const size_t pFirst, size_t &pLength );
 
-apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody);
+apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo);
+
+void childInit(apr_pool_t *pPool, server_rec *pServer);
+
+void writeDifferences(const DupModule::RequestInfo &pReqInfo);
+
+void map2string(const std::map< std::string, std::string> &pMap, std::string &pString);
+
+int iterateOverHeadersCallBack(void *d, const char *key, const char *value);
 
 }
 

@@ -37,6 +37,9 @@ class TestModCompare :
     CPPUNIT_TEST(testGetLength);
     CPPUNIT_TEST(testDeserializeBody);
     CPPUNIT_TEST(testInputFilterHandler);
+    CPPUNIT_TEST(testMap2string);
+    CPPUNIT_TEST(testIterOverHeader);
+    CPPUNIT_TEST(testWriteDifferences);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -48,5 +51,8 @@ public:
     void testGetLength();
     void testDeserializeBody();
     void testInputFilterHandler();
+    void testMap2string();
+    void testIterOverHeader();
+    void testWriteDifferences();
 
 };

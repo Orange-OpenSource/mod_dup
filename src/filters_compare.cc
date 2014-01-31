@@ -27,13 +27,13 @@
 #include <boost/thread/detail/singleton.hpp>
 #include <math.h>
 #include <boost/tokenizer.hpp>
+#include <iomanip>
 
 const char *c_UNIQUE_ID = "UNIQUE_ID";
 const size_t SECTION_SIZE_CHARS = 8 ;
 unsigned const MAX_SECTION_SIZE  = pow(10, static_cast<double>(SECTION_SIZE_CHARS))-1;
 
 namespace CompareModule {
-
 
 void
 printRequest(request_rec *pRequest, std::string pBody)
@@ -44,13 +44,37 @@ printRequest(request_rec *pRequest, std::string pBody)
     Log::debug("### Request args: %s", pRequest->args);
 }
 
+void map2string(const std::map< std::string, std::string> &pMap, std::string &pString) {
+
+    std::map< std::string, std::string>::const_iterator lIter;
+    for ( lIter = pMap.begin(); lIter != pMap.end(); ++lIter )
+    {
+        pString += lIter->first + ": " + lIter->second + "\n";
+    }
+
+}
+
 /**
  * @brief write response differences in a file
- * @param
+ * @param pReqInfo info of the original request
+ * @param pFile file to write in, by default it is the global file gFile
  */
-void writeDifferences()
+void writeDifferences(const DupModule::RequestInfo &pReqInfo)
 {
-
+    std::string lDupRespHeader, lRespHeader, lReqHeader;
+    map2string( pReqInfo.mResponseHeader, lRespHeader );
+    map2string( pReqInfo.mDupResponseHeader, lDupRespHeader );
+    map2string( pReqInfo.mReqHeader, lReqHeader );
+    gMutex.lock();
+    gFile << std::setfill('0') << std::setw(8) << lReqHeader.length() << lReqHeader.c_str();
+    gFile << std::setfill('0') << std::setw(8) << pReqInfo.mReqBody.length() << pReqInfo.mReqBody.c_str();
+    gFile << std::setfill('0') << std::setw(8) << lRespHeader.length() << lRespHeader.c_str();
+    gFile << std::setfill('0') << std::setw(8) << pReqInfo.mResponseBody.length() << pReqInfo.mResponseBody.c_str();
+    gFile << std::setfill('0') << std::setw(8) << lDupRespHeader.length() << lDupRespHeader.c_str();
+    gFile << std::setfill('0') << std::setw(8) << pReqInfo.mDupResponseBody.length() << pReqInfo.mDupResponseBody.c_str();
+    gFile << "\n\n";
+    gFile.flush();
+    gMutex.unlock();
 }
 
 /**
@@ -72,7 +96,7 @@ bool checkCassandraDiff(std::string &pUniqueID)
         return false;
     }
 
-    writeDifferences();
+    //write differences in file
     lDiff.erase(pUniqueID);
 
     return true;
@@ -109,10 +133,9 @@ bool getLength(const std::string pString, const size_t pFirst, size_t &pLength )
 /**
  * @brief extract the request body, the header answer and the response answer
  * @param pReqInfo info of the original request
- * @param lReqBody deserialized body to pass on to the next apache module
  * @return a http status
  */
-apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReqBody)
+apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo)
 {
     int BAD_REQUEST = 400;
     size_t lBodyReqSize, lHeaderResSize, lBodyResSize;
@@ -138,7 +161,7 @@ apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReq
     }
     try
     {
-        lReqBody = pReqInfo.mBody.substr(SECTION_SIZE_CHARS,lBodyReqSize);
+        pReqInfo.mReqBody = pReqInfo.mBody.substr(SECTION_SIZE_CHARS,lBodyReqSize);
         lResponseHeader = pReqInfo.mBody.substr(2*SECTION_SIZE_CHARS + lBodyReqSize,lHeaderResSize);
         pReqInfo.mResponseBody = pReqInfo.mBody.substr(3*SECTION_SIZE_CHARS + lBodyReqSize +  lHeaderResSize, lBodyResSize);
     }
@@ -172,6 +195,18 @@ apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo, std::string &lReq
 
 }
 
+/*
+ * Callback to iterate over the headers tables
+ * Pushes a copy of key => value in a list
+ */
+int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+    std::map< std::string, std::string> *lHeader = reinterpret_cast< std::map< std::string, std::string> *>(d);
+
+    (*lHeader)[std::string(key)] = std::string(value);
+
+    return 1;
+}
+
 apr_status_t
 inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
@@ -186,7 +221,7 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
-    if (( lDupType == NULL ) || ( strcmp("answer", lDupType) != 0) )
+    if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
         return DECLINED;
     }
@@ -210,7 +245,7 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         return OK;
     }
 
-    DupModule::RequestInfo *pBH = static_cast<DupModule::RequestInfo *>(pF->ctx);
+    DupModule::RequestInfo *lBH = static_cast<DupModule::RequestInfo *>(pF->ctx);
     for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
          b != APR_BRIGADE_SENTINEL(pB);
          b = APR_BUCKET_NEXT(b) ) {
@@ -225,34 +260,23 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
             continue;
         }
-        pBH->mBody += std::string(lReqPart, lLength);
+        lBH->mBody += std::string(lReqPart, lLength);
     }
     apr_brigade_cleanup(pB);
 
-    std::string lReqBody;
-    lStatus =  deserializeBody(*pBH, lReqBody);
+    lStatus =  deserializeBody(*lBH);
     std::stringstream lStringSize;
-    lStringSize << lReqBody.size();
+    lStringSize << lBH->mReqBody.size();
 #ifndef UNIT_TESTING
     apr_table_set(pRequest->headers_in, "Content-Length", lStringSize.str().c_str());
-    apr_brigade_write(pB, ap_filter_flush, pF, lReqBody.c_str(), lReqBody.length() );
+    apr_brigade_write(pB, ap_filter_flush, pF, lBH->mReqBody.c_str(), lBH->mReqBody.length() );
 #endif
-    printRequest(pRequest, lReqBody);
+    apr_table_do(&iterateOverHeadersCallBack, &(lBH->mReqHeader), pRequest->headers_in, NULL);
+    printRequest(pRequest, lBH->mReqBody);
 
     return lStatus;
 }
 
-/*
- * Callback to iterate over the headers tables
- * Pushes a copy of key => value in a list
- */
-static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
-    std::map< std::string, std::string> *lResHeaderLocalWS = reinterpret_cast< std::map< std::string, std::string> *>(d);
-
-    (*lResHeaderLocalWS)[std::string(key)] = std::string(value);
-
-    return 1;
-}
 
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
@@ -263,7 +287,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
-    if ( ( lDupType == NULL ) || ( strcmp("answer", lDupType) != 0) )
+    if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
         return DECLINED;
     }
@@ -311,12 +335,14 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
             checkCassandraDiff(lUniqueID);
 
-            //check headers
+            //write headers in Map
             apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
             // call the comparison function for the header (map, map)
             // write differences
             // call the comparison function for the body
             // write differences
+            writeDifferences(*req);
+
         }
     }
 

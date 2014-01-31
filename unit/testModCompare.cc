@@ -22,6 +22,9 @@
 #include <http_protocol.h>
 #include <algorithm>
 #include <boost/thread/detail/singleton.hpp>
+#include <fstream>
+#include <iterator>
+#include <iostream>
 
 #include <apr_pools.h>
 #include <apr_hooks.h>
@@ -39,10 +42,11 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION( TestModCompare );
 
-extern module AP_DECLARE_DATA compare_module;
+//extern module AP_DECLARE_DATA compare_module;
 
 using namespace CompareModule;
 
+extern std::ofstream CompareModule::gFile;
 
 //////////////////////////////////////////////////////////////
 // Dummy implementations of apache funcs
@@ -161,41 +165,91 @@ void TestModCompare::testDeserializeBody()
     apr_status_t lStatus;
     apr_status_t BAD_REQUEST = 400;
     DupModule::RequestInfo lReqInfo;
-    std::string lBody;
 
     // case1: body size too small
     lReqInfo.mBody = ("zfz");
-    lStatus = deserializeBody(lReqInfo, lBody);
+    lStatus = deserializeBody(lReqInfo);
     CPPUNIT_ASSERT(lStatus == BAD_REQUEST);
 
     // case2: Unexpected body format for the first 8 characters
     lReqInfo.mBody = "00aze012dadadada00000002totototo00000125";
-    lStatus = deserializeBody(lReqInfo, lBody);
+    lStatus = deserializeBody(lReqInfo);
     CPPUNIT_ASSERT(lStatus == BAD_REQUEST);
 
     // case3: Unexpected format for the size of response header (characters 000kk002)
     lReqInfo.mBody = "00000002da000kk002totototo00000125";
-    lStatus = deserializeBody(lReqInfo, lBody);
+    lStatus = deserializeBody(lReqInfo);
     CPPUNIT_ASSERT(lStatus == BAD_REQUEST);
 
     // case4: Unexpected format for the size of response body (characters 000000d4)
     lReqInfo.mBody = "00000002da00000004toto000000d4tutu";
-    lStatus = deserializeBody(lReqInfo, lBody);
+    lStatus = deserializeBody(lReqInfo);
     CPPUNIT_ASSERT(lStatus == BAD_REQUEST);
 
     // case5: invalid header format
     lReqInfo.mBody = "00000002da00000004toto00000004tutu";
-    lStatus = deserializeBody(lReqInfo, lBody);
+    lStatus = deserializeBody(lReqInfo);
     CPPUNIT_ASSERT(lStatus == BAD_REQUEST);
 
     // case6: OK
     lReqInfo.mBody.clear();
     lReqInfo.mBody = "00000002da00000021toto: good\ntiti: bad\n00000004tutu";
-    lStatus = deserializeBody(lReqInfo, lBody);
+    lStatus = deserializeBody(lReqInfo);
     CPPUNIT_ASSERT(lStatus == OK);
-    CPPUNIT_ASSERT(lBody.compare("da") == 0);
+    CPPUNIT_ASSERT(lReqInfo.mReqBody.compare("da") == 0);
 
 
+}
+
+void TestModCompare::testMap2string()
+{
+    std::map< std::string, std::string> lMap;
+    std::string lString;
+    lMap["Maradona"] = "TheBest";
+    lMap["Pele"] = "GoodPlayer";
+    lMap["toto"] = "titi";
+
+    map2string(lMap, lString);
+    CPPUNIT_ASSERT( lString == "Maradona: TheBest\nPele: GoodPlayer\ntoto: titi\n");
+}
+
+
+void TestModCompare::testIterOverHeader()
+{
+    std::map< std::string, std::string> lMap;
+    iterateOverHeadersCallBack( &lMap, "Maradona", "TheBest");
+    iterateOverHeadersCallBack( &lMap, "Pele", "GoodPlayer");
+    iterateOverHeadersCallBack( &lMap, "toto", "titi");
+
+    CPPUNIT_ASSERT( lMap.find("Maradona") != lMap.end() );
+    CPPUNIT_ASSERT( lMap.find("Pele") != lMap.end() );
+    CPPUNIT_ASSERT( lMap.find("toto") != lMap.end() );
+}
+
+void TestModCompare::testWriteDifferences()
+{
+    gFile.open("/home/dgiampaglia/workspace/test/Maradona.txt", std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
+    DupModule::RequestInfo lReqInfo;
+    lReqInfo.mReqHeader["Toto"]= "titi";  //size = 11
+    lReqInfo.mReqHeader["Tutu"]= "tete";  //size = 11
+    lReqInfo.mReqBody = "Request Body";   //size = 12
+    lReqInfo.mResponseHeader["pippo"]= "poppi";  //size = 12
+    lReqInfo.mResponseHeader["puppu"]= "peppe";  //size = 13
+    lReqInfo.mResponseBody = "Response Body";  //size = 13
+    lReqInfo.mDupResponseHeader["Nice"]= "Nizza";  //size = 12
+    lReqInfo.mDupResponseHeader["Paris"]= "Parigi";  //size = 14
+    lReqInfo.mDupResponseBody = "Dup Response Body";  //size = 17
+
+    writeDifferences(lReqInfo);
+    gFile.close();
+
+    gFile.open("/home/dgiampaglia/workspace/test/Maradona.txt", std::ofstream::in | std::ofstream::out );
+    std::stringstream buffer;
+    buffer << gFile.rdbuf() ;
+
+    // size of header + bodies + 48(representing the size of each part) + 2( \n \n )
+    size_t lTotal = 11 + 11 + 12 + 13 + 13 + 13 + 12 + 14 + 17 + 48 + 2;
+    CPPUNIT_ASSERT( lTotal == buffer.str().size() );
 }
 
 

@@ -27,12 +27,15 @@
 #include <unistd.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
 #include <exception>
 #include <set>
 #include <sstream>
 #include <sys/syscall.h>
 #include <algorithm>
 #include <boost/tokenizer.hpp>
+#include <fstream>
+
 
 #include "mod_compare.hh"
 
@@ -46,6 +49,10 @@ namespace CompareModule {
 const char *gName = "Compare";
 const char *c_COMPONENT_VERSION = "Compare/1.0";
 const char* c_UNIQUE_ID = "UNIQUE_ID";
+
+std::ofstream gFile;
+const char * gFilePath;
+boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, "global_mutex");
 
 
 CompareConf::CompareConf() {
@@ -85,6 +92,20 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
 
     ap_add_version_component(pPool, c_COMPONENT_VERSION) ;
     return OK;
+}
+
+apr_status_t
+closeFile(void *) {
+
+    gFile.close();
+    return APR_SUCCESS;
+}
+
+void
+childInit(apr_pool_t *pPool, server_rec *pServer)
+{
+    gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
+    apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeFile);
 }
 
 /**
@@ -163,6 +184,24 @@ setIgnoreList(cmd_parms* pParams, void* pCfg, const char* pListType, const char*
     return NULL;
 }
 
+/**
+ * @brief Set the list of errors to ignore in the comparison
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pListType the type of list (Header or Body)
+ * @param pValue the value to insert in the list
+ * @return NULL if parameters are valid, otherwise a string describing the error
+ */
+const char*
+setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
+    if (!pPath || strlen(pPath) == 0) {
+        return "Missing path value";
+    }
+
+    gFilePath = pPath;
+
+    return NULL;
+}
 
 /** @brief Declaration of configuration commands */
 command_rec gCmds[] = {
@@ -181,6 +220,11 @@ command_rec gCmds[] = {
                     0,
                     ACCESS_CONF,
                     "List of errors to ignore in the comparison."),
+        AP_INIT_TAKE1("FilePath",
+                    reinterpret_cast<const char *(*)()>(&setFilePath),
+                    0,
+                    ACCESS_CONF,
+                    "Path of file where the differences will be logged."),
     {0}
 };
 
@@ -192,6 +236,7 @@ void
 registerHooks(apr_pool_t *pPool) {
 #ifndef UNIT_TESTING
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
 #endif
