@@ -57,7 +57,6 @@ void map2string(const std::map< std::string, std::string> &pMap, std::string &pS
 /**
  * @brief write response differences in a file
  * @param pReqInfo info of the original request
- * @param pFile file to write in, by default it is the global file gFile
  */
 void writeDifferences(const DupModule::RequestInfo &pReqInfo)
 {
