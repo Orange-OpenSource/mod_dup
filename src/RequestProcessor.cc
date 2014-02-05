@@ -507,16 +507,17 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
             if (toSet.size()) {
                 apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
                 ++count;
+                Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
             }
-            Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+
         }
         if (ctx.mScope & ApplicationScope::BODY) {
             std::string toSet = regex_replace(rInfo.mBody, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             if (toSet.size()) {
                 apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
                 ++count;
+                Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
             }
-            Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
         }
     }
     return count;

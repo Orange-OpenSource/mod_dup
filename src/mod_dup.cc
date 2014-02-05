@@ -52,7 +52,7 @@ const char *c_COMPONENT_VERSION = "Dup/1.0";
 const char* c_UNIQUE_ID = "UNIQUE_ID";
 
 namespace DuplicationType {
-    extern const char* c_ERROR_ON_STRING_VALUE;   
+    extern const char* c_ERROR_ON_STRING_VALUE;
 };
 
 DupConf::DupConf()
@@ -106,7 +106,7 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
     void *addr= apr_palloc(pPool, sizeof(class DupConf));
     new (addr) DupConf();
-    apr_pool_cleanup_register(pPool, addr, cleaner<DupConf>,  NULL);
+    apr_pool_cleanup_register(pPool, addr, cleaner<DupConf>, apr_pool_cleanup_null);
     return addr;
 }
 
@@ -464,7 +464,6 @@ static void insertInputFilter(request_rec *pRequest) {
     assert(tConf);
     if (tConf->dirName) {
         ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
-        ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
     }
 }
 
@@ -487,15 +486,14 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_pre_config(preConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
-    ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
-    
+
     // Here we want to be almost the last filter
     ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
-    
+
     // And now one of the first
     ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
-    ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_FIRST);
+    ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_MIDDLE);
 #endif
