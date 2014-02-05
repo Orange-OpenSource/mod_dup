@@ -22,12 +22,12 @@
 
 namespace DupModule {
 
-const unsigned int max_bytes = 8192;
+const unsigned int CMaxBytes = 8192;
 
 static bool
 extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
     if (ap_get_brigade(pRequest->input_filters,
-                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, max_bytes) == APR_SUCCESS) {
+                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) == APR_SUCCESS) {
         // Read brigade content
         for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
              b != APR_BRIGADE_SENTINEL(bb);
@@ -57,10 +57,12 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
 
 
 int
-earlyHook(request_rec *pRequest) {
+translateHook(request_rec *pRequest) {
+    if (!pRequest->per_dir_config)
+        return DECLINED;
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
-    assert(tConf);
-    if (!tConf->dirName) {
+    if (!tConf || !tConf->dirName) {
+        // Not a location that we treat, we decline the request
         return DECLINED;
     }
     RequestInfo *info = new RequestInfo(tConf->getNextReqId());
@@ -139,6 +141,7 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
     if (!pF->ctx) {
         if (!info->mBody.empty()) {
             apr_status_t st;
+            Log::warn(1, "Wrote body to brigade: %s",  info->mBody.c_str());
             if ((st = apr_brigade_write(pB, NULL, NULL, info->mBody.c_str(), info->mBody.size())) != APR_SUCCESS ) {
                 Log::warn(1, "Failed to write request body in a brigade: %s",  info->mBody.c_str());
                 return st;

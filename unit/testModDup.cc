@@ -22,9 +22,7 @@
 #include <http_request.h>
 #include <http_protocol.h>
 
-#include "MultiThreadQueue.hh"
 #include "testModDup.hh"
-#include "mod_dup.hh"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -37,27 +35,6 @@ extern module AP_DECLARE_DATA dup_module;
 
 using namespace DupModule;
 
-
-//////////////////////////////////////////////////////////////
-// Dummy implementations of apache funcs
-/////////////////////////////////////////////////////////////
-apr_status_t
-ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *){
-    return OK;
-}
-
-const apr_bucket_type_t 	apr_bucket_type_eos = apr_bucket_type_t();
-apr_bucket_brigade * 	apr_brigade_create (apr_pool_t *, apr_bucket_alloc_t *){
-    return NULL;
-}
-
-apr_status_t 	apr_brigade_cleanup (void *){
-    return OK;
-}
-//////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-
-
 namespace DupModule {
 
     RequestProcessor *gProcessor;
@@ -65,22 +42,6 @@ namespace DupModule {
     std::set<std::string> gActiveLocations;
 
 
-    template <typename QueueT>
-    class DummyThreadPool : public ThreadPool<QueueT> {
-    public:
-        typedef boost::function1<void, MultiThreadQueue<QueueT> &> tQueueWorker;
-
-        std::list<QueueT> mDummyQueued;
-
-        //DummyThreadPool(int pWorker, const QueueT &pPoisonItem) : ThreadPool<QueueT>(pWorker, pPoisonItem) {
-        DummyThreadPool(tQueueWorker pWorker, const QueueT &pPoisonItem) : ThreadPool<QueueT>(pWorker, pPoisonItem) {
-        }
-
-        void
-        push(const QueueT &pItem) {
-            mDummyQueued.push_back(pItem);
-        }
-    };
 
 }
 
@@ -248,24 +209,4 @@ void TestModDup::testDuplicationType()
 
     // // Incorrect value
     // CPPUNIT_ASSERT(setDuplicationType(lParms, (void *)&conf, "incorrect_vALUE"));
-}
-
-void TestModDup::testContextEnrichment()
-{
-
-    cmd_parms * lParms = getParms();
-    lParms->path = new char[10];
-    strcpy(lParms->path, "/spp/main");
-    // Pointer to a boolean meant to activate the module on a given path
-    DupConf *conf = new DupConf();
-
-
-    // Correct insert
-    CPPUNIT_ASSERT(!setEnrichContext(lParms, (void *)&conf,
-                                     "myVar", "toMatch", "toSet"));
-
-    // Invalid regex
-    CPPUNIT_ASSERT(setEnrichContext(lParms, (void *)&conf,
-                                     "myVar", "toM**(atch", "toSet"));
-
 }

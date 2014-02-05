@@ -92,14 +92,23 @@ unsigned int DupConf::getNextReqId() {
     return lRandNum;
 }
 
-void DupConf::setCurrentDuplicationType(DuplicationType::eDuplicationType dt)
-{
+void
+DupConf::setCurrentDuplicationType(DuplicationType::eDuplicationType dt) {
     mCurrentDuplicationType = dt;
     if ( dt > mHighestDuplicationType ) {
         mHighestDuplicationType = dt;
     }
 }
 
+DuplicationType::eDuplicationType
+DupConf::getCurrentDuplicationType() const {
+    return mCurrentDuplicationType;
+}
+
+DuplicationType::eDuplicationType
+DupConf::getHighestDuplicationType() const {
+    return mHighestDuplicationType;
+}
 
 void *
 createDirConfig(apr_pool_t *pPool, char *pDirName)
@@ -493,7 +502,7 @@ registerHooks(apr_pool_t *pPool) {
     // And now one of the first
     ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
-    ap_hook_translate_name(&earlyHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
+    ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_MIDDLE);
 #endif

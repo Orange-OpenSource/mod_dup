@@ -70,14 +70,15 @@ public:
      * method is reentrant
      */
     unsigned int                               getNextReqId();
-    
+
     void setCurrentDuplicationType(DuplicationType::eDuplicationType dt);
-    
-    DuplicationType::eDuplicationType getCurrentDuplicationType() const {return mCurrentDuplicationType;};
-    DuplicationType::eDuplicationType getHighestDuplicationType() const {return mHighestDuplicationType;};
-    
+
+    DuplicationType::eDuplicationType getCurrentDuplicationType() const;
+    DuplicationType::eDuplicationType getHighestDuplicationType() const;
+
 private:
-        /** @brief the current duplication type*/
+
+    /** @brief the current duplication type*/
     DuplicationType::eDuplicationType          mCurrentDuplicationType;
 
     /** @brief the highest duplication type based on successive current ones*/
@@ -234,30 +235,29 @@ const char*
 setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType);
 
 /*
- * Read the request body
+ * Read the request body ans stores it in a RequestInfo object in the request context
  * Enrich the request context for mod_rewrite
- * Store the request body in the request context for further use with the input filter
  */
 int
-earlyHook(request_rec *r);
+translateHook(request_rec *r);
 
 /**
- * @brief the input filter callback
+ * @brief the source input filter callback
+ * This filter is placed first in the chain and serves the body stored in a RequestInfo object in the request context
+ * to the other filters
  */
-apr_status_t
-inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
-
-
 apr_status_t
 inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
 
-
-/** @brief the output filter callback
- * Plugged only in REQUEST_WITH_ANSWER mode
+/**
+ * @brief the output filter callback
  */
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
 
+/*
+ * Method that calls the destructor of an object which type is templated
+ */
 template <class T>
 apr_status_t
 cleaner(void *self) {

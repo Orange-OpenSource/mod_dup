@@ -38,7 +38,9 @@ file(GLOB mod_dup_test_SOURCE_FILES	testThreadPool.cc
   testLog.cc
   testUrlCodec.cc
   testModDup.cc
-  testRunner.cc)
+  testRunner.cc
+  testContextEnrichment.cc
+)
 
 add_executable(mod_dup_test ${mod_dup_test_SOURCE_FILES})
 target_link_libraries(mod_dup_test mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES})

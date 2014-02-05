@@ -27,50 +27,31 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "MultiThreadQueue.hh"
-#include "mod_dup.hh"
-
 #ifdef CPPUNIT_HAVE_NAMESPACES
 using namespace CPPUNIT_NS;
 #endif
 
-class TestModDup :
+
+class TestContextEnrichment :
     public TestFixture
 {
 
-    CPPUNIT_TEST_SUITE(TestModDup);
-    CPPUNIT_TEST(testInit);
-    CPPUNIT_TEST(testConfig);
-    CPPUNIT_TEST(testRequestHandler);
-    CPPUNIT_TEST(testScope);
-    CPPUNIT_TEST(testDuplicationType);
-    CPPUNIT_TEST(testInitAndCleanUp);
+    CPPUNIT_TEST_SUITE(TestContextEnrichment);
+    CPPUNIT_TEST(testConfiguration);
+    CPPUNIT_TEST(testEnrichHeader);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    cmd_parms* getParms();
-    void testInit();
-    void testInitAndCleanUp();
-    void testConfig();
-    void testRequestHandler();
-    void testScope();
-    void testDuplicationType();
 
-};
+    /**
+     * Tests that the configuration behavior is correct
+     */
+    void testConfiguration();
+    void testEnrichHeader();
 
+    void setUp();
+    void tearDown();
 
-template <typename QueueT>
-class DummyThreadPool : public DupModule::ThreadPool<QueueT> {
-public:
-    typedef boost::function1<void, DupModule::MultiThreadQueue<QueueT> &> tQueueWorker;
-
-    std::list<QueueT> mDummyQueued;
-
-    DummyThreadPool(tQueueWorker pWorker, const QueueT &pPoisonItem) : DupModule::ThreadPool<QueueT>(pWorker, pPoisonItem) {
-    }
-
-    void
-    push(const QueueT &pItem) {
-        mDummyQueued.push_back(pItem);
-    }
+private:
+    cmd_parms * mParms;
 };

@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -129,5 +129,22 @@ AP_DECLARE(ap_filter_t *) ap_add_input_filter(const char *name, void *ctx,
 {
 	return NULL;
 }
+
+apr_status_t
+ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *)
+{
+    return OK;
+}
+
+const apr_bucket_type_t 	apr_bucket_type_eos = apr_bucket_type_t();
+apr_bucket_brigade * 	apr_brigade_create (apr_pool_t *, apr_bucket_alloc_t *)
+{
+    return NULL;
+}
+
+apr_status_t 	apr_brigade_cleanup (void *){
+    return OK;
+}
+
 
 unixd_config_rec unixd_config;

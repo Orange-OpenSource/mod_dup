@@ -32,6 +32,7 @@ typedef void CURL;
 struct request_rec;
 
 class TestRequestProcessor;
+class TestContextEnrichment;
 
 namespace DupModule {
 
@@ -340,6 +341,7 @@ namespace DupModule {
         performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
 
         friend class ::TestRequestProcessor;
+        friend class ::TestContextEnrichment;
     };
 
 
