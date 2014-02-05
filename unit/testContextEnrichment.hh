@@ -38,7 +38,9 @@ class TestContextEnrichment :
 
     CPPUNIT_TEST_SUITE(TestContextEnrichment);
     CPPUNIT_TEST(testConfiguration);
+    CPPUNIT_TEST(testEnrichBody);
     CPPUNIT_TEST(testEnrichHeader);
+    CPPUNIT_TEST(testEnrichBoth);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -47,10 +49,25 @@ public:
      * Tests that the configuration behavior is correct
      */
     void testConfiguration();
+
+    /**
+     * Tests that the enrichement is OK with the application on request headers
+     */
     void testEnrichHeader();
 
-    void setUp();
-    void tearDown();
+    /**
+     * Tests that the enrichement is OK with the application on the request body
+     */
+    void testEnrichBody();
+
+    /**
+     * Tests that the enrichement is OK with the application on request headers and body
+     */
+    void testEnrichBoth();
+
+
+    virtual void setUp();
+    virtual void tearDown();
 
 private:
     cmd_parms * mParms;

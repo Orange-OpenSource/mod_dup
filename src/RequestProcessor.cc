@@ -505,18 +505,21 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
         if (ctx.mScope & ApplicationScope::HEADER) {
             std::string toSet = regex_replace(rInfo.mArgs, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             if (toSet.size()) {
-                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
-                ++count;
                 Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+#ifndef UNIT_TESTING
+                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+#endif
+                ++count;
             }
-
         }
         if (ctx.mScope & ApplicationScope::BODY) {
             std::string toSet = regex_replace(rInfo.mBody, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             if (toSet.size()) {
-                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
-                ++count;
                 Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+#ifndef UNIT_TESTING
+                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+#endif
+               ++count;
             }
         }
     }
