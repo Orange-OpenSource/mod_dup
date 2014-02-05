@@ -20,6 +20,7 @@
 
 #include <boost/regex.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <curl/curl.h>
 #include <string>
 #include <map>
 #include <apr_pools.h>
@@ -27,6 +28,7 @@
 #include "MultiThreadQueue.hh"
 #include "RequestInfo.hh"
 #include "UrlCodec.hh"
+
 
 typedef void CURL;
 struct request_rec;
@@ -183,6 +185,12 @@ namespace DupModule {
 
         /** @brief The url codec */
         boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
+
+        void
+        sendInBody(CURL *curl, curl_slist *&slist, const std::string &toSend) const;
+
+        std::string *
+        sendDupFormat(CURL *curl, const RequestInfo &rInfo, curl_slist *&slist) const;
 
     public:
 	/**

@@ -30,7 +30,6 @@ class TestRequestProcessor :
 
     CPPUNIT_TEST_SUITE(TestRequestProcessor);
     CPPUNIT_TEST(init);
-
     CPPUNIT_TEST(testParseArgs);
     CPPUNIT_TEST(testFilter);
     CPPUNIT_TEST(testSubstitution);
@@ -38,8 +37,8 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testRun);
     CPPUNIT_TEST(testFilterBasic);
     CPPUNIT_TEST(testRawSubstitution);
+    CPPUNIT_TEST(testDupFormat);
     CPPUNIT_TEST(testContextEnrichment);
-
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -54,4 +53,8 @@ public:
     void testRawSubstitution();
     void testContextEnrichment();
 
+    /**
+     * Tests that the a duplicated request respects the dup format
+     */
+    void testDupFormat();
 };
