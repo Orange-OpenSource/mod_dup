@@ -61,11 +61,8 @@ earlyHook(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     assert(tConf);
     if (!tConf->dirName) {
-        Log::warn(1,"declined earlyHook in directory %s %p", pRequest->uri, pRequest);
         return DECLINED;
     }
-    Log::warn(1,"in earlyHook in directory %s %p", pRequest->uri, pRequest);
-
     RequestInfo *info = new RequestInfo(tConf->getNextReqId());
     // Backup in request context
     ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
@@ -90,7 +87,6 @@ earlyHook(request_rec *pRequest) {
     while (!extractBrigadeContent(bb, pRequest, info->mBody)){
         apr_brigade_cleanup(bb);
     }
-//    Log::warn(1,"Extracted body: %s", info->mBody.c_str());
     apr_brigade_cleanup(bb);
     // Body read :)
 
@@ -125,34 +121,33 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
 {
 
     request_rec *pRequest = pF->r;
-    Log::warn(1,"InputFilterB2B %p", pF);
     if (!pRequest || !pRequest->per_dir_config) {
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         assert(e);
         APR_BRIGADE_INSERT_TAIL(pB, e);
+        return APR_SUCCESS;
     }
     // Retrieve request info from context
     RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
     if (!info) {
-        Log::warn(1,"no info");
+        // Should not happen
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         assert(e);
         APR_BRIGADE_INSERT_TAIL(pB, e);
-        // TODO HANDLE ERROR
         return APR_SUCCESS;
     }
     if (!pF->ctx) {
         if (!info->mBody.empty()) {
-            Log::warn(1,"Reinjecting a body in a brigade: %s",  info->mBody.c_str());
-            if (apr_brigade_write(pB, NULL, NULL, info->mBody.c_str(), info->mBody.size()) != APR_SUCCESS ) {
-                Log::warn(1,"Failed to write a body in a brigade: %s",  info->mBody.c_str());
+            apr_status_t st;
+            if ((st = apr_brigade_write(pB, NULL, NULL, info->mBody.c_str(), info->mBody.size())) != APR_SUCCESS ) {
+                Log::warn(1, "Failed to write request body in a brigade: %s",  info->mBody.c_str());
+                return st;
             }
         }
+        // Marks the body as sent
         pF->ctx = (void *) -1;
-        // CLEANUP?
-        return APR_SUCCESS;
     }
-    Log::warn(1,"=== SENDING EOS");
+    // Marks that we do not have any more data to read
     apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
     assert(e);
     APR_BRIGADE_INSERT_TAIL(pB, e);
@@ -205,17 +200,6 @@ public:
         mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
         mReq = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config,
                                                                     &dup_module));
-        assert(mReq);
-
-        // A previous request exists. It never be pushed, therefore we clean the requestinfo struct
-        if (pFilter->r->prev) {
-            RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->prev->request_config,
-                                                                    &dup_module));
-            if (info) {
-                delete info;
-                ap_set_module_config(pFilter->r->prev->request_config, &dup_module, NULL);
-            }
-        }
     }
 
     RequestContext()
@@ -237,34 +221,23 @@ public:
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
-    Log::warn(1,"OutputFilterHandler in directory %s %p", pRequest->uri, pRequest);
+    // Reject requests that do not meet our requirements
     if (!pRequest || !pRequest->per_dir_config)
         return ap_pass_brigade(pFilter->next, pBrigade);
 
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
-    if ( (! tConf) || (! tConf->dirName) ) {
-
+    if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
          return ap_pass_brigade(pFilter->next, pBrigade);
-    }
-    // Log::warn(1,"doing outputFilterHandler in directory %s %p", pRequest->uri, pRequest);
-
-    if ( tConf->getHighestDuplicationType() == DuplicationType::NONE ) {
-        // Log::warn(1,"exiting outputFilterHandler because of dup type NONE in directory %s %p", pRequest->uri, pRequest);
-        return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     // Request answer analyse
     RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
     if (ctx == NULL) {
-        // Context init
+        // First pass in the output filter => context init
         ctx = new RequestContext(pFilter);
-        if (ctx->mReq->mAnswer.size()) {
-            // Happens after a rewrite
-            pFilter->ctx = (void *) -1;
-            return ap_pass_brigade(pFilter->next, pBrigade);
-        }
         pFilter->ctx = ctx;
     } else if (ctx == (void *) -1) {
+        // Output filter already did his job, we return
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
