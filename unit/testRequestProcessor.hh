@@ -39,6 +39,10 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testRawSubstitution);
     CPPUNIT_TEST(testDupFormat);
     CPPUNIT_TEST(testContextEnrichment);
+    CPPUNIT_TEST(testRequestInfo);
+    CPPUNIT_TEST(testKeySubstitutionOnBody);
+    CPPUNIT_TEST(testTimeout);
+
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -52,6 +56,13 @@ public:
     void testFilterBasic();
     void testRawSubstitution();
     void testContextEnrichment();
+    void testRequestInfo();
+    void testTimeout();
+
+    /**
+     * Tests the key substitution on the request body
+     */
+    void testKeySubstitutionOnBody();
 
     /**
      * Tests that the a duplicated request respects the dup format

@@ -77,6 +77,27 @@ void TestModDup::testInitAndCleanUp()
     cleanUp(NULL);
     CPPUNIT_ASSERT(!gProcessor);
     CPPUNIT_ASSERT(!gThreadPool);
+
+    // Cleaner test
+
+    class Dummy {
+    public:
+        Dummy(int &r) : mR(r) {
+            mR = 0;
+        }
+
+        ~Dummy(){
+            mR = 42;
+        }
+
+        int &mR;
+    };
+
+    int test;
+    Dummy d(test);
+    cleaner<Dummy>((void *)&d);
+    CPPUNIT_ASSERT_EQUAL(42, test);
+
 }
 
 void TestModDup::testRequestHandler()
@@ -158,17 +179,35 @@ void TestModDup::testConfig()
     CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, ""));
     CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost"));
 
+    // Substitutions
     CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)lDoHandle, "toto", "toto", "titi"));
-
-    // Invalid regexp
     CPPUNIT_ASSERT(setSubstitute(lParms, (void *)lDoHandle, "toto", "*t(oto", "titi"));
+    CPPUNIT_ASSERT(!setRawSubstitute(lParms, (void *)lDoHandle, "toMatch", "toReplace"));
+    CPPUNIT_ASSERT(setRawSubstitute(lParms, (void *)lDoHandle, "toMatchInvalid(", "toReplace"));
 
+    // Filters
     CPPUNIT_ASSERT(!setFilter(lParms, (void *)lDoHandle, "titi", "toto"));
-
-    // Invalid regexp
     CPPUNIT_ASSERT(setFilter(lParms, (void *)lDoHandle, "titi", "*toto"));
+    CPPUNIT_ASSERT(!setRawFilter(lParms, (void *)lDoHandle, "Filter"));
+    CPPUNIT_ASSERT(setRawFilter(lParms, (void *)lDoHandle, "InvalidFilter("));
+
+    // Program name tests
+    CPPUNIT_ASSERT(!setName(lParms, (void *)lDoHandle, "ProgramName"));
+    CPPUNIT_ASSERT(setName(lParms, (void *)lDoHandle, ""));
+    CPPUNIT_ASSERT(setName(lParms, (void *)lDoHandle, NULL));
+
+    // Timeout tests
+    CPPUNIT_ASSERT(!setTimeout(lParms, (void *) lDoHandle, "1400"));
+    CPPUNIT_ASSERT(setTimeout(lParms, (void *) lDoHandle, "what??"));
+
+    // URL codec
+    CPPUNIT_ASSERT(!setUrlCodec(lParms, (void *) lDoHandle, "Apache"));
+    CPPUNIT_ASSERT(setUrlCodec(lParms, (void *) lDoHandle, ""));
+    CPPUNIT_ASSERT(setUrlCodec(lParms, (void *) lDoHandle, NULL));
 
     CPPUNIT_ASSERT(!setActive(lParms, lDoHandle));
+
+
 
     delete lParms->path;
 }
@@ -187,6 +226,14 @@ void TestModDup::testScope()
     CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "ALL"));
     CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->currentApplicationScope);
 
+    // Switching to HEADER
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "HEADER"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->currentApplicationScope);
+
+    // Switching to BODY
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "BODY"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::BODY, conf->currentApplicationScope);
+
     // Incorrect value
     CPPUNIT_ASSERT(setApplicationScope(lParms, (void *)conf, "incorrect_vALUE"));
 }
@@ -198,15 +245,46 @@ void TestModDup::testDuplicationType()
     strcpy(lParms->path, "/spp/main");
     DupConf *conf = new DupConf();
 
-    // TODO M
+    // Default value
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::NONE, conf->getCurrentDuplicationType());
 
-    // // Default value
-    // CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, DuplicationType::value);
+    // Switching to COMPLETE_REQUEST
+    CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)conf, "COMPLETE_REQUEST"));
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, conf->getCurrentDuplicationType());
 
-    // // Switching to COMPLETE_REQUEST
-    // CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)&conf, "COMPLETE_REQUEST"));
-    // CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, DuplicationType::value);
+    // Switching to REQUEST_WITH_ANSWER
+    CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)conf, "REQUEST_WITH_ANSWER"));
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::REQUEST_WITH_ANSWER, conf->getCurrentDuplicationType());
 
-    // // Incorrect value
-    // CPPUNIT_ASSERT(setDuplicationType(lParms, (void *)&conf, "incorrect_vALUE"));
+    // Switching to NONE
+    CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)conf, "NONE"));
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::NONE, conf->getCurrentDuplicationType());
+
+    // Switching to HEADER_ONLY
+    CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)conf, "HEADER_ONLY"));
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::HEADER_ONLY, conf->getCurrentDuplicationType());
+
+    // Incorrect value
+    CPPUNIT_ASSERT(setDuplicationType(lParms, (void *)conf, "incorrect_vALUE"));
+}
+
+void TestModDup::testHighestDuplicationType()
+{
+    cmd_parms * lParms = getParms();
+    lParms->path = new char[10];
+    strcpy(lParms->path, "/spp/main");
+    DupConf *conf = new DupConf();
+
+    // Default value
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::NONE, conf->getHighestDuplicationType());
+
+    // Switching to COMPLETE_REQUEST
+    CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)conf, "COMPLETE_REQUEST"));
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, conf->getHighestDuplicationType());
+
+    // Should NOT go back to HEADER_ONLY
+    CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)conf, "HEADER_ONLY"));
+    CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, conf->getHighestDuplicationType());
+
+
 }

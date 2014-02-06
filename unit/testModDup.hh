@@ -44,6 +44,7 @@ class TestModDup :
     CPPUNIT_TEST(testRequestHandler);
     CPPUNIT_TEST(testScope);
     CPPUNIT_TEST(testDuplicationType);
+    CPPUNIT_TEST(testHighestDuplicationType);
     CPPUNIT_TEST(testInitAndCleanUp);
     CPPUNIT_TEST_SUITE_END();
 
@@ -55,6 +56,7 @@ public:
     void testRequestHandler();
     void testScope();
     void testDuplicationType();
+    void testHighestDuplicationType();
 
 };
 

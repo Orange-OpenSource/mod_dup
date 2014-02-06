@@ -56,11 +56,6 @@ RequestProcessor::setTimeout(const unsigned int &pTimeout) {
     mTimeout = pTimeout;
 }
 
-bool
-RequestInfo::hasBody() const {
-    return mBody.size();
-}
-
 const unsigned int
 RequestProcessor::getTimeoutCount() {
 	// Atomic read + reset
@@ -334,7 +329,6 @@ const tFilter *
 RequestProcessor::processRequest(RequestInfo &pRequest) {
     const std::string &pConfPath = pRequest.mConfPath;
     std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(pConfPath);
-//        Log::warn(1,"Process request");
 
     // No filters for this path
     if (it == mCommands.end() || (!it->second.mFilters.size() && !it->second.mRawFilters.size()))
@@ -348,7 +342,6 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
     // Tests if at least one active filter matches
     const tFilter* matchedFilter = NULL;
     if (!(matchedFilter = argsMatchFilter(pRequest, lCommands, lParsedArgs))) {
- //       Log::warn(1,"No args match filter");
         return NULL;
     }
 

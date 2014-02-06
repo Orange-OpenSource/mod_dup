@@ -21,7 +21,7 @@
 #include <string.h>
 
 namespace DupModule {
-    
+
     namespace DuplicationType {
             // String representation of the Duplicationtype values
         const char* c_NONE =                        "NONE";
@@ -46,7 +46,7 @@ namespace DupModule {
             }
             throw std::exception();
         }
-        
+
     };
 
 
@@ -72,6 +72,11 @@ RequestInfo::RequestInfo() :
 bool
 RequestInfo::isPoison() const {
     return mPoison;
+}
+
+bool
+RequestInfo::hasBody() const {
+    return mBody.size();
 }
 
 

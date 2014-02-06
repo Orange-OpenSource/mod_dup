@@ -471,3 +471,44 @@ void TestRequestProcessor::testDupFormat() {
     delete df;
 
 }
+
+void TestRequestProcessor::testRequestInfo() {
+    RequestInfo ri = RequestInfo(10, "/path", "/path", "arg1=value1");
+    CPPUNIT_ASSERT(!ri.hasBody());
+    ri.mBody = "sdf";
+    CPPUNIT_ASSERT(ri.hasBody());
+}
+
+void TestRequestProcessor::testTimeout() {
+    RequestProcessor proc;
+    MultiThreadQueue<RequestInfo *> queue;
+
+    DupConf conf;
+    conf.currentApplicationScope = ApplicationScope::ALL;
+    conf.currentDupDestination = "Honolulu:8080";
+    proc.addFilter("/spp/main", "SID", "mySid", conf);
+
+    queue.push(new RequestInfo(1,"/spp/main", "/spp/main", "SID=mySid"));
+    queue.push(&POISON_REQUEST);
+    proc.run(queue);
+
+    CPPUNIT_ASSERT_EQUAL((unsigned int)1, proc.getDuplicatedCount());
+}
+
+void TestRequestProcessor::testKeySubstitutionOnBody()
+{
+    RequestProcessor proc;
+    std::string query;
+    DupConf conf;
+    conf.currentApplicationScope =  ApplicationScope::BODY;
+    proc.addRawFilter("/toto", ".*", conf);
+    proc.addSubstitution("/toto", "titi", "value", "replacedValue", conf);
+
+    query = "titi=value&tutu=tatae";
+    RequestInfo ri = RequestInfo(10, "/toto", "/toto", query);
+    ri.mBody = "key1=what??&titi=value";
+
+    CPPUNIT_ASSERT(proc.processRequest(ri));
+    CPPUNIT_ASSERT_EQUAL(std::string("titi=value&tutu=tatae"), ri.mArgs);
+    CPPUNIT_ASSERT_EQUAL(std::string("KEY1=what%3f%3f&TITI=replacedValue"), ri.mBody);
+}

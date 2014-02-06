@@ -167,6 +167,18 @@ const char*
 setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pMatch, const char* pReplace);
 
 /**
+ * @brief Add a raw substitution definition
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pMatch the regexp matching what should be replaced
+ * @param pReplace the value which the match should be replaced with
+ * @return NULL if parameters are valid, otherwise a string describing the error
+ */
+const char*
+setRawSubstitute(cmd_parms* pParams, void* pCfg,
+                 const char* pMatch, const char* pReplace);
+
+/**
  * @brief Add a substitution definition
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
@@ -190,6 +202,16 @@ const char*
 setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter);
 
 /**
+ * @brief Add a Raw filter definition
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pFilter a reg exp which has to match for this request to be duplicated
+ * @return NULL if parameters are valid, otherwise a string describing the error
+ */
+const char*
+setRawFilter(cmd_parms* pParams, void* pCfg, const char* pFilter);
+
+/**
  * @brief Activate duplication
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
@@ -197,6 +219,19 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
  */
 const char*
 setActive(cmd_parms* pParams, void* pCfg);
+
+/**
+ * @brief Sets the program name to use in the logs
+ * @return NULL
+ */
+const char*
+setName(cmd_parms* pParams, void* pCfg, const char* pName);
+
+/*
+ * @brief Sets the URL codec to use during the request duplication process
+ */
+const char*
+setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec);
 
 /**
  * @brief Clean up before the child exits

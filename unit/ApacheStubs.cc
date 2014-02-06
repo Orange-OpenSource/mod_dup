@@ -36,6 +36,8 @@
 #include <cstring>
 #include <cassert>
 
+unixd_config_rec unixd_config;
+
 AP_DECLARE_NONSTD(int) ap_rprintf( request_rec *r, const char *fmt, ...)
 {
     assert( r != NULL );
@@ -63,7 +65,6 @@ AP_DECLARE_NONSTD(int) ap_rprintf( request_rec *r, const char *fmt, ...)
 
      return n;
 };
-
 
 AP_DECLARE(int) ap_is_initial_req(request_rec *r)
 {
@@ -146,5 +147,13 @@ apr_status_t 	apr_brigade_cleanup (void *){
     return OK;
 }
 
+apr_bucket * 	apr_bucket_eos_create (apr_bucket_alloc_t *list) {
 
-unixd_config_rec unixd_config;
+}
+
+apr_bucket_alloc_t* apr_bucket_alloc_create(apr_pool_t *p){
+
+}
+apr_status_t 	apr_brigade_write (apr_bucket_brigade *b, apr_brigade_flush flush, void *ctx, const char *str, apr_size_t nbyte) {
+
+}
