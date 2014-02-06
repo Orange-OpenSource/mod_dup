@@ -132,6 +132,25 @@ void TestFilters::translateHook() {
      delete conf;
  }
 
+ {
+     // NOMINAL CASE REQUEST + MASSIVE BODY
+     DupConf *conf = new DupConf;
+     request_rec *req = prep_request_rec();
+     ap_set_module_config(req->per_dir_config, &dup_module, conf);
+     conf->dirName = strdup("/spp/main");
+     bodyServed = 0;
+
+     req->input_filters = (ap_filter_t *)(void *) 0x43;
+     CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
+
+     RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(req->request_config, &dup_module));
+     CPPUNIT_ASSERT(info);
+
+     CPPUNIT_ASSERT_EQUAL(std::string(testBody43p1) + std::string(testBody43p2), info->mBody);
+     delete conf;
+ }
+
+
 }
 
 
