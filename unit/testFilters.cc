@@ -17,6 +17,7 @@
 */
 
 #include "RequestProcessor.hh"
+#define CORE_PRIVATE
 #include <httpd.h>
 #include <http_config.h>
 #include <http_request.h>
@@ -67,7 +68,73 @@ void TestFilters::tearDown() {
     // delete mParms;
 }
 
-void TestFilters::extractBrigadeContent() {
+static request_rec *prep_request_rec() {
+    request_rec *req = new request_rec;
+    memset(req, 0, sizeof(*req));
+    apr_pool_t *pool = NULL;
+    apr_pool_create(&pool, 0);
+    req->per_dir_config = (ap_conf_vector_t *)apr_pcalloc(pool, sizeof(void *) * 42);
+    req->request_config = (ap_conf_vector_t *)apr_pcalloc(pool, sizeof(void *) * 42);
+    req->connection = (conn_rec *)apr_pcalloc(pool, sizeof(*(req->connection)));
+    req->connection->pool = pool;
+    req->headers_in = apr_table_make(pool, 42);
+    req->headers_out = apr_table_make(pool, 42);
+    return req;
+}
 
+
+void TestFilters::translateHook() {
+
+{
+    // TESTS ALL THE DECLINED POSSIBILITIES AND THE EMPTY REQUEST
+    request_rec *req = new request_rec;
+    memset(req, 0, sizeof(*req));
+
+    // No per_dir_config
+    CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
+
+
+    DupConf *conf = new DupConf;
+    apr_pool_t *pool = NULL;
+    apr_pool_create(&pool, 0);
+    req->per_dir_config = (ap_conf_vector_t *)apr_pcalloc(pool, sizeof(void *) * 42);
+    req->request_config = (ap_conf_vector_t *)apr_pcalloc(pool, sizeof(void *) * 42);
+    req->connection = (conn_rec *)apr_pcalloc(pool, sizeof(*(req->connection)));
+    ap_set_module_config(req->per_dir_config, &dup_module, conf);
+    // Conf without dirName set in per_dir_config
+    CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
+
+    // Conf in an active location
+    conf->dirName = strdup("/spp/main");
+    CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
+
+    req->connection->pool = pool;
+    req->headers_in = apr_table_make(pool, 42);
+    req->headers_out = apr_table_make(pool, 42);
+    CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
+    delete conf;
+ }
+
+ {
+     // NOMINAL CASE REQUEST + BODY
+     DupConf *conf = new DupConf;
+     request_rec *req = prep_request_rec();
+     ap_set_module_config(req->per_dir_config, &dup_module, conf);
+     conf->dirName = strdup("/spp/main");
+
+     req->input_filters = (ap_filter_t *)(void *) 0x42;
+     CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
+
+     RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(req->request_config, &dup_module));
+     CPPUNIT_ASSERT(info);
+     delete conf;
+ }
 
 }
+
+
+
+
+
+
+

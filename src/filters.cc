@@ -60,7 +60,7 @@ int
 translateHook(request_rec *pRequest) {
     if (!pRequest->per_dir_config)
         return DECLINED;
-    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     if (!tConf || !tConf->dirName) {
         // Not a location that we treat, we decline the request
         return DECLINED;
@@ -102,15 +102,6 @@ translateHook(request_rec *pRequest) {
     info->mArgs = pRequest->args ? pRequest->args : "";
     gProcessor->enrichContext(pRequest, *info);
 
-    // If the request has a previous member
-    // It means it has been rewritten
-    if (pRequest->prev) {
-        RequestInfo *prev = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->prev->request_config,
-                                                                                 &dup_module));
-        if (prev) {
-            info->mBody = prev->mBody;
-        }
-    }
     return DECLINED;
 }
 

@@ -117,12 +117,28 @@ AP_CORE_DECLARE(ap_conf_vector_t *) ap_create_request_config(apr_pool_t *p)
 }
 
 AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
-                                        apr_bucket_brigade *bucket,
+                                        apr_bucket_brigade *bb,
                                         ap_input_mode_t mode,
                                         apr_read_type_e block,
                                         apr_off_t readbytes)
 {
-	return APR_SUCCESS;
+
+    apr_pool_t *pool = NULL;
+    apr_pool_create(&pool, 0);
+    apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
+
+
+    // No filter, simply forge an EOS
+    if ((void *)filter == (void *)0x42) {
+        // We request a real test brigade
+
+        std::string body = "I am the body 42";
+        assert(apr_brigade_write(bb, NULL, NULL, body.c_str(), body.size()) == APR_SUCCESS);
+    }
+    apr_bucket *e = apr_bucket_eos_create(bA);
+    assert(e);
+    APR_BRIGADE_INSERT_TAIL(bb, e);
+    return APR_SUCCESS;
 }
 
 AP_DECLARE(ap_filter_t *) ap_add_input_filter(const char *name, void *ctx,
@@ -135,25 +151,4 @@ apr_status_t
 ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *)
 {
     return OK;
-}
-
-const apr_bucket_type_t 	apr_bucket_type_eos = apr_bucket_type_t();
-apr_bucket_brigade * 	apr_brigade_create (apr_pool_t *, apr_bucket_alloc_t *)
-{
-    return NULL;
-}
-
-apr_status_t 	apr_brigade_cleanup (void *){
-    return OK;
-}
-
-apr_bucket * 	apr_bucket_eos_create (apr_bucket_alloc_t *list) {
-
-}
-
-apr_bucket_alloc_t* apr_bucket_alloc_create(apr_pool_t *p){
-
-}
-apr_status_t 	apr_brigade_write (apr_bucket_brigade *b, apr_brigade_flush flush, void *ctx, const char *str, apr_size_t nbyte) {
-
 }
