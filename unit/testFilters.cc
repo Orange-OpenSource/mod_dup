@@ -41,31 +41,31 @@ extern module AP_DECLARE_DATA dup_module;
 using namespace DupModule;
 
 void TestFilters::setUp() {
-    // mParms = new cmd_parms;
-    // server_rec * lServer = new server_rec;
+    mParms = new cmd_parms;
+    server_rec * lServer = new server_rec;
 
-    // memset(mParms, 0, sizeof(cmd_parms));
-    // memset(lServer, 0, sizeof(server_rec));
-    // mParms->server = lServer;
-    // apr_pool_create(&mParms->pool, 0);
+    memset(mParms, 0, sizeof(cmd_parms));
+    memset(lServer, 0, sizeof(server_rec));
+    mParms->server = lServer;
+    apr_pool_create(&mParms->pool, 0);
 
-    // // Complete init
-    // registerHooks(mParms->pool);
-    // gProcessor = new RequestProcessor();
-    // CPPUNIT_ASSERT(gProcessor);
-    // gThreadPool = new DummyThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
-    // CPPUNIT_ASSERT(gThreadPool);
+    // Complete init
+    registerHooks(mParms->pool);
+    gProcessor = new RequestProcessor();
+    CPPUNIT_ASSERT(gProcessor);
+    gThreadPool = new DummyThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
+    CPPUNIT_ASSERT(gThreadPool);
 
-    // childInit(mParms->pool, mParms->server);
-    // preConfig(NULL, NULL, NULL);
-    // postConfig(mParms->pool, mParms->pool, mParms->pool, mParms->server);
+    childInit(mParms->pool, mParms->server);
+    preConfig(NULL, NULL, NULL);
+    postConfig(mParms->pool, mParms->pool, mParms->pool, mParms->server);
 
 }
 
 void TestFilters::tearDown() {
-    // delete gThreadPool;
-    // delete gProcessor;
-    // delete mParms;
+    delete gThreadPool;
+    delete gProcessor;
+    delete mParms;
 }
 
 static request_rec *prep_request_rec() {
@@ -77,6 +77,8 @@ static request_rec *prep_request_rec() {
     req->request_config = (ap_conf_vector_t *)apr_pcalloc(pool, sizeof(void *) * 42);
     req->connection = (conn_rec *)apr_pcalloc(pool, sizeof(*(req->connection)));
     req->connection->pool = pool;
+    req->connection->bucket_alloc = apr_bucket_alloc_create(pool);
+
     req->headers_in = apr_table_make(pool, 42);
     req->headers_out = apr_table_make(pool, 42);
     return req;
@@ -150,8 +152,113 @@ void TestFilters::translateHook() {
      delete conf;
  }
 
-
 }
+
+template<class T>
+T *memSet(T *addr, char c = 0) {
+    memset(addr, c, sizeof(T));
+    return addr;
+}
+
+namespace DupModule {
+bool extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content);
+};
+
+
+void TestFilters::inputFilterBody2BrigadeTest() {
+
+{
+    // NO PER_DIR_CONFIG
+    request_rec *req = prep_request_rec();
+
+    ap_filter_t *filter = new ap_filter_t;
+    memSet(filter);
+    apr_pool_t *pool = NULL;
+    apr_pool_create(&pool, 0);
+    filter->r = req;
+    filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+    filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+    apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+    req->per_dir_config = NULL;
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, inputFilterBody2Brigade(filter, bb, AP_MODE_READBYTES,
+                                                           APR_BLOCK_READ, 8192));
+ }
+
+ {
+    // MISSING INFO CASE
+    request_rec *req = prep_request_rec();
+
+    ap_filter_t *filter = new ap_filter_t;
+    memSet(filter);
+    apr_pool_t *pool = NULL;
+    apr_pool_create(&pool, 0);
+    filter->r = req;
+    filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+    filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+    apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, inputFilterBody2Brigade(filter, bb, AP_MODE_READBYTES,
+                                                           APR_BLOCK_READ, 8192));
+ }
+
+ {
+     // NOMINAL CASE WITH A SMALL BODY
+     request_rec *req = prep_request_rec();
+
+     ap_filter_t *filter = new ap_filter_t;
+     memSet(filter);
+     apr_pool_t *pool = NULL;
+     apr_pool_create(&pool, 0);
+     filter->r = req;
+     filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+     filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+     apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+
+     RequestInfo *info = new RequestInfo(42);
+     ap_set_module_config(req->request_config, &dup_module, (void *)info);
+
+     info->mBody = testBody42;
+     CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, inputFilterBody2Brigade(filter, bb, AP_MODE_READBYTES,
+                                                               APR_BLOCK_READ, 8192));
+
+
+     // Compare the brigade content to what should have been sent
+     std::string result;
+     extractBrigadeContent(bb, req, result);
+     CPPUNIT_ASSERT_EQUAL(result, std::string(testBody42));
+ }
+
+ {
+     // NOMINAL CASE WITH A MASSIVE BODY
+     request_rec *req = prep_request_rec();
+
+     ap_filter_t *filter = new ap_filter_t;
+     memSet(filter);
+     apr_pool_t *pool = NULL;
+     apr_pool_create(&pool, 0);
+     filter->r = req;
+     filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+     filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+     apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+
+     RequestInfo *info = new RequestInfo(42);
+     ap_set_module_config(req->request_config, &dup_module, (void *)info);
+
+     info->mBody = testBody43p1;
+     info->mBody += testBody43p2;
+     CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, inputFilterBody2Brigade(filter, bb, AP_MODE_READBYTES,
+                                                               APR_BLOCK_READ, 8192));
+
+
+     // Compare the brigade content to what should have been sent
+     std::string result;
+     extractBrigadeContent(bb, req, result);
+     CPPUNIT_ASSERT_EQUAL(result, std::string(testBody43p1) + std::string(testBody43p2));
+ }
+}
+
+
+
+
 
 
 

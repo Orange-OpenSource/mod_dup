@@ -24,7 +24,7 @@ namespace DupModule {
 
 const unsigned int CMaxBytes = 8192;
 
-static bool
+bool
 extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
     if (ap_get_brigade(pRequest->input_filters,
                        bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) == APR_SUCCESS) {

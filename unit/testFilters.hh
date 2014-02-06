@@ -38,6 +38,7 @@ class TestFilters :
 
     CPPUNIT_TEST_SUITE(TestFilters);
     CPPUNIT_TEST(translateHook);
+    CPPUNIT_TEST(inputFilterBody2BrigadeTest);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -46,6 +47,8 @@ public:
      *
      */
     void translateHook();
+
+    void inputFilterBody2BrigadeTest();
 
 
     virtual void setUp();
