@@ -32,6 +32,7 @@
 #include <unixd.h>
 
 #include <http_log.h>
+#include "testBodies.hh"
 
 #include <cstring>
 #include <cassert>
@@ -131,9 +132,7 @@ AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
     // No filter, simply forge an EOS
     if ((void *)filter == (void *)0x42) {
         // We request a real test brigade
-
-        std::string body = "I am the body 42";
-        assert(apr_brigade_write(bb, NULL, NULL, body.c_str(), body.size()) == APR_SUCCESS);
+        assert(apr_brigade_write(bb, NULL, NULL, testBody42, std::string(testBody42).size()) == APR_SUCCESS);
     }
     apr_bucket *e = apr_bucket_eos_create(bA);
     assert(e);

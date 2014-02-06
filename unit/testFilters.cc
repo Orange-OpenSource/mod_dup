@@ -26,7 +26,7 @@
 #include "MultiThreadQueue.hh"
 #include "testFilters.hh"
 #include "testModDup.hh"
-
+#include "testBodies.hh"
 #include "mod_dup.hh"
 
 // cppunit
@@ -127,6 +127,8 @@ void TestFilters::translateHook() {
 
      RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(req->request_config, &dup_module));
      CPPUNIT_ASSERT(info);
+
+     CPPUNIT_ASSERT_EQUAL(std::string(testBody42), info->mBody);
      delete conf;
  }
 
