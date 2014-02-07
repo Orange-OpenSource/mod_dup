@@ -255,6 +255,19 @@ void TestFilters::inputFilterBody2BrigadeTest() {
  }
 }
 
+struct MyComp {
+       MyComp(const char *k, const char *v)
+           : key(k), value(v) {
+       }
+
+       bool operator()(const std::pair<std::string, std::string > &elt) {
+           return (elt.first == key && elt.second == value);
+       }
+
+       const char *key;
+       const char *value;
+   };
+
 void TestFilters::outputFilterHandlerTest() {
 {
     // NO PER_DIR_CONFIG
@@ -420,20 +433,6 @@ void TestFilters::outputFilterHandlerTest() {
 
     CPPUNIT_ASSERT_EQUAL(std::string(testBody43p1) + std::string(testBody43p2),
                          info->mAnswer);
-
-
-    struct MyComp {
-        MyComp(const char *k, const char *v)
-            : key(k), value(v) {
-        }
-
-        bool operator()(const std::pair<std::string, std::string > &elt) {
-            return (elt.first == key && elt.second == value);
-        }
-
-        const char *key;
-        const char *value;
-    };
 
     CPPUNIT_ASSERT(info->mHeadersOut.end() != std::find_if(info->mHeadersOut.begin(), info->mHeadersOut.end(), MyComp("KeyOut1", "value1")));
     CPPUNIT_ASSERT(info->mHeadersOut.end() != std::find_if(info->mHeadersOut.begin(), info->mHeadersOut.end(), MyComp("KeyOut2", "value2")));
