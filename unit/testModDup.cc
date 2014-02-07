@@ -36,12 +36,13 @@ extern module AP_DECLARE_DATA dup_module;
 
 using namespace DupModule;
 
+static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
+
 namespace DupModule {
 
     RequestProcessor *gProcessor;
-    ThreadPool<RequestInfo*> *gThreadPool;
+    ThreadPool<boost::shared_ptr<RequestInfo> > *gThreadPool;
     std::set<std::string> gActiveLocations;
-
 }
 
 cmd_parms * TestModDup::getParms() {
@@ -64,7 +65,7 @@ void TestModDup::testInit()
     CPPUNIT_ASSERT(gProcessor);
     CPPUNIT_ASSERT(gThreadPool);
 
-    gThreadPool = new DummyThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
+    gThreadPool = new DummyThreadPool<boost::shared_ptr<RequestInfo> >(boost::bind(&RequestProcessor::run, gProcessor, _1), POISON_REQUEST);
 }
 
 class Dummy {

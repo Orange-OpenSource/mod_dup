@@ -317,7 +317,7 @@ namespace DupModule {
          * @param pQueue the queue which gets filled with incoming requests
          */
         void
-        run(MultiThreadQueue<RequestInfo *> &pQueue);
+        run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue);
 
         /**
          * @brief Define some environnement variables if the query matches the criteria defined

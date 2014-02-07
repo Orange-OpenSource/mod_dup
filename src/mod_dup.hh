@@ -21,6 +21,7 @@
 #include <apr_pools.h>
 #include <apr_hooks.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/shared_ptr.hpp>
 #include <curl/curl.h>
 #include <exception>
 #include <httpd.h>
@@ -42,8 +43,8 @@ namespace DupModule {
     extern const char *gNameBody2Brigade;
     extern const char *gNameOut;
 
-    extern RequestProcessor                       *gProcessor;
-    extern ThreadPool<RequestInfo *>              *gThreadPool;
+    extern RequestProcessor                             *gProcessor;
+    extern ThreadPool<boost::shared_ptr<RequestInfo> >  *gThreadPool;
 
     /** The unique id HEADER attribute name */
     extern const char* c_UNIQUE_ID;

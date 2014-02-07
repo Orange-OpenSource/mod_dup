@@ -20,6 +20,7 @@
 
 #include <list>
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 namespace DupModule {
 
@@ -101,6 +102,4 @@ namespace DupModule {
 	bool isPoison() const;
 
     };
-
-    static RequestInfo POISON_REQUEST;
 }

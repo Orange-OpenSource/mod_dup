@@ -449,7 +449,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
  * @param pQueue the queue which gets filled with incoming requests
  */
 void
-RequestProcessor::run(MultiThreadQueue<RequestInfo *> &pQueue)
+RequestProcessor::run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue)
 {
     Log::debug("New worker thread started");
 
@@ -464,7 +464,8 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo *> &pQueue)
     curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
 
     for (;;) {
-        RequestInfo *lQueueItem = pQueue.pop();
+        boost::shared_ptr<RequestInfo> lQueueItemShared = pQueue.pop();
+        RequestInfo *lQueueItem = lQueueItemShared.get();
         if (lQueueItem->isPoison()) {
             // Master tells us to stop
             Log::debug("Received poison pill. Exiting.");
@@ -475,7 +476,6 @@ RequestProcessor::run(MultiThreadQueue<RequestInfo *> &pQueue)
             __sync_fetch_and_add(&mDuplicatedCount, 1);
             performCurlCall(lCurl, *matchedFilter, *lQueueItem);
         }
-        delete lQueueItem;
     }
     curl_easy_cleanup(lCurl);
 }

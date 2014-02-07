@@ -18,6 +18,7 @@
 
 #include "mod_dup.hh"
 
+#include <boost/shared_ptr.hpp>
 #include <http_config.h>
 
 namespace DupModule {
@@ -66,6 +67,13 @@ translateHook(request_rec *pRequest) {
         return DECLINED;
     }
     RequestInfo *info = new RequestInfo(tConf->getNextReqId());
+    // Allocation on a shared pointer on the request pool
+    // We guarantee that whatever happens, the RequestInfo will be deleted
+    void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
+    new (space) boost::shared_ptr<RequestInfo>(info);
+    // Registering of the shared pointer destructor on the pool
+    apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
+                              apr_pool_cleanup_null);
     // Backup in request context
     ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
 
@@ -121,14 +129,15 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
         return APR_SUCCESS;
     }
     // Retrieve request info from context
-    RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
-    if (!info) {
+    boost::shared_ptr<RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pRequest->request_config, &dup_module));
+    if (!shPtr) {
         // Should not happen
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         assert(e);
         APR_BRIGADE_INSERT_TAIL(pB, e);
         return APR_SUCCESS;
     }
+    RequestInfo *info = shPtr->get();
     if (!pF->ctx) {
         if (!info->mBody.empty()) {
             apr_status_t st;
@@ -189,11 +198,13 @@ class RequestContext {
 public:
     apr_bucket_brigade  *mTmpBB;
     RequestInfo         *mReq; /** Req is pushed to requestprocessor for duplication and will be deleted later*/
+    /* A copy of the pointer of the shared pointer allocated on the pool */
+    boost::shared_ptr<RequestInfo> *mShPtr;
 
     RequestContext(ap_filter_t *pFilter) {
         mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
-        mReq = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config,
-                                                                    &dup_module));
+        mShPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module));
+        mReq = mShPtr->get();
         assert(mReq);
     }
 
@@ -229,7 +240,13 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
     if (ctx == NULL) {
         // First pass in the output filter => context init
-        ctx = new RequestContext(pFilter);
+        // TODO allocate on pool
+
+        void *space = apr_palloc(pRequest->pool, sizeof(RequestContext));
+        ctx = new (space) RequestContext(pFilter);
+        // Registering of the RequestContext on the pool
+        apr_pool_cleanup_register(pRequest->pool, space, cleaner<RequestContext>,
+                                  apr_pool_cleanup_null);
         pFilter->ctx = ctx;
     } else if (ctx == (void *) -1) {
         // Output filter already did his job, we return
@@ -240,10 +257,9 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (tConf->getHighestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
         // Asynchronous push of request WITHOUT the answer
         RequestInfo *rH = ctx->mReq;
-        prepareRequestInfo(tConf, pRequest, *rH, false);
+        prepareRequestInfo(tConf, pRequest, *ctx->mReq, false);
         printRequest(pRequest, rH, tConf);
-        gThreadPool->push(rH);
-        delete ctx;
+        gThreadPool->push(*ctx->mShPtr);
         pFilter->ctx = (void *) -1;
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
@@ -266,7 +282,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         rv = ap_pass_brigade(pFilter->next, ctx->mTmpBB);
         if (rv != APR_SUCCESS) {
             // Something went wrong, no duplication performed
-            delete ctx;
             pFilter->ctx = (void *) -1;
             return rv;
         }
@@ -274,8 +289,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             // Pushing the answer to the processor
             prepareRequestInfo(tConf, pRequest, *(ctx->mReq), true);
             printRequest(pRequest, ctx->mReq, tConf);
-            gThreadPool->push(ctx->mReq);
-            delete ctx;
+            gThreadPool->push(*ctx->mShPtr);
             pFilter->ctx = (void *) -1;
         }
         else {
