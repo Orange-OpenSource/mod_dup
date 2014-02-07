@@ -309,7 +309,7 @@ void TestFilters::outputFilterHandlerTest() {
 {
     // NOMINAL TEST DUPLICATION TYPE != REQUEST_WITH_ANSWER
     request_rec *req = prep_request_rec();
-    req->uri = "/spp/main/test.cgi";
+    req->uri = strdup("/spp/main/test.cgi");
     ap_filter_t *filter = new ap_filter_t;
     memSet(filter);
     apr_pool_t *pool = NULL;
@@ -337,7 +337,7 @@ void TestFilters::outputFilterHandlerTest() {
     // NOMINAL TEST DUPLICATION TYPE == REQUEST_WITH_ANSWER
     // small payload
     request_rec *req = prep_request_rec();
-    req->uri = "/spp/main/test.cgi";
+    req->uri = strdup("/spp/main/test.cgi");
     ap_filter_t *filter = new ap_filter_t;
     memSet(filter);
     apr_pool_t *pool = NULL;
@@ -379,7 +379,7 @@ void TestFilters::outputFilterHandlerTest() {
     // NOMINAL TEST DUPLICATION TYPE == REQUEST_WITH_ANSWER
     // Big payload and answer headers
     request_rec *req = prep_request_rec();
-    req->uri = "/spp/main/test.cgi";
+    req->uri = strdup("/spp/main/test.cgi");
     ap_filter_t *filter = new ap_filter_t;
     memSet(filter);
     apr_pool_t *pool = NULL;
