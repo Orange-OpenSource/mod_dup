@@ -42,8 +42,6 @@ namespace DupModule {
     ThreadPool<RequestInfo*> *gThreadPool;
     std::set<std::string> gActiveLocations;
 
-
-
 }
 
 cmd_parms * TestModDup::getParms() {
