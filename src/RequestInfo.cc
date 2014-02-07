@@ -16,8 +16,9 @@
 * limitations under the License.
 */
 
-#include <assert.h>
 #include "RequestInfo.hh"
+#include <assert.h>
+#include <iomanip>
 #include <string.h>
 
 namespace DupModule {
@@ -75,8 +76,12 @@ RequestInfo::isPoison() const {
 
 bool
 RequestInfo::hasBody() const {
-    return mBody.size();
+    return !mBody.empty();
 }
 
+void
+RequestInfo::Serialize(const std::string &toSerialize, std::stringstream &ss) {
+    ss << std::setfill('0') << std::setw(8) << toSerialize.length() << toSerialize;
+}
 
 }

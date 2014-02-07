@@ -220,7 +220,6 @@ public:
     }
 };
 
-
 /**
  * Here we can get the response body and finally duplicate or not
  */
@@ -240,8 +239,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
     if (ctx == NULL) {
         // First pass in the output filter => context init
-        // TODO allocate on pool
-
         void *space = apr_palloc(pRequest->pool, sizeof(RequestContext));
         ctx = new (space) RequestContext(pFilter);
         // Registering of the RequestContext on the pool

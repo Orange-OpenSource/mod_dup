@@ -20,6 +20,7 @@
 
 #include <list>
 #include <string>
+#include <sstream>
 #include <boost/shared_ptr.hpp>
 
 namespace DupModule {
@@ -101,5 +102,12 @@ namespace DupModule {
 	 */
 	bool isPoison() const;
 
+        /**
+         * @brief Formats the string toSerialize using the format
+         * size on 8 bytes + value
+         * e.g. value => 00000005value
+         * content is appended to output
+         */
+        static void Serialize(const std::string &toSerialize, std::stringstream &output);
     };
 }

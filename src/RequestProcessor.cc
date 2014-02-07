@@ -331,7 +331,7 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
     std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(pConfPath);
 
     // No filters for this path
-    if (it == mCommands.end() || (!it->second.mFilters.size() && !it->second.mRawFilters.size()))
+    if (it == mCommands.end() || (it->second.mFilters.empty() && it->second.mRawFilters.empty()))
         return NULL;
 
     tRequestProcessorCommands lCommands = (*it).second;
@@ -385,17 +385,17 @@ RequestProcessor::sendDupFormat(CURL *curl, const RequestInfo &rInfo, struct cur
     //Computing dup format string
     std::stringstream ss;
     //Request body
-    ss << std::setfill('0') << std::setw(8) << rInfo.mBody.length() << rInfo.mBody;
+    RequestInfo::Serialize(rInfo.mBody, ss);
 
     // Answer headers, Copy requestInfo out headers
     std::string answerHeaders;
     BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersOut) {
         answerHeaders.append(v.first + std::string(": ") + v.second + "\n");
     }
-    ss << std::setfill('0') << std::setw(8) << answerHeaders.length() << answerHeaders;
+    RequestInfo::Serialize(answerHeaders, ss);
 
     // Answer Body
-    ss << std::setfill('0') << std::setw(8) << rInfo.mAnswer.length() << rInfo.mAnswer;
+    RequestInfo::Serialize(rInfo.mAnswer, ss);
     std::string *content = new std::string(ss.str());
     sendInBody(curl, slist, *content);
     return content;
@@ -420,7 +420,6 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     // Setting mod-dup as the real agent for tracability
     slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
     if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
-//        Log::info(1,"Sending duplicated request+answer");
         content = sendDupFormat(curl, rInfo, slist);
     } else if (matchedFilter.mDuplicationType == DuplicationType::COMPLETE_REQUEST && rInfo.hasBody()) {
         sendInBody(curl, slist, rInfo.mBody);
@@ -485,7 +484,7 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
     std::map<std::string, tRequestProcessorCommands>::iterator it = mCommands.find(rInfo.mConfPath);
 
     // No filters for this path
-    if (it == mCommands.end() || !it->second.mEnrichContext.size())
+    if (it == mCommands.end() || it->second.mEnrichContext.empty())
         return 0;
     int count = 0;
     std::list<tContextEnrichment> &cE = it->second.mEnrichContext;
@@ -494,7 +493,7 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
     BOOST_FOREACH(const tContextEnrichment &ctx, cE) {
         if (ctx.mScope & ApplicationScope::HEADER) {
             std::string toSet = regex_replace(rInfo.mArgs, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
-            if (toSet.size()) {
+            if (!toSet.empty()) {
                 Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
 #ifndef UNIT_TESTING
                 apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
@@ -504,7 +503,7 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
         }
         if (ctx.mScope & ApplicationScope::BODY) {
             std::string toSet = regex_replace(rInfo.mBody, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
-            if (toSet.size()) {
+            if (!toSet.empty()) {
                 Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
 #ifndef UNIT_TESTING
                 apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
