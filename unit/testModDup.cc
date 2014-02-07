@@ -16,6 +16,7 @@
 * limitations under the License.
 */
 
+#include "mod_dup.hh"
 #include "RequestProcessor.hh"
 #include <httpd.h>
 #include <http_config.h>
@@ -68,6 +69,19 @@ void TestModDup::testInit()
     gThreadPool = new DummyThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
 }
 
+class Dummy {
+ public:
+     Dummy(int &r) : mR(r) {
+         mR = 0;
+     }
+
+     ~Dummy(){
+         mR = 42;
+     }
+
+     int &mR;
+ };
+
 void TestModDup::testInitAndCleanUp()
 {
     cmd_parms * lParms = getParms();
@@ -79,20 +93,6 @@ void TestModDup::testInitAndCleanUp()
     CPPUNIT_ASSERT(!gThreadPool);
 
     // Cleaner test
-
-    class Dummy {
-    public:
-        Dummy(int &r) : mR(r) {
-            mR = 0;
-        }
-
-        ~Dummy(){
-            mR = 42;
-        }
-
-        int &mR;
-    };
-
     int test;
     Dummy d(test);
     cleaner<Dummy>((void *)&d);
