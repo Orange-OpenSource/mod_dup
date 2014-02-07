@@ -25,15 +25,18 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 #include <cppunit/extensions/HelperMacros.h>
+#include <boost/shared_ptr.hpp>
 
 CPPUNIT_TEST_SUITE_REGISTRATION( TestRequestProcessor );
 
 using namespace DupModule;
 
+static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
+
 void TestRequestProcessor::testRun()
 {
     RequestProcessor proc;
-    MultiThreadQueue<RequestInfo *> queue;
+    MultiThreadQueue<boost::shared_ptr<RequestInfo> > queue;
 
     DupConf conf;
     conf.currentApplicationScope = ApplicationScope::ALL;
@@ -42,8 +45,8 @@ void TestRequestProcessor::testRun()
     proc.addFilter("/toto", "INFO", "[my]+", conf);
 
     // This request won't go anywhere, but at least we exersize the loop in proc.run()
-    queue.push(new RequestInfo(1,"/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&"));
-    queue.push(&POISON_REQUEST);
+    queue.push(boost::shared_ptr<RequestInfo>(new RequestInfo(1,"/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&")));
+    queue.push(POISON_REQUEST);
 
     // If the poison pill would not work, this call would hang forever
     proc.run(queue);
@@ -481,15 +484,15 @@ void TestRequestProcessor::testRequestInfo() {
 
 void TestRequestProcessor::testTimeout() {
     RequestProcessor proc;
-    MultiThreadQueue<RequestInfo *> queue;
+    MultiThreadQueue<boost::shared_ptr<RequestInfo> > queue;
 
     DupConf conf;
     conf.currentApplicationScope = ApplicationScope::ALL;
     conf.currentDupDestination = "Honolulu:8080";
     proc.addFilter("/spp/main", "SID", "mySid", conf);
 
-    queue.push(new RequestInfo(1,"/spp/main", "/spp/main", "SID=mySid"));
-    queue.push(&POISON_REQUEST);
+    queue.push(boost::shared_ptr<RequestInfo>(new RequestInfo(1,"/spp/main", "/spp/main", "SID=mySid")));
+    queue.push(POISON_REQUEST);
     proc.run(queue);
 
     CPPUNIT_ASSERT_EQUAL((unsigned int)1, proc.getDuplicatedCount());

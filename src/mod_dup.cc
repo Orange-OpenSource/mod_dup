@@ -41,8 +41,8 @@ namespace alg = boost::algorithm;
 
 namespace DupModule {
 
-RequestProcessor *gProcessor;
-ThreadPool<RequestInfo*> *gThreadPool;
+RequestProcessor                                *gProcessor;
+ThreadPool<boost::shared_ptr<RequestInfo> >    *gThreadPool;
 
 const char *gName = "Dup";
 const char *gNameBody2Brigade = "DupBody2Brigade";
@@ -119,10 +119,13 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
     return addr;
 }
 
+static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
+
 int
 preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
     gProcessor = new RequestProcessor();
-    gThreadPool = new ThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
+    gThreadPool = new ThreadPool<boost::shared_ptr<RequestInfo> >(boost::bind(&RequestProcessor::run, gProcessor, _1),
+                                                                  POISON_REQUEST);
     // Add the request timeout stat provider. Compose the lexical_cast with getTimeoutCount so that the resulting stat provider returns a string
     gThreadPool->addStat("#TmOut", boost::bind(boost::lexical_cast<std::string, unsigned int>,
                                                boost::bind(&RequestProcessor::getTimeoutCount, gProcessor)));

@@ -16,6 +16,7 @@
 * limitations under the License.
 */
 
+#include "RequestInfo.hh"
 #include "RequestProcessor.hh"
 #include <httpd.h>
 #include <http_config.h>
@@ -32,12 +33,16 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 #include <cppunit/extensions/HelperMacros.h>
+#include <boost/shared_ptr.hpp>
+
 
 CPPUNIT_TEST_SUITE_REGISTRATION( TestContextEnrichment );
 
 extern module AP_DECLARE_DATA dup_module;
 
 using namespace DupModule;
+
+static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
 
 void TestContextEnrichment::setUp() {
     mParms = new cmd_parms;
@@ -52,7 +57,7 @@ void TestContextEnrichment::setUp() {
     registerHooks(mParms->pool);
     gProcessor = new RequestProcessor();
     CPPUNIT_ASSERT(gProcessor);
-    gThreadPool = new DummyThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
+    gThreadPool = new DummyThreadPool<boost::shared_ptr<RequestInfo> >(boost::bind(&RequestProcessor::run, gProcessor, _1), POISON_REQUEST);
     CPPUNIT_ASSERT(gThreadPool);
 
     childInit(mParms->pool, mParms->server);

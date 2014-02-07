@@ -39,6 +39,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION( TestFilters );
 extern module AP_DECLARE_DATA dup_module;
 
 using namespace DupModule;
+static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
 
 void TestFilters::setUp() {
     mParms = new cmd_parms;
@@ -53,7 +54,7 @@ void TestFilters::setUp() {
     registerHooks(mParms->pool);
     gProcessor = new RequestProcessor();
     CPPUNIT_ASSERT(gProcessor);
-    gThreadPool = new DummyThreadPool<RequestInfo *>(boost::bind(&RequestProcessor::run, gProcessor, _1), &POISON_REQUEST);
+    gThreadPool = new DummyThreadPool<boost::shared_ptr<RequestInfo> >(boost::bind(&RequestProcessor::run, gProcessor, _1), POISON_REQUEST);
     CPPUNIT_ASSERT(gThreadPool);
 
     childInit(mParms->pool, mParms->server);
@@ -101,6 +102,7 @@ void TestFilters::translateHook() {
     req->per_dir_config = (ap_conf_vector_t *)apr_pcalloc(pool, sizeof(void *) * 42);
     req->request_config = (ap_conf_vector_t *)apr_pcalloc(pool, sizeof(void *) * 42);
     req->connection = (conn_rec *)apr_pcalloc(pool, sizeof(*(req->connection)));
+    req->pool = pool;
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
     // Conf without dirName set in per_dir_config
     CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
@@ -211,9 +213,9 @@ void TestFilters::inputFilterBody2BrigadeTest() {
      filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
      filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
      apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
-
      RequestInfo *info = new RequestInfo(42);
-     ap_set_module_config(req->request_config, &dup_module, (void *)info);
+     boost::shared_ptr<RequestInfo> shPtr(info);
+     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
      info->mBody = testBody42;
      CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, inputFilterBody2Brigade(filter, bb, AP_MODE_READBYTES,
@@ -240,7 +242,8 @@ void TestFilters::inputFilterBody2BrigadeTest() {
      apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
 
      RequestInfo *info = new RequestInfo(42);
-     ap_set_module_config(req->request_config, &dup_module, (void *)info);
+     boost::shared_ptr<RequestInfo> shPtr(info);
+     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
      info->mBody = testBody43p1;
      info->mBody += testBody43p2;
@@ -325,8 +328,8 @@ void TestFilters::outputFilterHandlerTest() {
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
     RequestInfo *info = new RequestInfo(42);
-    // Backup in request context
-    ap_set_module_config(req->request_config, &dup_module, (void *)info);
+    boost::shared_ptr<RequestInfo> shPtr(info);
+    ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
     CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
     // Second call, tests context backup
@@ -352,8 +355,8 @@ void TestFilters::outputFilterHandlerTest() {
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
     RequestInfo *info = new RequestInfo(42);
-    // Backup in request context
-    ap_set_module_config(req->request_config, &dup_module, (void *)info);
+    boost::shared_ptr<RequestInfo> shPtr(info);
+    ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
     // Setting answer to read
     apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
@@ -394,8 +397,9 @@ void TestFilters::outputFilterHandlerTest() {
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
     RequestInfo *info = new RequestInfo(42);
-    // Backup in request context
-    ap_set_module_config(req->request_config, &dup_module, (void *)info);
+    boost::shared_ptr<RequestInfo> shPtr(info);
+    ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
+
     // Adding some headers out
     apr_table_set(req->headers_out, "KeyOut1", "value1");
     apr_table_set(req->headers_out, "KeyOut2", "value2");

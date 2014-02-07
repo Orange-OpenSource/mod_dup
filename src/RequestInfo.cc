@@ -49,7 +49,6 @@ namespace DupModule {
 
     };
 
-
 RequestInfo::RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *pBody)
     : mPoison(false),
       mId(id),
