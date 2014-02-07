@@ -194,6 +194,7 @@ public:
         mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
         mReq = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config,
                                                                     &dup_module));
+        assert(mReq);
     }
 
     RequestContext()

@@ -161,5 +161,5 @@ AP_DECLARE(ap_filter_t *) ap_add_input_filter(const char *name, void *ctx,
 apr_status_t
 ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *)
 {
-    return OK;
+    return APR_SUCCESS;
 }
