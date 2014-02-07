@@ -18,6 +18,7 @@
 
 #include "mod_dup.hh"
 
+#include <boost/shared_ptr.hpp>
 #include <http_config.h>
 
 namespace DupModule {
@@ -66,6 +67,13 @@ translateHook(request_rec *pRequest) {
         return DECLINED;
     }
     RequestInfo *info = new RequestInfo(tConf->getNextReqId());
+    // Allocation on a shared pointer on the request pool
+    // We guarantee that whatever happens, the RequestInfo will be deleted
+    void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
+    new (space) boost::shared_ptr<RequestInfo>(info);
+    // Registering of the shared pointer destructor on the pool
+    apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
+                              apr_pool_cleanup_null);
     // Backup in request context
     ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
 
@@ -121,7 +129,9 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
         return APR_SUCCESS;
     }
     // Retrieve request info from context
-    RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(pRequest->request_config, &dup_module));
+    boost::shared_ptr<RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pRequest->request_config, &dup_module));
+    RequestInfo *info = shPtr->get();
+
     if (!info) {
         // Should not happen
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
@@ -192,8 +202,8 @@ public:
 
     RequestContext(ap_filter_t *pFilter) {
         mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
-        mReq = reinterpret_cast<RequestInfo *>(ap_get_module_config(pFilter->r->request_config,
-                                                                    &dup_module));
+        boost::shared_ptr<RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module));
+        mReq = shPtr->get();
         assert(mReq);
     }
 
