@@ -75,7 +75,7 @@ translateHook(request_rec *pRequest) {
     apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
                               apr_pool_cleanup_null);
     // Backup in request context
-    ap_set_module_config(pRequest->request_config, &dup_module, (void *)info);
+    ap_set_module_config(pRequest->request_config, &dup_module, (void *)space);
 
     if (!pRequest->connection->pool) {
         Log::error(42, "No connection pool associated to the request");
