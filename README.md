@@ -5,6 +5,9 @@ Apache module (mod_dup) duplicating requests before they are handled by their us
 Useful for testing new servers/modules with a real production load but no user impact.
 Request parameters (GET & POST) can be rewritten before duplication.
 
+Basic Request Duplication
+=========================
+![](https://raw2.github.com/Orange-OpenSource/mod_dup/master/docs/mod_dup_overview.png)
 
 Documentation
 =============
