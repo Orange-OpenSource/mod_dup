@@ -96,7 +96,9 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
       COMMAND make apache_functional_tests_setup
       ## Run the python scripts
       COMMAND ../testing/functionnal/test_dup.py --path=../testing/functionnal/data/dup/0/requests/
-      COMMAND make coverage-functional)
+      COMMAND make apache_functional_tests_stop
+      COMMAND make coverage-functional
+      )
 
     add_custom_target(coverage-campaign
       COMMAND make coverage

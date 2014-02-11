@@ -16,13 +16,21 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-## ./env.sh ../../build/src ./data/dup/0/
 
+## Configures system apache and launches it
 add_custom_target(apache_functional_tests_setup
   ## Prepare apache
   COMMAND cd ../../../testing/functionnal/ && ./env.sh ../../build/src ./data/dup/0/
 
   COMMAND /usr/sbin/apache2 -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
 
+  )
+
+## Stopping apache before the setup
+add_dependencies(apache_functional_tests_setup apache_functional_tests_stop)
+
+## Stops the system apache that uses the code coverage configuration
+add_custom_target(apache_functional_tests_stop
+  COMMAND /usr/sbin/apache2ctl -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
   )
 

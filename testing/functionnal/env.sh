@@ -44,15 +44,3 @@ chmod +x $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 
 sed 's|{{ROOT}}|'"$ROOT"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $PWD/httpd.conf.templ > $APACHE_DIR/httpd_func_tests.conf
 
-
-# restart apache
-echo "Stopping apache"
-$APACHE_DIR/bin/httpd -f $APACHE_DIR/conf/custom_httpd.conf -k stop
-#$APACHE_DIR/bin/apachectl stop || exit 1;
-
-out=`ps auxw | grep $APACHE_DIR/bin/httpd | grep -v grep`
-while [ $? -eq 0 ]; do
-    echo "Waiting 1s for apache to stop"
-    sleep 1
-    out=`ps auxw | grep $APACHE_DIR/bin/httpd | grep -v grep`
-done
