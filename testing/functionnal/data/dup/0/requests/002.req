@@ -1,0 +1,10 @@
+==DESC==
+/dup_test/dup Filter with ALL scope matching in request header
+==HEADER==
+/dup_test/dup?mtb=rocks
+==BODY==
+==THEADER==
+/dup_test/dup?mtb=rocks
+==TBODY==
+^00000000.*UNIQUE_ID.*Content-Length: 3.*DUP$
+==RBODY==

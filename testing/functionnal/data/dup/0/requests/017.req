@@ -1,0 +1,12 @@
+==DESC==
+/dup_test/header_and_body Duplication of the header + the body (no answer)
+==HEADER==
+/dup_test/header_and_body?love=hate
+==BODY==
+love=hate
+This body must be duplicated
+==THEADER==
+/dup_test/header_and_body?love=hate
+==TBODY==
+^love=hate.*This body must be duplicated.*$
+==RBODY==

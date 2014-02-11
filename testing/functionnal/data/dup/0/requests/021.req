@@ -1,0 +1,10 @@
+==DESC==
+/dup_test/enrich_test_body Tests that the body is correctly passed to the CGI script
+==HEADER==
+/dup_test/enrich_test_body?FilterKey=FilterMe&actor=jean
+==BODY==
+WhatABody!
+==THEADER==
+==TBODY==
+==RBODY==
+10

@@ -1,0 +1,10 @@
+==DESC==
+/dup_test/dup Substitution in HEADER
+==HEADER==
+/dup_test/dup?oiseau=a%20la%20grise%20robe&Pigeon=vole
+==BODY==
+==THEADER==
+/dup_test/dup?OISEAU=dans%20l'enfer%20des%20villes&PIGEON=vole
+==TBODY==
+^00000000.*UNIQUE_ID.*Content-Length.*DUP$
+==RBODY==

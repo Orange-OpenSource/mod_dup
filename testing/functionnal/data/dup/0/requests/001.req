@@ -1,0 +1,10 @@
+==DESC==
+/dup_test/dup Duplication with Filter matching in a header
+==HEADER==
+/dup_test/dup?love=hate
+==BODY==
+==THEADER==
+/dup_test/dup?love=hate
+==TBODY==
+^00000000.*Content-Length: 3.*DUP$
+==RBODY==

@@ -1,0 +1,12 @@
+==DESC==
+/dup_test/enrich Context enrichment then rewrite on a location that is duplicated
+No tee format in the answer, request is proxified directly to port 8043
+==HEADER==
+/dup_test/enrich?FilterKey=FilterMe&actor=benoit
+==BODY==
+I am the body
+==THEADER==
+/dup_test/rewritten?FilterKey=FilterMe&actor=benoit
+==TBODY==
+I am the body
+==RBODY==

@@ -1,0 +1,10 @@
+==DESC==
+/get_body_size_direct Tests that the body is correctly passed to the CGI script without any redirection
+==HEADER==
+/get_body_size_direct?FilterKey=FilterMe&actor=jean
+==BODY==
+WhatABody!
+==THEADER==
+==TBODY==
+==RBODY==
+10

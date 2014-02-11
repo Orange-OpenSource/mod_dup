@@ -1,0 +1,11 @@
+==DESC==
+/dup_test/dup RawSubstitution in BODY
+==HEADER==
+/dup_test/dup?Pigeon=vole
+==BODY==
+tochange=Like%20a%20Hello
+==THEADER==
+/dup_test/dup?Pigeon=vole
+==TBODY==
+^.*tochange=Like%20a%20Moto.*DUP$
+==RBODY==

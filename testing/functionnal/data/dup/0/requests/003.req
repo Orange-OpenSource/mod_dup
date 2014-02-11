@@ -1,0 +1,11 @@
+==DESC==
+/dup_test/dup Filter with ALL scope matching in request body
+==HEADER==
+/dup_test/dup?mykey=myval
+==BODY==
+mtb=rocks
+==THEADER==
+/dup_test/dup?mykey=myval
+==TBODY==
+^00000009mtb=rocks.*DUP$
+==RBODY==

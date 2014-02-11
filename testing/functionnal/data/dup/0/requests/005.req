@@ -1,0 +1,11 @@
+==DESC==
+/dup_test/dup RawFilter BODY scope
+==HEADER==
+/dup_test/dup?
+==BODY==
+CestarrivepresdechezvousInBody
+==THEADER==
+/dup_test/dup?
+==TBODY==
+.*CestarrivepresdechezvousInBody.*DUP$
+==RBODY==

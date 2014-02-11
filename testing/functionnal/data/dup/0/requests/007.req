@@ -1,0 +1,9 @@
+==DESC==
+/dup_test/dup Filter HEADER only does not match in body
+==HEADER==
+/dup_test/dup?
+==BODY==
+love=hate
+==THEADER==
+==TBODY==
+==RBODY==
