@@ -128,8 +128,9 @@ void TestFilters::translateHook() {
      req->input_filters = (ap_filter_t *)(void *) 0x42;
      CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
 
-     RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(req->request_config, &dup_module));
-     CPPUNIT_ASSERT(info);
+     boost::shared_ptr<RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(req->request_config, &dup_module));
+     CPPUNIT_ASSERT(shPtr);
+     RequestInfo *info = shPtr->get();
 
      CPPUNIT_ASSERT_EQUAL(std::string(testBody42), info->mBody);
      delete conf;
@@ -146,8 +147,9 @@ void TestFilters::translateHook() {
      req->input_filters = (ap_filter_t *)(void *) 0x43;
      CPPUNIT_ASSERT_EQUAL(DECLINED, DupModule::translateHook(req));
 
-     RequestInfo *info = reinterpret_cast<RequestInfo *>(ap_get_module_config(req->request_config, &dup_module));
-     CPPUNIT_ASSERT(info);
+     boost::shared_ptr<RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(req->request_config, &dup_module));
+     CPPUNIT_ASSERT(shPtr);
+     RequestInfo *info = shPtr->get();
 
      CPPUNIT_ASSERT_EQUAL(std::string(testBody43p1) + std::string(testBody43p2), info->mBody);
      delete conf;
