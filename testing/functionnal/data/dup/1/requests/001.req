@@ -1,0 +1,11 @@
+==DESC==
+Validation mode =>> nominal case, SID to dup present in arguments
+==HEADER==
+/dup_test/dup?method=getBES&country=FR&Sid=IDBAR
+==BODY==
+==THEADER==
+/dup_test/dup?METHOD=getBES&COUNTRY=FR&SID=DUPIDBAR
+==TBODY==
+.*
+==RBODY==
+DUP

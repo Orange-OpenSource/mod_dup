@@ -335,7 +335,7 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
     if (it == mCommands.end() || (it->second.mFilters.empty() && it->second.mRawFilters.empty()))
         return NULL;
 
-    tRequestProcessorCommands lCommands = (*it).second;
+    tRequestProcessorCommands &lCommands = (*it).second;
 
     std::list<std::pair<std::string, std::string> > lParsedArgs;
     parseArgs(lParsedArgs, pRequest.mArgs);
@@ -540,14 +540,6 @@ tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope s
     , mDuplicationType(dupType) {
 }
 
-tFilter::tFilter(const tFilter& other): tElementBase(other) {
-    if (&other == this)
-        return;
-    mField = other.mField;
-    mDestination = other.mDestination;
-    mDuplicationType = other.mDuplicationType;
-}
-
 tElementBase::tElementBase(const tElementBase &other) {
     if (&other == this)
         return;
@@ -560,12 +552,6 @@ tSubstitute::tSubstitute(const std::string &regex, const std::string &replacemen
     , mReplacement(replacement){
 }
 
-tSubstitute::tSubstitute(const tSubstitute &other)
-    : tElementBase(other){
-    if (&other == this)
-        return;
-    mReplacement = other.mReplacement;
-}
 
 tSubstitute::~tSubstitute() {
 }

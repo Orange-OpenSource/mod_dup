@@ -96,8 +96,6 @@ namespace DupModule {
                 const std::string &currentDupDestination,
                 DuplicationType::eDuplicationType dupType);
 
-        tFilter(const tFilter& other);
-
         virtual ~tFilter(){}
 
         std::string mField;                                     /** The key or field the filter applies on */
@@ -114,8 +112,6 @@ namespace DupModule {
         tSubstitute(const std::string &regex,
                     const std::string &replacement,
                     ApplicationScope::eApplicationScope scope);
-
-        tSubstitute(const tSubstitute &other);
 
         virtual ~tSubstitute();
 
