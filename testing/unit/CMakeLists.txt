@@ -47,3 +47,4 @@ add_executable(mod_dup_test ${mod_dup_test_SOURCE_FILES})
 target_link_libraries(mod_dup_test mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES})
 add_test(mod_dup_UnitTestInit rm -f mod_dup_unittest.file)
 add_test(mod_dup_UnitTestsFirstRun mod_dup_test -x)
+

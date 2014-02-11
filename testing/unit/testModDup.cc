@@ -52,12 +52,8 @@ cmd_parms * TestModDup::getParms() {
     memset(lServer, 0, sizeof(server_rec));
     lParms->server = lServer;
     apr_pool_create(&lParms->pool, 0);
-    //lServer->module_config = reinterpret_cast<ap_conf_vector_t *>(apr_pcalloc(lParms->pool, sizeof(void *) * 16));
-    //ap_set_module_config(lServer->module_config, &dup_module, gsDropRate);
-
     return lParms;
 }
-
 
 void TestModDup::testInit()
 {

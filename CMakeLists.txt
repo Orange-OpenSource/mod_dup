@@ -88,35 +88,45 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
       COMMAND make coverage-clean
       COMMAND make -j2 all
       COMMAND make test
-      COMMAND make coverage-test)
+      COMMAND make coverage-unit)
+
+    add_custom_target(coverage-ft
+      COMMAND make coverage-functional-clean
+      COMMAND make -j2 all
+      COMMAND make apache_functional_tests_setup
+      ## Run the python scripts
+      COMMAND ../testing/functionnal/test_dup.py --path=../testing/functionnal/data/dup/0/requests/
+      COMMAND make coverage-functional)
 
     add_custom_target(coverage-campaign
-      COMMAND make coverage)
+      COMMAND make coverage
+      COMMAND make coverage-ft
+      )
 
     #-----------------------------------------------------------------------------
-    # coverage-test target
+    # coverage-unit target
     #-----------------------------------------------------------------------------
-    configure_file(${INPUT_CMAKE_DIR}/coverage-test.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-test.cmake IMMEDIATE @ONLY)
-    add_custom_target(coverage-test
-        COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-test.cmake)
-
-    #-----------------------------------------------------------------------------
-    # coverage-clean target
-    #-----------------------------------------------------------------------------
+    configure_file(${INPUT_CMAKE_DIR}/coverage-test.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-unit.cmake IMMEDIATE @ONLY)
+    add_custom_target(coverage-unit
+        COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-unit.cmake)
+    # Clean target of unit coverage
     configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-clean.cmake IMMEDIATE @ONLY)
     add_custom_target(coverage-clean
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-clean.cmake)
 
-    # Functional test coverage
-    set(COVERDIR ${CMAKE_BINARY_DIR}/measures/functional CACHE STRING "Path to the coverage results" FORCE)
 
+    #-----------------------------------------------------------------------------
+    # coverage-ft target
+    #-----------------------------------------------------------------------------
+    set(COVERDIR ${CMAKE_BINARY_DIR}/measures/coverage_ft CACHE STRING "Path to the ft coverage results" FORCE)
     configure_file(${INPUT_CMAKE_DIR}/coverage-test.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional.cmake IMMEDIATE @ONLY)
     add_custom_target(coverage-functional
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-functional.cmake)
-
+    # Clean target on functional
     configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional-clean.cmake IMMEDIATE @ONLY)
     add_custom_target(coverage-functional-clean
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-functional-clean.cmake)
+
 endif()
 
 
@@ -134,6 +144,10 @@ add_subdirectory(src)
 if(BUILD_UNIT_TESTS)
   ENABLE_TESTING()
   add_subdirectory(testing/unit)
+endif()
+
+if(BUILD_COVERAGE)
+  add_subdirectory(testing/functionnal)
 endif()
 
 add_subdirectory(docs)
