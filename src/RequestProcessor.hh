@@ -74,8 +74,11 @@ namespace DupModule {
         tElementBase(const std::string &regex,
                     ApplicationScope::eApplicationScope scope);
 
-        tElementBase(const tElementBase &other);
+        tElementBase(const std::string &regex,
+                     boost::regex::flag_type flags,
+                     ApplicationScope::eApplicationScope scope);
 
+        tElementBase(const tElementBase &other);
 
         virtual ~tElementBase();
 

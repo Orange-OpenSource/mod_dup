@@ -86,7 +86,7 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     add_custom_target(coverage-functional
       COMMAND make coverage-functional-clean
       COMMAND make -j2 all
-      COMMAND make check_functional
+      COMMAND make check-functional
       COMMAND make coverage-functionalP
       )
 

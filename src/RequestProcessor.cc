@@ -21,6 +21,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/lexical_cast.hpp>
+
 #include <httpd.h>
 #include <iomanip>
 
@@ -520,6 +521,14 @@ tElementBase::tElementBase(const std::string &r, ApplicationScope::eApplicationS
     , mRegex(r) {
 }
 
+tElementBase::tElementBase(const std::string &regex,
+                           boost::regex::flag_type flags,
+                           ApplicationScope::eApplicationScope scope)
+    : mScope(scope)
+    , mRegex(regex, flags) {
+
+}
+
 tElementBase::~tElementBase() {
 }
 
@@ -565,7 +574,7 @@ tContextEnrichment::tContextEnrichment(const std::string &varName,
                                        const std::string &matchRegex,
                                        const std::string &setValue,
                                        ApplicationScope::eApplicationScope scope)
-    : tElementBase(matchRegex, scope)
+    : tElementBase(matchRegex, boost::regex::icase, scope)
     , mVarName(varName)
     , mSetValue(setValue) {
 }
