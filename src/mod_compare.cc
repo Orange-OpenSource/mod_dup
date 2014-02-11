@@ -60,13 +60,20 @@ CompareConf::CompareConf() {
 
 
 apr_status_t CompareConf::cleaner(void *self) {
-    CompareConf *c = reinterpret_cast<CompareConf *>(self);
-    c->~CompareConf();
+    if(self){
+        CompareConf *c = reinterpret_cast<CompareConf *>(self);
+        /*c->mHeaderIgnoreList.clear();
+        c->mBodyIgnoreList.clear();
+        c->mHeaderStopList.clear();
+        c->mBodyStopList.clear();*/
+
+        c->~CompareConf();
+    }
     return 0;
 }
 
 /**
- * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it
+ * @brief allocate a pointer to a string which will hold the path for the dir config if mod_compare is active on it
  * @param pPool the apache pool on which to allocate data
  * @param pDirName the directory name for which to create data
  * @return a void pointer to newly allocated object
@@ -76,7 +83,7 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
     void *addr= apr_pcalloc(pPool, sizeof(class CompareConf));
     new (addr) CompareConf();
-    apr_pool_cleanup_register(pPool, addr, CompareConf::cleaner,  NULL);
+    apr_pool_cleanup_register(pPool, addr, CompareConf::cleaner,  apr_pool_cleanup_null);
     return addr;
 }
 
@@ -104,7 +111,6 @@ closeFile(void *) {
 void
 childInit(apr_pool_t *pPool, server_rec *pServer)
 {
-    Log::error(13, "path del file  %s", gFilePath);
     gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
     apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeFile);
 }

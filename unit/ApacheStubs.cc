@@ -144,7 +144,7 @@ AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
             return APR_SUCCESS;
         }
     } else if ((void *)filter == (void *)0x44) {
-            return 0;
+            return 1;
     }
 
     apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);

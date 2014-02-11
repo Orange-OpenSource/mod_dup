@@ -41,7 +41,7 @@ extern module AP_DECLARE_DATA compare_module;
 namespace CompareModule {
 
 extern std::ofstream gFile;
-extern const char * gFilePath;
+extern const char* gFilePath;
 extern boost::interprocess::named_mutex gMutex;
 
 /**
@@ -142,6 +142,10 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo);
 void map2string(const std::map< std::string, std::string> &pMap, std::string &pString);
 
 int iterateOverHeadersCallBack(void *d, const char *key, const char *value);
+
+apr_status_t closeFile(void *);
+
+const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath);
 
 }
 

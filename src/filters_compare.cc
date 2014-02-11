@@ -339,7 +339,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
         if ((rv == APR_SUCCESS) && (data != NULL))
         {
-            Log::error(13, "beneee ");
             req->mDupResponseBody.append(data, len);
         }
         // Remove bucket e from bb.

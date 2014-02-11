@@ -47,8 +47,6 @@ CPPUNIT_TEST_SUITE_REGISTRATION( TestModCompare );
 
 using namespace CompareModule;
 
-extern std::ofstream CompareModule::gFile;
-
 cmd_parms * TestModCompare::getParms() {
     cmd_parms * lParms = new cmd_parms;
     server_rec * lServer = new server_rec;
@@ -96,6 +94,9 @@ void TestModCompare::testInit()
     CPPUNIT_ASSERT(postConfig(lParms->pool, lParms->pool, lParms->pool, lParms->server)==OK);
 
     CPPUNIT_ASSERT( createDirConfig(lParms->pool, NULL) );
+
+    setFilePath(lParms, NULL , "toto");
+    childInit(lParms->pool, lParms->server);
 }
 
 
@@ -119,7 +120,9 @@ void TestModCompare::testConfig()
     CPPUNIT_ASSERT(!setStopList(NULL, (void *) lDoHandle, "Body", "pluto"));
     CPPUNIT_ASSERT(std::find( lDoHandle->mBodyStopList.begin(), lDoHandle->mBodyStopList.end(), "pluto") != lDoHandle->mBodyStopList.end());
 
-    delete lDoHandle;
+    CPPUNIT_ASSERT( CompareConf::cleaner( (void *)lDoHandle ) == 0 );
+
+    //delete lDoHandle;
 }
 
 void TestModCompare::testPrintRequest()
@@ -248,7 +251,7 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mDupResponseBody = "Dup Response Body";  //size = 17
 
     writeDifferences(lReqInfo);
-    gFile.close();
+    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
 
     gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out );
     std::stringstream buffer;
@@ -257,6 +260,7 @@ void TestModCompare::testWriteDifferences()
     // size of header + bodies + 48(representing the size of each part) + 2( \n \n )
     size_t lTotal = 11 + 11 + 12 + 13 + 13 + 13 + 12 + 14 + 17 + 48 + 2;
     CPPUNIT_ASSERT( lTotal == buffer.str().size() );
+    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
 }
 
 
@@ -273,6 +277,23 @@ void TestModCompare::testInputFilterHandler()
         filter->r = req;
         filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
         filter->next = (ap_filter_t *)(void *) 0x44;
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->per_dir_config = NULL;
+        CPPUNIT_ASSERT_EQUAL( 1, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+    }
+
+    {
+        // request_rec NULL
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = NULL;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->next = (ap_filter_t *)(void *) 0x43;
         filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
         req->per_dir_config = NULL;
@@ -369,7 +390,11 @@ void TestModCompare::testInputFilterHandler()
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        apr_table_set(req->headers_in, "UNIQUE_ID", "toto");
         CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+        // Second call, tests context backup
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
     }
 
@@ -430,7 +455,6 @@ void TestModCompare::testOutputFilterHandler()
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
     }
-    //gFile.close();
 
     {
         // case pFilter->ctx = -1
