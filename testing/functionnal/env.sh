@@ -7,9 +7,6 @@ ROOT=`cd ../../build; echo $PWD`
 APACHE_DIR=$ROOT/apache2
 APACHE_SRC=$APACHE_DIR/src
 
-PHP_DIR=$ROOT/env/php5
-PHP_SRC=$PHP_DIR/src
-
 APT=apt-get
 
 echo $ROOT

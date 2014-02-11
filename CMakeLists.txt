@@ -59,16 +59,9 @@ else()
   endif()
 endif()
 
+## Unit test rule definition
 if(BUILD_UNIT_TESTS)
     enable_testing()
-
-    #-----------------------------------------------------------------------------
-    # Package dependencies
-    #-----------------------------------------------------------------------------
-    # find_package(cppunit REQUIRED)
-    #-----------------------------------------------------------------------------
-    # check target
-    #-------------------------------------------------------------------------------
     add_custom_target(check make -j4 all
       COMMAND make test)
 endif()
@@ -93,10 +86,7 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     add_custom_target(coverage-ft
       COMMAND make coverage-functional-clean
       COMMAND make -j2 all
-      COMMAND make apache_functional_tests_setup
-      ## Run the python scripts
-      COMMAND ../testing/functionnal/test_dup.py --path=../testing/functionnal/data/dup/0/requests/
-      COMMAND make apache_functional_tests_stop
+      COMMAND make check_functional
       COMMAND make coverage-functional
       )
 

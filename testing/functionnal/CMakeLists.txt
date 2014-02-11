@@ -16,21 +16,33 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-
-## Configures system apache and launches it
-add_custom_target(apache_functional_tests_setup
-  ## Prepare apache
-  COMMAND cd ../../../testing/functionnal/ && ./env.sh ../../build/src ./data/dup/0/
-
-  COMMAND /usr/sbin/apache2 -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
-
-  )
-
-## Stopping apache before the setup
-add_dependencies(apache_functional_tests_setup apache_functional_tests_stop)
-
 ## Stops the system apache that uses the code coverage configuration
 add_custom_target(apache_functional_tests_stop
   COMMAND /usr/sbin/apache2ctl -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
+  COMMAND sleep 1
   )
 
+## Collecting the functionnal directories
+file(GLOB test_dirs "${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/*" )
+
+## Runs the functional tests
+## Iterate over the directories in the functional repo to launch the corresponding tests
+add_custom_target(check_functional)
+
+foreach(td ${test_dirs})
+  add_custom_command(TARGET check_functional PRE_BUILD
+    COMMAND make apache_functional_tests_stop
+
+    ## Prepare apache
+    COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env.sh ../../build/src ${td}
+
+    ## Launch apache
+    COMMAND /usr/sbin/apache2 -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
+
+    ## Launching the tests script
+    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${td}/requests/
+
+    ## Stopping apache
+    COMMAND make apache_functional_tests_stop
+  )
+endforeach()
