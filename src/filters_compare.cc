@@ -142,6 +142,7 @@ apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo)
     if ( pReqInfo.mBody.size() < 3*SECTION_SIZE_CHARS )
     {
         Log::error(11, "Unexpected body format");
+        Log::error(13, "Current body size: %d", static_cast<int>(pReqInfo.mBody.size()));
         return BAD_REQUEST;
     }
     if ( !getLength( pReqInfo.mBody, 0, lBodyReqSize ) )
@@ -216,28 +217,37 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
     request_rec *pRequest = pF->r;
     if (!pRequest)
     {
-        return DECLINED;
+        return lStatus;
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
-        return DECLINED;
+        return lStatus;
     }
 
-
+    if(pRequest->per_dir_config == NULL){
+        return lStatus;
+    }
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if (!tConf) {
-            return DECLINED; // SHOULD NOT HAPPEN
+            return lStatus; // SHOULD NOT HAPPEN
     }
     // No context? new request
     if (!pF->ctx) {
         DupModule::RequestInfo *info = new DupModule::RequestInfo(getNextReqId());
         ap_set_module_config(pRequest->request_config, &compare_module, (void *)info);
-        // Copy Request ID in both headers
-        std::string reqId = boost::lexical_cast<std::string>(info->mId);
-        apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
-        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+        // If there is no UNIQUE_ID in the request header copy thr Request ID generated in both headers
+        const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
+        if( lID == NULL){
+            std::string reqId = boost::lexical_cast<std::string>(info->mId);
+            apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
+            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+        }
+        else {
+            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
+        }
+
         // Backup of info struct in the request context
         pF->ctx = info;
     } else if (pF->ctx == (void *)1) {
@@ -259,6 +269,7 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
         if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
             continue;
         }
+
         lBH->mBody += std::string(lReqPart, lLength);
     }
     apr_brigade_cleanup(pB);
@@ -272,7 +283,6 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
 #endif
     apr_table_do(&iterateOverHeadersCallBack, &(lBH->mReqHeader), pRequest->headers_in, NULL);
     printRequest(pRequest, lBH->mReqBody);
-
     return lStatus;
 }
 
@@ -280,6 +290,16 @@ inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMod
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
+    // Truncate the log before writing if the URI is set to "comp_truncate"
+    std::string lArgs( static_cast<const char *>(pRequest->uri) );
+    if ( lArgs.find("comp_truncate") != std::string::npos){
+        gFile.close();
+        gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
+        apr_brigade_cleanup(pBrigade);
+        apr_table_set(pRequest->headers_out, "Content-Length", "0");
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
     if (!pRequest || !pRequest->per_dir_config)
     {
         return ap_pass_brigade(pFilter->next, pBrigade);
@@ -288,7 +308,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
-        return DECLINED;
+        return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
@@ -300,8 +320,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
-
-    DupModule::RequestInfo *req = reinterpret_cast<DupModule::RequestInfo *>(ap_get_module_config(pFilter->r->request_config, &compare_module));
+    assert(pRequest->request_config);
+    DupModule::RequestInfo *req = reinterpret_cast<DupModule::RequestInfo *>(ap_get_module_config(pRequest->request_config, &compare_module));
     if ( req == NULL)
     {
         apr_brigade_cleanup(pBrigade);
@@ -319,6 +339,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
         if ((rv == APR_SUCCESS) && (data != NULL))
         {
+            Log::error(13, "beneee ");
             req->mDupResponseBody.append(data, len);
         }
         // Remove bucket e from bb.
@@ -326,11 +347,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
         if (APR_BUCKET_IS_EOS(currentBucket))
         {
-            apr_brigade_cleanup(pBrigade);
-            apr_table_set(pRequest->headers_out, "Content-Length", "0");
-            rv =  ap_pass_brigade(pFilter->next, pBrigade);
-            pFilter->ctx = (void *) -1;
-
             std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
             checkCassandraDiff(lUniqueID);
 
@@ -342,6 +358,11 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             // write differences
             writeDifferences(*req);
 
+            //we want to avoid to send the response body on the network
+            apr_table_set(pRequest->headers_out, "Content-Length", "0");
+            apr_brigade_cleanup(pBrigade);
+            rv =  ap_pass_brigade(pFilter->next, pBrigade);
+            pFilter->ctx = (void *) -1;
         }
     }
 

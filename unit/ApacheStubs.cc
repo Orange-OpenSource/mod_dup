@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -32,9 +32,12 @@
 #include <unixd.h>
 
 #include <http_log.h>
+#include "testBodies.hh"
 
 #include <cstring>
 #include <cassert>
+
+unixd_config_rec unixd_config;
 
 AP_DECLARE_NONSTD(int) ap_rprintf( request_rec *r, const char *fmt, ...)
 {
@@ -63,7 +66,6 @@ AP_DECLARE_NONSTD(int) ap_rprintf( request_rec *r, const char *fmt, ...)
 
      return n;
 };
-
 
 AP_DECLARE(int) ap_is_initial_req(request_rec *r)
 {
@@ -115,13 +117,41 @@ AP_CORE_DECLARE(ap_conf_vector_t *) ap_create_request_config(apr_pool_t *p)
 
 }
 
+int bodyServed = 0;
+
 AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
-                                        apr_bucket_brigade *bucket,
+                                        apr_bucket_brigade *bb,
                                         ap_input_mode_t mode,
                                         apr_read_type_e block,
                                         apr_off_t readbytes)
 {
-	return APR_SUCCESS;
+
+    apr_pool_t *pool = NULL;
+    apr_pool_create(&pool, 0);
+
+    // No filter, simply forge an EOS
+    if ((void *)filter == (void *)0x42) {
+        // We request a real test brigade
+        assert(apr_brigade_write(bb, NULL, NULL, testBody42, std::string(testBody42).size()) == APR_SUCCESS);
+    } else if ((void *)filter == (void *)0x43) {
+        if (!bodyServed) {
+            assert(apr_brigade_write(bb, NULL, NULL, testBody43p1, std::string(testBody43p1).size()) == APR_SUCCESS);
+            bodyServed = 1;
+            return APR_SUCCESS;
+        } else if (bodyServed == 1) {
+            assert(apr_brigade_write(bb, NULL, NULL, testBody43p2, std::string(testBody43p2).size()) == APR_SUCCESS);
+            bodyServed = 2;
+            return APR_SUCCESS;
+        }
+    } else if ((void *)filter == (void *)0x44) {
+            return 0;
+    }
+
+    apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
+    apr_bucket *e = apr_bucket_eos_create(bA);
+    assert(e);
+    APR_BRIGADE_INSERT_TAIL(bb, e);
+    return APR_SUCCESS;
 }
 
 AP_DECLARE(ap_filter_t *) ap_add_input_filter(const char *name, void *ctx,
@@ -130,4 +160,8 @@ AP_DECLARE(ap_filter_t *) ap_add_input_filter(const char *name, void *ctx,
 	return NULL;
 }
 
-unixd_config_rec unixd_config;
+apr_status_t
+ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *)
+{
+    return APR_SUCCESS;
+}

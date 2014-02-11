@@ -39,8 +39,10 @@
 extern module AP_DECLARE_DATA compare_module;
 
 namespace CompareModule {
+
 extern std::ofstream gFile;
-extern boost::interprocess::named_mutex gMutex;//(boost::interprocess::open_or_create, "global_mutex");
+extern const char * gFilePath;
+extern boost::interprocess::named_mutex gMutex;
 
 /**
  * A class that holds the configuration specific to the location

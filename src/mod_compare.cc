@@ -104,6 +104,7 @@ closeFile(void *) {
 void
 childInit(apr_pool_t *pPool, server_rec *pServer)
 {
+    Log::error(13, "path del file  %s", gFilePath);
     gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
     apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeFile);
 }

@@ -38,26 +38,6 @@ extern module AP_DECLARE_DATA dup_module;
 using namespace DupModule;
 
 
-//////////////////////////////////////////////////////////////
-// Dummy implementations of apache funcs
-/////////////////////////////////////////////////////////////
-apr_status_t
-ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *){
-    return OK;
-}
-
-const apr_bucket_type_t 	apr_bucket_type_eos = apr_bucket_type_t();
-apr_bucket_brigade * 	apr_brigade_create (apr_pool_t *, apr_bucket_alloc_t *){
-    return NULL;
-}
-
-apr_status_t 	apr_brigade_cleanup (void *){
-    return OK;
-}
-//////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-
-
 namespace DupModule {
 
     RequestProcessor *gProcessor;

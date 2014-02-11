@@ -34,6 +34,7 @@
 #include "mod_compare.hh"
 #include "Log.hh"
 #include "CassandraDiff.h"
+#include "testBodies.hh"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -48,29 +49,6 @@ using namespace CompareModule;
 
 extern std::ofstream CompareModule::gFile;
 
-//////////////////////////////////////////////////////////////
-// Dummy implementations of apache funcs
-/////////////////////////////////////////////////////////////
-/*apr_status_t
-ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *){
-    return OK;
-}
-
-const apr_bucket_type_t 	apr_bucket_type_eos = apr_bucket_type_t();
-apr_bucket_brigade * 	apr_brigade_create (apr_pool_t *, apr_bucket_alloc_t *){
-    return NULL;
-}
-
-apr_status_t 	apr_brigade_cleanup (void *){
-    return OK;
-}*/
-/*apr_status_t ap_get_brigade(ap_filter_t *, apr_bucket_brigade *, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
-{
-    return APR_SUCCESS;
-}*/
-//////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-
 cmd_parms * TestModCompare::getParms() {
     cmd_parms * lParms = new cmd_parms;
     server_rec * lServer = new server_rec;
@@ -78,11 +56,38 @@ cmd_parms * TestModCompare::getParms() {
     memset(lServer, 0, sizeof(server_rec));
     lParms->server = lServer;
     apr_pool_create(&lParms->pool, 0);
-    //lServer->module_config = reinterpret_cast<ap_conf_vector_t *>(apr_pcalloc(lParms->pool, sizeof(void *) * 16));
-    //ap_set_module_config(lServer->module_config, &dup_module, gsDropRate);
 
     return lParms;
 }
+
+void TestModCompare::tearDown() {
+    cmd_parms * lParms = getParms();
+    if( lParms != NULL){
+       delete lParms;
+    }
+}
+
+static request_rec *prep_request_rec() {
+    request_rec *req = new request_rec;
+    memset(req, 0, sizeof(*req));
+    apr_pool_create(&req->pool, 0);
+    req->per_dir_config = (ap_conf_vector_t *)apr_pcalloc(req->pool, sizeof(void *) * 42);
+    req->request_config = (ap_conf_vector_t *)apr_pcalloc(req->pool, sizeof(void *) * 42);
+    req->connection = (conn_rec *)apr_pcalloc(req->pool, sizeof(*(req->connection)));
+    req->connection->bucket_alloc = apr_bucket_alloc_create(req->pool);
+    apr_pool_create(&req->connection->pool, 0);
+
+    req->headers_in = apr_table_make(req->pool, 42);
+    req->headers_out = apr_table_make(req->pool, 42);
+    return req;
+}
+
+template<class T>
+T *memSet(T *addr, char c = 0) {
+    memset(addr, c, sizeof(T));
+    return addr;
+}
+
 
 void TestModCompare::testInit()
 {
@@ -228,7 +233,9 @@ void TestModCompare::testIterOverHeader()
 
 void TestModCompare::testWriteDifferences()
 {
-    gFile.open("/home/dgiampaglia/workspace/test/Maradona.txt", std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
+    std::string lPath( getenv("HOME") );
+    lPath.append("/Maradona.txt");
+    gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
     DupModule::RequestInfo lReqInfo;
     lReqInfo.mReqHeader["Toto"]= "titi";  //size = 11
     lReqInfo.mReqHeader["Tutu"]= "tete";  //size = 11
@@ -243,7 +250,7 @@ void TestModCompare::testWriteDifferences()
     writeDifferences(lReqInfo);
     gFile.close();
 
-    gFile.open("/home/dgiampaglia/workspace/test/Maradona.txt", std::ofstream::in | std::ofstream::out );
+    gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out );
     std::stringstream buffer;
     buffer << gFile.rdbuf() ;
 
@@ -255,26 +262,253 @@ void TestModCompare::testWriteDifferences()
 
 void TestModCompare::testInputFilterHandler()
 {
-    /*cmd_parms * lParms = getParms();
-    request_rec r;
-    memset(&r,0,sizeof(request_rec));
-    apr_pool_create(&r.pool, 0);
+    {
+        // get_brigade fails
+        request_rec *req = prep_request_rec();
 
-    ap_filter_t * lfilter = new ap_filter_t;
-    memset(lfilter, 0, sizeof(ap_filter_t));
-    lfilter->r = &r;
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->next = (ap_filter_t *)(void *) 0x44;
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->per_dir_config = NULL;
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+    }
 
-    ap_filter_t * lFilterNext = new ap_filter_t;
-    memset(lFilterNext, 0, sizeof(ap_filter_t));
-    lfilter->next = lFilterNext;
+    {
+        // missing header "Response"
+        request_rec *req = prep_request_rec();
 
-    r.headers_in = apr_table_make(r.pool, 16);
-    r.server = lParms->server;
-    r.pool = lParms->pool;
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x43;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->per_dir_config = NULL;
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
-    apr_bucket_brigade *pB = new apr_bucket_brigade;
-    memset(pB, 0, sizeof(apr_bucket_brigade));
+    }
+    {
+        // empty per_dir_conf
+        request_rec *req = prep_request_rec();
 
-    inputFilterHandler(lfilter, (apr_bucket_brigade*)pB, AP_MODE_READBYTES, APR_BLOCK_READ, 1);*/
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x43;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->per_dir_config = NULL;
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+    }
+
+    {
+        // NULL CompareConf
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x43;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+    }
+
+    {
+        // // NOMINAL CASE REQUEST + EMPTY BODY
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = NULL;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+    }
+
+    {
+        // // NOMINAL CASE REQUEST + BODY ( invalid body format)
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+    }
+
+}
+
+void TestModCompare::testOutputFilterHandler()
+{
+    {
+        // URI comp_truncate
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->uri = (char *)"comp_truncate";
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+    }
+
+    {
+        // empty per_dir_conf
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        req->per_dir_config = NULL;
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->uri = (char *)"";
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+    }
+
+    {
+        // missing header "Response"
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->uri = (char *)"";
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+    }
+    //gFile.close();
+
+    {
+        // case pFilter->ctx = -1
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->uri = (char *)"";
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        filter->ctx = (void *)(-1);
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+    }
+    {
+        // case req->request_config = NULL
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        req->uri = (char *)"";
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+    }
+
+    {
+        // NOMINAL TEST
+        request_rec *req = prep_request_rec();
+
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x43;
+        req->uri = (char *)"";
+
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+
+        DupModule::RequestInfo *info = new DupModule::RequestInfo(42);
+        ap_set_module_config(req->request_config, &compare_module, info);
+
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, apr_brigade_write(bb, NULL, NULL, testBody42, std::string(testBody42).size()));
+
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+
+        // Adding eos to bb
+        apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
+        apr_bucket *e = apr_bucket_eos_create(bA);
+        CPPUNIT_ASSERT(e);
+        APR_BRIGADE_INSERT_TAIL(bb, e);
+
+        apr_table_set(req->headers_in, "UNIQUE_ID", "toto");
+
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+    }
+
 }
 
