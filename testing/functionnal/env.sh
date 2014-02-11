@@ -3,14 +3,16 @@
 BIN=`cd $1; echo $PWD`
 CONF=`cd $2; echo $PWD`
 
-ROOT=$PWD
-APACHE_DIR=$ROOT/env/apache2
+ROOT=`cd ../../build; echo $PWD`
+APACHE_DIR=$ROOT/apache2
 APACHE_SRC=$APACHE_DIR/src
 
 PHP_DIR=$ROOT/env/php5
 PHP_SRC=$PHP_DIR/src
 
 APT=apt-get
+
+echo $ROOT
 
 ## Apache installation
 if test ! -f ${APACHE_DIR}/bin/httpd; then
@@ -71,7 +73,7 @@ print len(body)
 chmod +x $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 
 
-sed 's|{{ROOT}}|'"$ROOT"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $ROOT/httpd.conf.templ > $APACHE_DIR/conf/custom_httpd.conf
+sed 's|{{ROOT}}|'"$ROOT"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $PWD/httpd.conf.templ > $APACHE_DIR/conf/custom_httpd.conf
 
 
 # restart apache

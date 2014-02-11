@@ -133,7 +133,7 @@ add_subdirectory(src)
 # Unit tests
 if(BUILD_UNIT_TESTS)
   ENABLE_TESTING()
-  add_subdirectory(unit)
+  add_subdirectory(testing/unit)
 endif()
 
 add_subdirectory(docs)
