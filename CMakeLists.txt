@@ -77,29 +77,29 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     target_link_libraries(gcov)
 
     # Run the binary for coverage of the exception in AccessLogParser in case of redirection instead of pipe
-    add_custom_target(coverage
+    add_custom_target(coverage-unit
       COMMAND make coverage-clean
       COMMAND make -j2 all
       COMMAND make test
-      COMMAND make coverage-unit)
+      COMMAND make coverage-unitP)
 
-    add_custom_target(coverage-ft
+    add_custom_target(coverage-functional
       COMMAND make coverage-functional-clean
       COMMAND make -j2 all
       COMMAND make check_functional
-      COMMAND make coverage-functional
+      COMMAND make coverage-functionalP
       )
 
     add_custom_target(coverage-campaign
       COMMAND make coverage
-      COMMAND make coverage-ft
+      COMMAND make coverage-functional
       )
 
     #-----------------------------------------------------------------------------
     # coverage-unit target
     #-----------------------------------------------------------------------------
     configure_file(${INPUT_CMAKE_DIR}/coverage-test.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-unit.cmake IMMEDIATE @ONLY)
-    add_custom_target(coverage-unit
+    add_custom_target(coverage-unitP
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-unit.cmake)
     # Clean target of unit coverage
     configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-clean.cmake IMMEDIATE @ONLY)
@@ -112,7 +112,7 @@ if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
     #-----------------------------------------------------------------------------
     set(COVERDIR ${CMAKE_BINARY_DIR}/measures/coverage_ft CACHE STRING "Path to the ft coverage results" FORCE)
     configure_file(${INPUT_CMAKE_DIR}/coverage-test.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional.cmake IMMEDIATE @ONLY)
-    add_custom_target(coverage-functional
+    add_custom_target(coverage-functionalP
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-functional.cmake)
     # Clean target on functional
     configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional-clean.cmake IMMEDIATE @ONLY)
