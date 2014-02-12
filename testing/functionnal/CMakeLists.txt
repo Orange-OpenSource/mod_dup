@@ -30,6 +30,8 @@ file(GLOB test_dirs "${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/*" )
 ## Iterate over the directories in the functional repo to launch the corresponding tests
 add_custom_target(check-functional)
 
+find_program(APACHE2BIN apache2)
+
 foreach(td ${test_dirs})
   add_custom_command(TARGET check-functional PRE_BUILD
 
@@ -37,7 +39,7 @@ foreach(td ${test_dirs})
     COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env.sh ${CMAKE_BINARY_DIR}/src ${td}
 
     ## Launch apache
-    COMMAND /usr/sbin/apache2 -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
+    COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
 
     ## Launching the tests script
     COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${td}/requests/
