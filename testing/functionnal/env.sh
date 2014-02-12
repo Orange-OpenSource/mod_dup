@@ -2,8 +2,7 @@
 
 BIN=`cd $1; echo $PWD`
 CONF=`cd $2; echo $PWD`
-
-ROOT=`cd ../../build; echo $PWD`
+ROOT=`cd $1/..; echo $PWD`
 APACHE_DIR=$ROOT/apache2
 APACHE_SRC=$APACHE_DIR/src
 APACHE_MODS=/usr/lib/apache2/

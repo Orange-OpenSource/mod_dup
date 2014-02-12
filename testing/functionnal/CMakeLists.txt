@@ -34,8 +34,7 @@ foreach(td ${test_dirs})
   add_custom_command(TARGET check-functional PRE_BUILD
 
     ## Prepare apache
- #   COMMAND echo "-->> Preparing apache for ${td}"
-    COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env.sh ../../build/src ${td}
+    COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env.sh ${CMAKE_BINARY_DIR}/src ${td}
 
     ## Launch apache
     COMMAND /usr/sbin/apache2 -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
