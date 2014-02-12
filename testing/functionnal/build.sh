@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./local_env.sh ../../build/src ./data/dup/1/
+./local_env.sh ../../build/src ./data/dup/validation_mode/

@@ -6,7 +6,7 @@ CONF=`cd $2; echo $PWD`
 ROOT=`cd ../../build; echo $PWD`
 APACHE_DIR=$ROOT/apache2
 APACHE_SRC=$APACHE_DIR/src
-
+APACHE_MODS=/usr/lib/apache2/
 APT=apt-get
 
 echo $ROOT
@@ -14,6 +14,9 @@ echo $ROOT
 # Create htdocs
 mkdir -p $APACHE_DIR/htdocs/dup_test
 mkdir -p $APACHE_DIR/htdocs/cgi_bin
+mkdir -p $APACHE_DIR/logs
+touch $APACHE_DIR/mime.types
+
 echo -n "belge" > $APACHE_DIR/htdocs/dup_test/enrich
 echo -n "DUP" > $APACHE_DIR/htdocs/dup_test/dup
 echo -n "COMPARE" > $APACHE_DIR/htdocs/dup_test/compare
@@ -39,5 +42,5 @@ print len(body)
 chmod +x $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 
 
-sed 's|{{ROOT}}|'"$ROOT"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $PWD/httpd.conf.templ > $APACHE_DIR/httpd_func_tests.conf
+sed 's|{{ROOT}}|'"$ROOT"'|;s|{{APACHE_MODS}}|'"$APACHE_MODS"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $PWD/httpd.conf.templ > $APACHE_DIR/httpd_func_tests.conf
 
