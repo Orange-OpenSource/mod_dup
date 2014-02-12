@@ -16,13 +16,6 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-## Stops the system apache that uses the code coverage configuration
-add_custom_target(apache-functional-tests-stop
- #   message("--> Stopping apache")
-    COMMAND /usr/sbin/apache2ctl -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
-    COMMAND sleep 1
-  )
-
 ## Collecting the functionnal directories
 file(GLOB test_dirs "${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/*" )
 
@@ -44,8 +37,7 @@ foreach(td ${test_dirs})
     ## Launching the tests script
     COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${td}/requests/
 
-    ## Stopping apache
-    COMMAND make apache-functional-tests-stop
+    COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
   )
 endforeach()
 
