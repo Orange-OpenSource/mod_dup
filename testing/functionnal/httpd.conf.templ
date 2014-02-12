@@ -60,6 +60,8 @@ LoadModule userdir_module {{APACHE_MODS}}modules/mod_userdir.so
 LoadModule alias_module {{APACHE_MODS}}modules/mod_alias.so
 LoadModule rewrite_module {{APACHE_MODS}}modules/mod_rewrite.so
 
+ScriptSock {{ROOT}}/apache2/cgid.sock
+
 <IfModule worker.c>
   StartServers            1
 </IfModule>

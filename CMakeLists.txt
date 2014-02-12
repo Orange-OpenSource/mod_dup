@@ -66,7 +66,7 @@ if(BUILD_UNIT_TESTS)
       COMMAND make test)
 endif()
 
-if(BUILD_COVERAGE AND BUILD_UNIT_TESTS)
+if(BUILD_COVERAGE)
     #-----------------------------------------------------------------------------
     # coverage target
     #-----------------------------------------------------------------------------
