@@ -24,7 +24,7 @@ add_definitions(-DUNIT_TESTING)
 
 include_directories("../../src/")
 include_directories(".")
-LINK_DIRECTORIES("/opt/hosting/run/lib-ws-diff/unversionned/lib/")
+LINK_DIRECTORIES("/opt/hosting/run/libws-diff/unversionned/lib/")
 
 # UNIT TESTS
 file(GLOB lib_SOURCE_FILES

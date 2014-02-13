@@ -40,16 +40,16 @@ set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 #-----------------------------------------------------------------------------
 
 if(DEBUG)
-	set(CMAKE_CXX_FLAGS "-g -O2 -Wall -std=c++0x -fPIC")
+  set(CMAKE_CXX_FLAGS "-g -O2 -Wall -std=c++0x -fPIC")
 else()
-	set(CMAKE_CXX_FLAGS "-O2 -Wall -std=c++0x -fPIC")
+  set(CMAKE_CXX_FLAGS "-O2 -Wall -std=c++0x -fPIC")
 endif()
 
 if(BUILD_COVERAGE)
-    set(CMAKE_CXX_FLAGS "-ggdb --coverage -O0 -Wall -fno-inline -fno-elide-constructors -fno-default-inline -std=c++0x")
-    set(BUILD_UNIT_TESTS ON)
-    add_definitions(-DCOVERAGE)
-    add_definitions(-DDEBUG)
+  set(CMAKE_CXX_FLAGS "-ggdb --coverage -O0 -Wall -fno-inline -fno-elide-constructors -fno-default-inline -std=c++0x")
+  set(BUILD_UNIT_TESTS ON)
+  add_definitions(-DCOVERAGE)
+  add_definitions(-DDEBUG)
 else()
   if(BUILD_UNIT_TESTS)
     set(CMAKE_CXX_FLAGS "-g -O0 -fno-inline -Wall -Wno-deprecated -std=c++0x")
@@ -61,9 +61,9 @@ endif()
 
 ## Unit test rule definition
 if(BUILD_UNIT_TESTS)
-    enable_testing()
-    add_custom_target(check make -j4 all
-      COMMAND make test)
+  enable_testing()
+  add_custom_target(check make -j4 all
+    COMMAND make test)
 endif()
 
 if(BUILD_COVERAGE)
@@ -129,7 +129,7 @@ endif()
 # add the binary tree to the search path for include files
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}")
-include_directories("/opt/hosting/run/lib-ws-diff/unversionned/lib/")
+include_directories("/opt/hosting/run/libws-diff/unversionned/lib/")
 
 add_subdirectory(src)
 
