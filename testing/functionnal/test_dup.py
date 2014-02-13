@@ -157,8 +157,10 @@ def main(options, args):
                 process.start()
                 # We need to wait for the server to start up...
                 time.sleep(2)
-
             run_tests(request_files, queue, options)
+        except Exception as err_msg:
+            print err_msg
+            exit(0)
         finally:
             if not options.curl_only:
                 process.terminate()

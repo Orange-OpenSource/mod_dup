@@ -1,0 +1,9 @@
+==DESC==
+Migration mode =>> nominal case, SID present
+==HEADER==
+/migrate/dup?method=getBES&country=FR&SID=IDMIG1
+==BODY==
+==THEADER==
+/service_np1?method=getBES&country=FR&SID=IDMIG1
+==TBODY==
+==RBODY==

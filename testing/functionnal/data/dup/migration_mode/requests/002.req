@@ -1,0 +1,11 @@
+==DESC==
+Migration mode =>> nominal case, SID present
+==HEADER==
+/migrate/dup?method=getBES&country=FR&SID=IDMIG1
+==BODY==
+<?xml version="1.0"?><soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header></soap:Header><soap:Body><m:GetStockPrice xmlns:m="http://www.example.org/stock"><m:StockName>IBM</m:StockName></m:GetStockPrice></soap:Body></soap:Envelope>
+==THEADER==
+/service_np1?method=getBES&country=FR&SID=IDMIG1
+==TBODY==
+<?xml version="1.0"\?><soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header></soap:Header><soap:Body><m:GetStockPrice xmlns:m="http://www.example.org/stock"><m:StockName>IBM</m:StockName></m:GetStockPrice></soap:Body></soap:Envelope>
+==RBODY==
