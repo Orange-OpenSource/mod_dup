@@ -1,5 +1,5 @@
 ==DESC==
-Validation mode =>> no duplication case, SID not in migrated list altough a migrated SID is present in body
+Validation mode =>> nominal duplication case, SID in migrated list, massive body
 ==HEADER==
 /migrate/dup?&method=getBES&Sid=IDMIG2&country=FR
 ==BODY==
