@@ -22,6 +22,7 @@ echo -n "COMPARE" > $APACHE_DIR/htdocs/dup_test/compare
 echo -n "REWRITTEN" > $APACHE_DIR/htdocs/dup_test/rewritten
 echo -n "HEADER_ONLY" > $APACHE_DIR/htdocs/dup_test/header_only
 echo -n "HEADER_AND_BODY" > $APACHE_DIR/htdocs/dup_test/header_and_body
+echo -n "NP1" > $APACHE_DIR/htdocs/service_np1
 
 echo "#!/usr/bin/env python
 
