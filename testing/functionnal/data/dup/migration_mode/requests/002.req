@@ -1,5 +1,5 @@
 ==DESC==
-Migration mode =>> nominal case, SID present
+Migration mode =>> nominal case, SID present with request body
 ==HEADER==
 /migrate/dup?method=getBES&country=FR&SID=IDMIG1
 ==BODY==
