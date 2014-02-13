@@ -1,8 +1,9 @@
 ==DESC==
-Validation mode =>> no duplication case, SID not in migrated list
+Validation mode =>> no duplication case, SID not in migrated list altough a migrated SID is present in body
 ==HEADER==
 /migrate/dup?method=getBES&country=FR&Sid=IDNOTMIGRATED
 ==BODY==
+SID=IDMIG1
 The Dude: Walter, what is the point? Look, we all know who is at fault here, what the fuck are you talking about?
 Walter Sobchak: Huh? No, what the fuck are you... I'm not... We're talking about unchecked aggression here, dude.
 Donny: What the fuck is he talking about?
