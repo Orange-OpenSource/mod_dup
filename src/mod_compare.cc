@@ -35,7 +35,8 @@
 #include <algorithm>
 #include <boost/tokenizer.hpp>
 #include <fstream>
-
+#include <stringCompare.hh>
+#include <mapCompare.hh>
 
 #include "mod_compare.hh"
 
@@ -62,10 +63,6 @@ CompareConf::CompareConf() {
 apr_status_t CompareConf::cleaner(void *self) {
     if(self){
         CompareConf *c = reinterpret_cast<CompareConf *>(self);
-        /*c->mHeaderIgnoreList.clear();
-        c->mBodyIgnoreList.clear();
-        c->mHeaderStopList.clear();
-        c->mBodyStopList.clear();*/
 
         c->~CompareConf();
     }
@@ -119,31 +116,31 @@ childInit(apr_pool_t *pPool, server_rec *pServer)
  * @brief Set the list of errors which stop the comparison
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
- * @param pListType the type of list (Header or Body)
- * @param pValue the value to insert in the list
+ * @param pListType the type of list (STOP or IGNORE)
+ * @param pValue the reg_ex to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setStopList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue) {
+setBodyList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue) {
     if (!pValue || strlen(pValue) == 0) {
-        return "Missing stop value";
+        return "Missing reg_ex value for the body";
     }
 
     if (!pListType || strlen(pListType) == 0) {
-        return "Missing ignore list";
+        return "Missing the type of list";
     }
 
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
     std::string lListType(pListType);
     std::string lValue(pValue);
 
-    if (strcmp("Header", pListType) == 0)
+    if (strcmp("STOP", pListType) == 0)
     {
-        lConf->mHeaderStopList.push_back(lValue);
+        lConf->mCompBody.addStopRegex(lValue);
     }
-    else if(strcmp("Body", pListType) == 0)
+    else if(strcmp("IGNORE", pListType) == 0)
     {
-        lConf->mBodyStopList.push_back(lValue);
+        lConf->mCompBody.addIgnoreRegex(lValue);
     }
     else
     {
@@ -157,31 +154,37 @@ setStopList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* p
  * @brief Set the list of errors to ignore in the comparison
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
- * @param pListType the type of list (Header or Body)
- * @param pValue the value to insert in the list
+ * @param pListType the type of list (STOP or IGNORE)
+ * @param pHeader the header for which to apply the regex
+ * @param pValue the reg_ex to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char*
-setIgnoreList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue) {
+setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pHeader, const char* pValue) {
     if (!pValue || strlen(pValue) == 0) {
-        return "Missing stop value";
+        return "Missing reg_ex value for the header";
     }
 
+    if (!pHeader || strlen(pHeader) == 0) {
+            return "Missing header value";
+        }
+
     if (!pListType || strlen(pListType) == 0) {
-        return "Missing ignore list";
+        return "Missing the type list";
     }
 
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
     std::string lListType(pListType);
+    std::string lHeader(pHeader);
     std::string lValue(pValue);
 
-    if (strcmp("Header", pListType) == 0)
+    if (strcmp("STOP", pListType) == 0)
     {
-        lConf->mHeaderIgnoreList.push_back(lValue);
+        lConf->mCompHeader.addStopRegex(lHeader, lValue);
     }
-    else if(strcmp("Body", pListType) == 0)
+    else if(strcmp("IGNORE", pListType) == 0)
     {
-        lConf->mBodyIgnoreList.push_back(lValue);
+        lConf->mCompHeader.addIgnoreRegex(lHeader, lValue);
     }
     else
     {
@@ -204,8 +207,10 @@ setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
     if (!pPath || strlen(pPath) == 0) {
         return "Missing path value";
     }
-
+    Log::init();
     gFilePath = pPath;
+    std::string lPath(gFilePath);
+    Log::error(12, "ecco qui il percorso del file %s", lPath.c_str());
 
     return NULL;
 }
@@ -217,20 +222,20 @@ command_rec gCmds[] = {
     //          void * extra data,
     //          overrides to allow in order to enable,
     //          help message),
-        AP_INIT_TAKE2("CompareStop",
-                    reinterpret_cast<const char *(*)()>(&setStopList),
+        AP_INIT_TAKE2("BodyList",
+                    reinterpret_cast<const char *(*)()>(&setBodyList),
                     0,
                     ACCESS_CONF,
-                    "List of errors which stop the comparison."),
-        AP_INIT_TAKE2("CompareIgnore",
-                    reinterpret_cast<const char *(*)()>(&setIgnoreList),
+                    "List of reg_ex to apply to the body for the comparison."),
+        AP_INIT_TAKE3("HeaderList",
+                    reinterpret_cast<const char *(*)()>(&setHeaderList),
                     0,
                     ACCESS_CONF,
-                    "List of errors to ignore in the comparison."),
+                    "List of reg_ex to apply to the Header for the comparison."),
         AP_INIT_TAKE1("FilePath",
                     reinterpret_cast<const char *(*)()>(&setFilePath),
                     0,
-                    ACCESS_CONF,
+                    OR_ALL,
                     "Path of file where the differences will be logged."),
     {0}
 };

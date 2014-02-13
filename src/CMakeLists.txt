@@ -18,6 +18,10 @@ cmake_minimum_required(VERSION 2.8)
 
 include(../cmake/Include.cmake)
 
+include_directories(/opt/hosting/run/lib-ws-diff/unversionned/lib/)
+LINK_DIRECTORIES("/opt/hosting/run/lib-ws-diff/unversionned/lib/")
+
+
 file(GLOB mod_dup_SOURCE_FILES
   filters.cc
   mod_dup.cc
@@ -41,4 +45,4 @@ target_link_libraries(mod_dup ${APR_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARI
 
 add_library(mod_compare MODULE ${mod_compare_SOURCE_FILES})
 set_target_properties(mod_compare PROPERTIES PREFIX "")
-target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} ws_diff )

@@ -36,6 +36,9 @@
 #include "Log.hh"
 #include "RequestInfo.hh"
 
+#include <stringCompare.hh>
+#include <mapCompare.hh>
+
 extern module AP_DECLARE_DATA compare_module;
 
 namespace CompareModule {
@@ -55,10 +58,8 @@ public:
 
     static apr_status_t cleaner(void *self);
 
-    std::vector< std::string > mHeaderIgnoreList;
-    std::vector< std::string > mBodyIgnoreList;
-    std::vector< std::string > mHeaderStopList;
-    std::vector< std::string > mBodyStopList;
+    LibWsDiff::StringCompareBody mCompBody;
+    LibWsDiff::MapCompare mCompHeader;
 
 };
 

@@ -1,0 +1,35 @@
+FilePath "/home/compare-diff.log" 
+
+<Location /dup_test/compare>
+    SetInputFilter Compare
+    SetOutputFilter Compare
+    CompareStop "Header" "Content-Type" "json"
+    CompareStop "Body" "400 Bad Request"  
+    CompareIgnore "Header" "Date" "\d{2}:\d{2}:\d{2}\sGMT"
+    CompareIgnore "Body" "\<title>(.*?)\</title>"
+
+  
+    Order deny,allow
+    Allow from all
+</Location>
+
+<Location /dup_test/comp_test1>
+    SetInputFilter Compare
+    SetOutputFilter Compare
+ 
+    Order deny,allow
+    Allow from all	
+</Location>
+
+<Location /dup_test/comp_truncate>    
+    SetInputFilter Compare
+    SetOutputFilter Compare
+    Order deny,allow
+    Allow from all
+</Location>
+
+<Location /dup_test/compare-diff.log>
+   
+    Order deny,allow
+    Allow from all
+</Location>
