@@ -1,0 +1,10 @@
+==DESC==
+Validation mode =>> no duplication case, SID matching filter present in body, no transmission
+==HEADER==
+/dup_test/dup?method=getBES&country=FR&Sid=IDZAZA
+==BODY==
+SID=IDFOO
+==THEADER==
+==TBODY==
+==RBODY==
+DUP
