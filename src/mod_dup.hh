@@ -66,12 +66,6 @@ public:
     /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
 
-    /*
-     * Returns the next random request ID
-     * method is reentrant
-     */
-    unsigned int                               getNextReqId();
-
     void setCurrentDuplicationType(DuplicationType::eDuplicationType dt);
 
     DuplicationType::eDuplicationType getCurrentDuplicationType() const;
@@ -84,7 +78,6 @@ private:
 
     /** @brief the highest duplication type based on successive current ones*/
     DuplicationType::eDuplicationType          mHighestDuplicationType;
-
 };
 
 /**

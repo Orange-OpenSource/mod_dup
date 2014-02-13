@@ -17,6 +17,7 @@
 */
 
 #include "mod_dup.hh"
+#include "Utils.hh"
 
 #include <boost/shared_ptr.hpp>
 #include <http_config.h>
@@ -66,7 +67,7 @@ translateHook(request_rec *pRequest) {
         // Not a location that we treat, we decline the request
         return DECLINED;
     }
-    RequestInfo *info = new RequestInfo(tConf->getNextReqId());
+    RequestInfo *info = new RequestInfo(DupModule::getNextReqId());
     // Allocation on a shared pointer on the request pool
     // We guarantee that whatever happens, the RequestInfo will be deleted
     void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));

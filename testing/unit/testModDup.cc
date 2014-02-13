@@ -34,9 +34,6 @@ CPPUNIT_TEST_SUITE_REGISTRATION( TestModDup );
 
 extern module AP_DECLARE_DATA dup_module;
 
-using namespace DupModule;
-
-static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
 
 namespace DupModule {
 
@@ -44,6 +41,9 @@ namespace DupModule {
     ThreadPool<boost::shared_ptr<RequestInfo> > *gThreadPool;
     std::set<std::string> gActiveLocations;
 }
+
+using namespace DupModule;
+static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
 
 cmd_parms * TestModDup::getParms() {
     cmd_parms * lParms = new cmd_parms;
