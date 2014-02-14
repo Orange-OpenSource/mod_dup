@@ -35,8 +35,6 @@
 #include <algorithm>
 #include <boost/tokenizer.hpp>
 #include <fstream>
-#include <stringCompare.hh>
-#include <mapCompare.hh>
 
 #include "mod_compare.hh"
 

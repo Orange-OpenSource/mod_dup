@@ -74,7 +74,6 @@ if(BUILD_COVERAGE)
     set(COVERAGE_TOP_DIR ${CMAKE_BINARY_DIR})
     set(TEMP_DIR ${CMAKE_BINARY_DIR}/temp)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-    target_link_libraries(gcov)
 
     # Run the binary for coverage of the exception in AccessLogParser in case of redirection instead of pipe
     add_custom_target(coverage-unit
@@ -129,7 +128,6 @@ endif()
 # add the binary tree to the search path for include files
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}")
-include_directories("/opt/hosting/run/libws-diff/unversionned/lib/")
 
 add_subdirectory(src)
 

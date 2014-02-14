@@ -18,10 +18,6 @@ cmake_minimum_required(VERSION 2.8)
 
 include(../cmake/Include.cmake)
 
-include_directories(/opt/hosting/run/libws-diff/unversionned/lib/)
-LINK_DIRECTORIES("/opt/hosting/run/libws-diff/unversionned/lib/")
-
-
 file(GLOB mod_dup_SOURCE_FILES
   filters.cc
   mod_dup.cc
