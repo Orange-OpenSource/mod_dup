@@ -138,7 +138,7 @@ apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo);
 
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 
-void writeDifferences(const DupModule::RequestInfo &pReqInfo);
+void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& myDiffHeader , const std::string& myDiffBody, double time);
 
 void map2string(const std::map< std::string, std::string> &pMap, std::string &pString);
 

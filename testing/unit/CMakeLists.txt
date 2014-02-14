@@ -52,7 +52,9 @@ file(GLOB mod_dup_test_SOURCE_FILES
   testModDup.cc
   testRunner.cc
   testContextEnrichment.cc
+  testBodies.cc
   testFilters.cc
+  testModCompare.cc
 )
 
 add_executable(mod_dup_test ${mod_dup_test_SOURCE_FILES})

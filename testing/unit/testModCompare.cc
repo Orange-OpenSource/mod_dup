@@ -26,8 +26,8 @@
 #include <iterator>
 #include <iostream>
 
-#include <stringCompare.hh>
-#include <mapCompare.hh>
+#include <libws-diff/stringCompare.hh>
+#include <libws-diff/mapCompare.hh>
 
 #include <apr_pools.h>
 #include <apr_hooks.h>
@@ -241,29 +241,31 @@ void TestModCompare::testIterOverHeader()
 void TestModCompare::testWriteDifferences()
 {
     std::string lPath( getenv("HOME") );
-    lPath.append("/Maradona.txt");
-    gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
+    lPath.append("/log_differences.txt");
+    gFile.open(lPath, std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
     DupModule::RequestInfo lReqInfo;
-    lReqInfo.mReqHeader["Toto"]= "titi";  //size = 11
-    lReqInfo.mReqHeader["Tutu"]= "tete";  //size = 11
-    lReqInfo.mReqBody = "Request Body";   //size = 12
-    lReqInfo.mResponseHeader["pippo"]= "poppi";  //size = 12
-    lReqInfo.mResponseHeader["puppu"]= "peppe";  //size = 13
-    lReqInfo.mResponseBody = "Response Body";  //size = 13
-    lReqInfo.mDupResponseHeader["Nice"]= "Nizza";  //size = 12
-    lReqInfo.mDupResponseHeader["Paris"]= "Parigi";  //size = 14
-    lReqInfo.mDupResponseBody = "Dup Response Body";  //size = 17
+    lReqInfo.mReqHeader["content-type"]= "plain/text";  //size = 11
+    lReqInfo.mReqHeader["agent-type"]= "myAgent";  //size = 11
+    lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
+    lReqInfo.mId=123;
 
-    writeDifferences(lReqInfo);
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
     CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
 
     gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out );
     std::stringstream buffer;
     buffer << gFile.rdbuf() ;
+    CPPUNIT_ASSERT(buffer.str()=="BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time : 0.001s\n"
+"agent-type: myAgent\n"
+"content-type: plain/text\n"
+"date: TODAY\n"
+"\n"
+"-------------------\n"
+"myHeaderDiff\n"
+"-------------------\n"
+"myBodyDiff\n"
+"END DIFFERENCE n°:123\n");
 
-    // size of header + bodies + 48(representing the size of each part) + 2( \n \n )
-    size_t lTotal = 11 + 11 + 12 + 13 + 13 + 13 + 12 + 14 + 17 + 48 + 2;
-    CPPUNIT_ASSERT( lTotal == buffer.str().size() );
     CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
 }
 

@@ -39,9 +39,9 @@ class TestModCompare :
     CPPUNIT_TEST(testMap2string);
     CPPUNIT_TEST(testIterOverHeader);
     CPPUNIT_TEST(testWriteDifferences);
-    CPPUNIT_TEST(testInputFilterHandler);
-    CPPUNIT_TEST(tearDown);
-    CPPUNIT_TEST(testOutputFilterHandler);
+//    CPPUNIT_TEST(testInputFilterHandler);
+//    CPPUNIT_TEST(tearDown);
+//    CPPUNIT_TEST(testOutputFilterHandler);
     CPPUNIT_TEST_SUITE_END();
 
 public:

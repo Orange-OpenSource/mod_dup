@@ -58,20 +58,20 @@ void map2string(const std::map< std::string, std::string> &pMap, std::string &pS
  * @brief write response differences in a file
  * @param pReqInfo info of the original request
  */
-void writeDifferences(const DupModule::RequestInfo &pReqInfo)
+void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& headerDiff,const std::string& bodyDiff, const double time )
 {
-    std::string lDupRespHeader, lRespHeader, lReqHeader;
-    map2string( pReqInfo.mResponseHeader, lRespHeader );
-    map2string( pReqInfo.mDupResponseHeader, lDupRespHeader );
+    std::string lReqHeader;
     map2string( pReqInfo.mReqHeader, lReqHeader );
     gMutex.lock();
-    gFile << std::setfill('0') << std::setw(8) << lReqHeader.length() << lReqHeader.c_str();
-    gFile << std::setfill('0') << std::setw(8) << pReqInfo.mReqBody.length() << pReqInfo.mReqBody.c_str();
-    gFile << std::setfill('0') << std::setw(8) << lRespHeader.length() << lRespHeader.c_str();
-    gFile << std::setfill('0') << std::setw(8) << pReqInfo.mResponseBody.length() << pReqInfo.mResponseBody.c_str();
-    gFile << std::setfill('0') << std::setw(8) << lDupRespHeader.length() << lDupRespHeader.c_str();
-    gFile << std::setfill('0') << std::setw(8) << pReqInfo.mDupResponseBody.length() << pReqInfo.mDupResponseBody.c_str();
-    gFile << "\n\n";
+    gFile << "BEGIN NEW REQUEST DIFFERENCE n°: " << pReqInfo.mId ;
+    if (time > 0){
+    	gFile << " / Elapsed time : " << time << "s";
+    }
+    gFile << std::endl << lReqHeader << std::endl;
+    std::string separator("-------------------\n");
+    gFile << separator << headerDiff << std::endl;
+    gFile << separator << bodyDiff << std::endl;
+    gFile << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
     gFile.flush();
     gMutex.unlock();
 }
@@ -351,11 +351,19 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
             //write headers in Map
             apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
-            // call the comparison function for the header (map, map)
-            // write differences
-            // call the comparison function for the body
-            // write differences
-            writeDifferences(*req);
+
+            std::string diffBody,diffHeader;
+
+            //TODO change return of the retrieveDiff function in order to be able to stop any diff
+            //Check if the diff between header is
+            clock_t start=clock();
+            if(tConf->mCompHeader.retrieveDiff(req->mReqHeader,req->mDupResponseHeader,diffHeader)){
+            	if (tConf->mCompBody.retrieveDiff(req->mReqBody,req->mDupResponseBody,diffBody)){
+            		if(diffHeader.length()!=0 || diffBody.length()!=0){
+            			writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
+            		}
+            	}
+            }
 
             //we want to avoid to send the response body on the network
             apr_table_set(pRequest->headers_out, "Content-Length", "0");
