@@ -38,6 +38,8 @@ foreach(td ${test_dirs})
     COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${td}/requests/
 
     COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
+    ## Apache sometimes needs some time to stop
+    COMMAND sleep 2
   )
 endforeach()
 
