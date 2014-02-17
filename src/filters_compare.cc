@@ -77,11 +77,11 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
 }
 
 /**
- * @brief check if there is a difference for a set in Cassandra
+ * @brief write the Cassandra differences in log file
  * @param pUniqueID the UNIQUE_ID of the request to check
  * @return true if there are differences, false otherwise
  */
-bool checkCassandraDiff(std::string &pUniqueID)
+bool writeCassandraDiff(std::string &pUniqueID)
 {
     typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
 
@@ -94,8 +94,15 @@ bool checkCassandraDiff(std::string &pUniqueID)
     {
         return false;
     }
+    gMutex.lock();
 
-    //write differences in file
+    gFile << "FieldInfo differences for pUniqueID : " << pUniqueID << "\n";
+    for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
+    	gFile << lPairIter.first->second;
+    }
+    gFile.flush();
+    gMutex.unlock();
+
     lDiff.erase(pUniqueID);
 
     return true;
@@ -347,14 +354,13 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         if (APR_BUCKET_IS_EOS(currentBucket))
         {
             std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
-            checkCassandraDiff(lUniqueID);
+            writeCassandraDiff(lUniqueID);
 
             //write headers in Map
             apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
 
             std::string diffBody,diffHeader;
 
-            //TODO change return of the retrieveDiff function in order to be able to stop any diff
             //Check if the diff between header is
             clock_t start=clock();
             if(tConf->mCompHeader.retrieveDiff(req->mReqHeader,req->mDupResponseHeader,diffHeader)){

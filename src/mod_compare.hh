@@ -130,7 +130,7 @@ setStopList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* p
 void
 printRequest(request_rec *pRequest, std::string pBody);
 
-bool checkCassandraDiff(std::string &pUniqueID);
+bool writeCassandraDiff(std::string &pUniqueID);
 
 bool getLength(const std::string pString, const size_t pFirst, size_t &pLength );
 

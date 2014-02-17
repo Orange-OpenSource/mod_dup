@@ -150,12 +150,12 @@ void TestModCompare::testCheckCassandraDiff()
 {
     CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
     std::string lID("IDtoto");
-    CPPUNIT_ASSERT(!CompareModule::checkCassandraDiff(lID));
+    CPPUNIT_ASSERT(!CompareModule::writeCassandraDiff(lID));
 
     CassandraDiff::FieldInfo lFieldInfo("toto", "pippo", "pepita", "maradona");
     lDiff.insert( std::pair<std::string, CassandraDiff::FieldInfo>(lID, lFieldInfo) );
 
-    CPPUNIT_ASSERT(CompareModule::checkCassandraDiff(lID));
+    CPPUNIT_ASSERT(CompareModule::writeCassandraDiff(lID));
 
 }
 

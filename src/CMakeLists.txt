@@ -28,6 +28,7 @@ file(GLOB mod_dup_SOURCE_FILES
   UrlCodec.cc)
 
 file(GLOB mod_compare_SOURCE_FILES
+  CassandraDiff.cc
   filters_compare.cc
   mod_compare.cc
   Log.cc

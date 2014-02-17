@@ -1,6 +1,8 @@
+#pragma once
+
 #include "boost/tuple/tuple.hpp"
 #include "boost/thread/mutex.hpp"
-
+#include <fstream>
 
 namespace CassandraDiff {
 
@@ -25,6 +27,8 @@ public:
     /// Value about to be set from Request
     std::string mReqValue;
 };
+
+std::ostream& operator<<(std::ostream & strm,const FieldInfo& f);
 
 /// MultiMap of UNIQUE_ID to RequestInfo
 /// There can be more than one request per UNIQUE_ID, with N fields per requests
