@@ -33,7 +33,7 @@ class TestModCompare :
     CPPUNIT_TEST(testInit);
     CPPUNIT_TEST(testConfig);
     CPPUNIT_TEST(testPrintRequest);
-    CPPUNIT_TEST(testCheckCassandraDiff);
+    CPPUNIT_TEST(testWriteCassandraDiff);
     CPPUNIT_TEST(testGetLength);
     CPPUNIT_TEST(testDeserializeBody);
     CPPUNIT_TEST(testMap2string);
@@ -50,7 +50,7 @@ public:
     void testInit();
     void testConfig();
     void testPrintRequest();
-    void testCheckCassandraDiff();
+    void testWriteCassandraDiff();
     void testGetLength();
     void testDeserializeBody();
     void testInputFilterHandler();

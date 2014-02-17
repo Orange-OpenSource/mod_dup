@@ -146,17 +146,51 @@ void TestModCompare::testPrintRequest()
 
 }
 
-void TestModCompare::testCheckCassandraDiff()
+void TestModCompare::testWriteCassandraDiff()
 {
+    std::string lPath( getenv("HOME") );
+    lPath.append("/log_differences_cassandra.txt");
+    gFile.open(lPath, std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
+
     CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
-    std::string lID("IDtoto");
+    std::string lID("IDtoto"),DiffCase("noDiffID");
     CPPUNIT_ASSERT(!CompareModule::writeCassandraDiff(lID));
+
+    CassandraDiff::FieldInfo lFieldInfo1("myName", "myMultiValueKey", "myDbValue", "myReqValue");
+    CassandraDiff::FieldInfo lFieldInfo2("myOtherData", "myOtherMultiValueKey", "myOtherDbValue", "myOtherReqValue");
+    lDiff.insert(std::pair<std::string, CassandraDiff::FieldInfo>(DiffCase,lFieldInfo1));
+    lDiff.insert(std::pair<std::string, CassandraDiff::FieldInfo>(DiffCase,lFieldInfo2));
+    CPPUNIT_ASSERT(CompareModule::writeCassandraDiff(DiffCase));
 
     CassandraDiff::FieldInfo lFieldInfo("toto", "pippo", "pepita", "maradona");
     lDiff.insert( std::pair<std::string, CassandraDiff::FieldInfo>(lID, lFieldInfo) );
 
     CPPUNIT_ASSERT(CompareModule::writeCassandraDiff(lID));
 
+    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
+
+    gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out );
+    std::stringstream buffer;
+    buffer << gFile.rdbuf() ;
+    CPPUNIT_ASSERT(buffer.str()==
+"FieldInfo differences for pUniqueID : noDiffID\n"
+"Field name in the db : 'myName'\n"
+"Multivalue/Collection index/key : 'myMultiValueKey'\n"
+"Value retrieved in Database : 'myDbValue'\n"
+"Value about to be set from Request : 'myReqValue'\n"
+"Field name in the db : 'myOtherData'\n"
+"Multivalue/Collection index/key : 'myOtherMultiValueKey'\n"
+"Value retrieved in Database : 'myOtherDbValue'\n"
+"Value about to be set from Request : 'myOtherReqValue'\n"
+"-------------------\n"
+"FieldInfo differences for pUniqueID : IDtoto\n"
+"Field name in the db : 'toto'\n"
+"Multivalue/Collection index/key : 'pippo'\n"
+"Value retrieved in Database : 'pepita'\n"
+"Value about to be set from Request : 'maradona'\n"
+"-------------------");
+
+    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
 }
 
 void TestModCompare::testGetLength()

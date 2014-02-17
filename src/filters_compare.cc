@@ -32,6 +32,7 @@
 const char *c_UNIQUE_ID = "UNIQUE_ID";
 const size_t SECTION_SIZE_CHARS = 8 ;
 unsigned const MAX_SECTION_SIZE  = pow(10, static_cast<double>(SECTION_SIZE_CHARS))-1;
+const std::string DIFF_SEPARATOR("-------------------\n");
 
 namespace CompareModule {
 
@@ -68,9 +69,8 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     	gFile << " / Elapsed time : " << time << "s";
     }
     gFile << std::endl << lReqHeader << std::endl;
-    std::string separator("-------------------\n");
-    gFile << separator << headerDiff << std::endl;
-    gFile << separator << bodyDiff << std::endl;
+    gFile << DIFF_SEPARATOR << headerDiff << std::endl;
+    gFile << DIFF_SEPARATOR << bodyDiff << std::endl;
     gFile << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
     gFile.flush();
     gMutex.unlock();
@@ -100,6 +100,7 @@ bool writeCassandraDiff(std::string &pUniqueID)
     for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
     	gFile << lPairIter.first->second;
     }
+    gFile << DIFF_SEPARATOR;
     gFile.flush();
     gMutex.unlock();
 
