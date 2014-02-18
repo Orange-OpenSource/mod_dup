@@ -43,7 +43,7 @@ class TestModCompare :
     CPPUNIT_TEST(tearDown);
     CPPUNIT_TEST(testOutputFilterHandler);
     CPPUNIT_TEST(testWriteCassandraDiff);
-//    CPPUNIT_TEST(testWriteSerializedRequests);
+    CPPUNIT_TEST(testWriteSerializedRequests);
     CPPUNIT_TEST_SUITE_END();
 
 public:

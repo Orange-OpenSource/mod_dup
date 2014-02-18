@@ -68,7 +68,7 @@ namespace DupModule {
 			ar & mReqHeader;
 			ar & mReqBody;
 			ar & mResponseHeader;
-			ar & mDupResponseBody;
+			ar & mResponseBody;
 			ar & mDupResponseHeader;
 			ar & mDupResponseBody;
 		}

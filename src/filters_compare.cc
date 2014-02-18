@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <stdexcept>
 #include <boost/thread/detail/singleton.hpp>
+#include <boost/archive/text_oarchive.hpp>
 #include <math.h>
 #include <boost/tokenizer.hpp>
 #include <iomanip>
@@ -87,9 +88,9 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
  */
 void writeSerializedRequest(const DupModule::RequestInfo* req)
 {
-    //boost::archive::text_oarchive oa(gFile);
-    //oa << (*req);
-    boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+	boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+	boost::archive::text_oarchive oa(gFile);
+    oa << (*req);
 }
 
 /**

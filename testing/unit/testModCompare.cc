@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <boost/thread/detail/singleton.hpp>
 #include <boost/assign.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <fstream>
 #include <iterator>
 #include <iostream>
@@ -151,7 +152,7 @@ void TestModCompare::testPrintRequest()
 void TestModCompare::testWriteCassandraDiff()
 {
 	std::string lPath( getenv("HOME") );
-	lPath.append("/log_differences_serialized.txt");
+	lPath.append("/log_differences_Cass.txt");
 	gFile.close();
     gFile.open(lPath.c_str());
 
@@ -199,9 +200,10 @@ void TestModCompare::testWriteCassandraDiff()
 }
 
 void TestModCompare::testWriteSerializedRequests(){
-    /*std::string lPath( getenv("HOME") );
+    std::string lPath( getenv("HOME") );
     lPath.append("/log_differences_serialized.txt");
-    gFile.open(lPath, std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
+    gFile.close();
+    gFile.open(lPath);
 
     std::map<std::string,std::string> header1 = boost::assign::map_list_of("header","header1");
     std::map<std::string,std::string> header2 = boost::assign::map_list_of("header","header1");
@@ -210,7 +212,20 @@ void TestModCompare::testWriteSerializedRequests(){
 
     writeSerializedRequest(&req);
 
-    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);*/
+    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
+    {
+		std::ifstream readFile;
+		readFile.open(lPath.c_str());
+		DupModule::RequestInfo retrievedReq;
+		boost::archive::text_iarchive iarch(readFile);
+
+		iarch >>retrievedReq;
+		CPPUNIT_ASSERT(req.mReqBody == retrievedReq.mReqBody &&
+					req.mResponseHeader == retrievedReq.mResponseHeader &&
+					req.mResponseBody == retrievedReq.mResponseBody &&
+					req.mDupResponseHeader == retrievedReq.mDupResponseHeader &&
+					req.mDupResponseBody == retrievedReq.mDupResponseBody);
+	}
 }
 
 void TestModCompare::testWriteDifferences()
