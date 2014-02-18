@@ -22,6 +22,7 @@
 #include <http_protocol.h>
 #include <algorithm>
 #include <boost/thread/detail/singleton.hpp>
+#include <boost/assign.hpp>
 #include <fstream>
 #include <iterator>
 #include <iostream>
@@ -38,6 +39,7 @@
 #include "Log.hh"
 #include "CassandraDiff.h"
 #include "testBodies.hh"
+#include "RequestInfo.hh"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -148,9 +150,10 @@ void TestModCompare::testPrintRequest()
 
 void TestModCompare::testWriteCassandraDiff()
 {
-    std::string lPath( getenv("HOME") );
-    lPath.append("/log_differences_cassandra.txt");
-    gFile.open(lPath, std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
+	std::string lPath( getenv("HOME") );
+	lPath.append("/log_differences_serialized.txt");
+	gFile.close();
+    gFile.open(lPath.c_str());
 
     CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
     std::string lID("IDtoto"),DiffCase("noDiffID");
@@ -169,11 +172,13 @@ void TestModCompare::testWriteCassandraDiff()
 
     CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
 
-    gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out );
-    std::stringstream buffer;
-    buffer << gFile.rdbuf() ;
-    CPPUNIT_ASSERT(buffer.str()==
-"FieldInfo differences for pUniqueID : noDiffID\n"
+    {
+		std::ifstream readFile;
+		readFile.open(lPath.c_str());
+		std::stringstream buffer;
+		buffer << readFile.rdbuf() ;
+
+		std::string assertRes("FieldInfo differences for pUniqueID : noDiffID\n"
 "Field name in the db : 'myName'\n"
 "Multivalue/Collection index/key : 'myMultiValueKey'\n"
 "Value retrieved in Database : 'myDbValue'\n"
@@ -188,9 +193,62 @@ void TestModCompare::testWriteCassandraDiff()
 "Multivalue/Collection index/key : 'pippo'\n"
 "Value retrieved in Database : 'pepita'\n"
 "Value about to be set from Request : 'maradona'\n"
-"-------------------");
+"-------------------\n");
+		CPPUNIT_ASSERT(buffer.str()==assertRes);
+    }
+}
 
+void TestModCompare::testWriteSerializedRequests(){
+    /*std::string lPath( getenv("HOME") );
+    lPath.append("/log_differences_serialized.txt");
+    gFile.open(lPath, std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
+
+    std::map<std::string,std::string> header1 = boost::assign::map_list_of("header","header1");
+    std::map<std::string,std::string> header2 = boost::assign::map_list_of("header","header1");
+    std::map<std::string,std::string> header3 = boost::assign::map_list_of("header","header1");
+    DupModule::RequestInfo req(header1,"mybody1",header2,"mybody2",header3,"mybody3");
+
+    writeSerializedRequest(&req);
+
+    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);*/
+}
+
+void TestModCompare::testWriteDifferences()
+{
+    std::string lPath( getenv("HOME") );
+    lPath.append("/log_differences.txt");
+    gFile.close();
+    gFile.open(lPath.c_str());
+
+    DupModule::RequestInfo lReqInfo;
+    lReqInfo.mReqHeader["content-type"]= "plain/text";  //size = 11
+    lReqInfo.mReqHeader["agent-type"]= "myAgent";  //size = 11
+    lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
+    lReqInfo.mReqBody="MyClientRequest";
+    lReqInfo.mId=123;
+
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
     CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
+
+    {
+		std::ifstream readFile;
+		readFile.open(lPath.c_str());
+		std::stringstream buffer;
+		buffer << readFile.rdbuf();
+		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time : 0.001s\n"
+				"agent-type: myAgent\n"
+				"content-type: plain/text\n"
+				"date: TODAY\n"
+				"\n"
+				"MyClientRequest\n"
+				"-------------------\n"
+				"myHeaderDiff\n"
+				"-------------------\n"
+				"myBodyDiff\n"
+				"END DIFFERENCE n°:123\n");
+		std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
+		CPPUNIT_ASSERT(buffer.str()==assertRes);
+    }
 }
 
 void TestModCompare::testGetLength()
@@ -271,38 +329,6 @@ void TestModCompare::testIterOverHeader()
     CPPUNIT_ASSERT( lMap.find("Pele") != lMap.end() );
     CPPUNIT_ASSERT( lMap.find("toto") != lMap.end() );
 }
-
-void TestModCompare::testWriteDifferences()
-{
-    std::string lPath( getenv("HOME") );
-    lPath.append("/log_differences.txt");
-    gFile.open(lPath, std::ofstream::in | std::ofstream::out | std::ofstream::trunc );
-    DupModule::RequestInfo lReqInfo;
-    lReqInfo.mReqHeader["content-type"]= "plain/text";  //size = 11
-    lReqInfo.mReqHeader["agent-type"]= "myAgent";  //size = 11
-    lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
-    lReqInfo.mId=123;
-
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
-    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
-
-    gFile.open(lPath.c_str(), std::ofstream::in | std::ofstream::out );
-    std::stringstream buffer;
-    buffer << gFile.rdbuf() ;
-    CPPUNIT_ASSERT(buffer.str()=="BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time : 0.001s\n"
-"agent-type: myAgent\n"
-"content-type: plain/text\n"
-"date: TODAY\n"
-"\n"
-"-------------------\n"
-"myHeaderDiff\n"
-"-------------------\n"
-"myBodyDiff\n"
-"END DIFFERENCE n°:123\n");
-
-    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
-}
-
 
 void TestModCompare::testInputFilterHandler()
 {

@@ -60,6 +60,14 @@ RequestInfo::RequestInfo(unsigned int id, const std::string &pConfPath, const st
         mBody = *pBody;
 }
 
+RequestInfo::RequestInfo(mapStr reqHeader,std::string reqBody,mapStr respHeader,std::string respBody,mapStr dupHeader,std::string dupBody):
+	mReqHeader(reqHeader),
+	mReqBody(reqBody),
+	mResponseHeader(respHeader),
+	mResponseBody(respBody),
+	mDupResponseHeader(dupHeader),
+	mDupResponseBody(dupBody){}
+
 RequestInfo::RequestInfo(unsigned int id)
     : mPoison(false),
       mId(id) {

@@ -46,13 +46,11 @@ printRequest(request_rec *pRequest, std::string pBody)
 }
 
 void map2string(const std::map< std::string, std::string> &pMap, std::string &pString) {
-
     std::map< std::string, std::string>::const_iterator lIter;
     for ( lIter = pMap.begin(); lIter != pMap.end(); ++lIter )
     {
         pString += lIter->first + ": " + lIter->second + "\n";
     }
-
 }
 
 /**
@@ -63,17 +61,35 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
 {
     std::string lReqHeader;
     map2string( pReqInfo.mReqHeader, lReqHeader );
-    gMutex.lock();
-    gFile << "BEGIN NEW REQUEST DIFFERENCE n°: " << pReqInfo.mId ;
+    std::stringstream diffLog;
+
+    diffLog << "BEGIN NEW REQUEST DIFFERENCE n°: " << pReqInfo.mId ;
     if (time > 0){
-    	gFile << " / Elapsed time : " << time << "s";
+    	diffLog << " / Elapsed time : " << time << "s";
     }
-    gFile << std::endl << lReqHeader << std::endl;
-    gFile << DIFF_SEPARATOR << headerDiff << std::endl;
-    gFile << DIFF_SEPARATOR << bodyDiff << std::endl;
-    gFile << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
+    diffLog << std::endl << lReqHeader << std::endl;
+    diffLog << pReqInfo.mReqBody.c_str() << std::endl;
+    diffLog << DIFF_SEPARATOR << headerDiff << std::endl;
+    diffLog << DIFF_SEPARATOR << bodyDiff << std::endl;
+    diffLog << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
+    diffLog.flush();
+
+    boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+    gFile << diffLog.str();
     gFile.flush();
-    gMutex.unlock();
+}
+
+/**
+ * @brief write request body and header in file with serialized boost method
+ * @param type specify custom information about the request (Request,Response,DupResponse,...)
+ * @param header the header
+ * @param body the body
+ */
+void writeSerializedRequest(const DupModule::RequestInfo* req)
+{
+    //boost::archive::text_oarchive oa(gFile);
+    //oa << (*req);
+    boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
 }
 
 /**
@@ -94,20 +110,25 @@ bool writeCassandraDiff(std::string &pUniqueID)
     {
         return false;
     }
-    gMutex.lock();
 
-    gFile << "FieldInfo differences for pUniqueID : " << pUniqueID << "\n";
+    std::stringstream diffStr;
+
+    diffStr << "FieldInfo differences for pUniqueID : " << pUniqueID << "\n";
     for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
-    	gFile << lPairIter.first->second;
+    	diffStr << lPairIter.first->second;
     }
-    gFile << DIFF_SEPARATOR;
+    diffStr << DIFF_SEPARATOR;
+    diffStr.flush();
+
+    std::cout << diffStr.str();
+
+    boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+    gFile << diffStr.rdbuf();
     gFile.flush();
-    gMutex.unlock();
 
     lDiff.erase(pUniqueID);
 
     return true;
-
 }
 
 /**
@@ -361,17 +382,18 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
 
             std::string diffBody,diffHeader;
-
-            //Check if the diff between header is
-            clock_t start=clock();
-            if(tConf->mCompHeader.retrieveDiff(req->mReqHeader,req->mDupResponseHeader,diffHeader)){
-            	if (tConf->mCompBody.retrieveDiff(req->mReqBody,req->mDupResponseBody,diffBody)){
-            		if(diffHeader.length()!=0 || diffBody.length()!=0){
-            			writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
-            		}
-            	}
+            if( tConf->mCompareDisabled){
+            	writeSerializedRequest(req);
+            }else{
+				clock_t start=clock();
+				if(tConf->mCompHeader.retrieveDiff(req->mReqHeader,req->mDupResponseHeader,diffHeader)){
+					if (tConf->mCompBody.retrieveDiff(req->mReqBody,req->mDupResponseBody,diffBody)){
+						if(diffHeader.length()!=0 || diffBody.length()!=0){
+							writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
+						}
+					}
+				}
             }
-
             //we want to avoid to send the response body on the network
             apr_table_set(pRequest->headers_out, "Content-Length", "0");
             apr_brigade_cleanup(pBrigade);

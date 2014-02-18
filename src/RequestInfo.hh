@@ -24,6 +24,12 @@
 #include <string>
 #include <sstream>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/archive/basic_text_oarchive.hpp>
+
 namespace DupModule {
 
     /*
@@ -49,6 +55,23 @@ namespace DupModule {
      * @brief Contains information about the incoming request.
      */
     struct RequestInfo {
+    	typedef std::map<std::string,std::string> mapStr;
+
+    	friend class boost::serialization::access;
+    	// cf http://www.boost.org/doc/libs/1_55_0/libs/serialization/doc/tutorial.html
+		// When the class Archive corresponds to an output archive, the
+		// & operator is defined similar to <<.  Likewise, when the class Archive
+		// is a type of input archive the & operator is defined similar to >>.
+		template<typename Archive>
+		void serialize(Archive & ar, const unsigned int version)
+		{
+			ar & mReqHeader;
+			ar & mReqBody;
+			ar & mResponseHeader;
+			ar & mDupResponseBody;
+			ar & mDupResponseHeader;
+			ar & mDupResponseBody;
+		}
 
         /** @brief True if the request processor should stop ater seeing this object. */
         bool mPoison;
@@ -65,18 +88,17 @@ namespace DupModule {
         /** @brief The query answer */
         std::string mAnswer;
         /** @brief The header part of the query */
-        std::map< std::string, std::string > mReqHeader;
+        mapStr mReqHeader;
         /** @brief The header part of the query */
         std::string mReqBody;
         /** @brief The header part of the answer */
-        std::map< std::string, std::string >  mResponseHeader;
+        mapStr  mResponseHeader;
         /** @brief The body part of the answer */
         std::string mResponseBody;
         /** @brief The header part of the answer of the duplicated request */
-        std::map<std::string, std::string> mDupResponseHeader;
+        mapStr mDupResponseHeader;
         /** @brief The body part of the answer of the duplicated request*/
         std::string mDupResponseBody;
-
 
         typedef std::list<std::pair<std::string, std::string> > tHeaders;
 
@@ -94,6 +116,11 @@ namespace DupModule {
          */
         RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath,
                     const std::string &pArgs, const std::string *body = 0);
+
+        /**
+         * @brief Constructor dedicated for serialization purpose
+         */
+        RequestInfo(mapStr reqHeader,std::string reqBody,mapStr respHeader,std::string respBody,mapStr dupHeader,std::string dupBody);
 
         /**
          * @brief Constructs a request initialising it's id
@@ -123,5 +150,6 @@ namespace DupModule {
          * content is appended to output
          */
         static void Serialize(const std::string &toSerialize, std::stringstream &output);
+
     };
 }

@@ -60,6 +60,7 @@ public:
 
     LibWsDiff::StringCompareBody mCompBody;
     LibWsDiff::MapCompare mCompHeader;
+    bool mCompareDisabled;
 
 };
 
@@ -132,6 +133,8 @@ printRequest(request_rec *pRequest, std::string pBody);
 
 bool writeCassandraDiff(std::string &pUniqueID);
 
+void writeSerializedRequest(const DupModule::RequestInfo* req);
+
 bool getLength(const std::string pString, const size_t pFirst, size_t &pLength );
 
 apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo);
@@ -147,6 +150,8 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value);
 apr_status_t closeFile(void *);
 
 const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath);
+
+const char* setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue);
 
 }
 

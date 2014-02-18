@@ -33,15 +33,17 @@ class TestModCompare :
     CPPUNIT_TEST(testInit);
     CPPUNIT_TEST(testConfig);
     CPPUNIT_TEST(testPrintRequest);
-    CPPUNIT_TEST(testWriteCassandraDiff);
+
     CPPUNIT_TEST(testGetLength);
     CPPUNIT_TEST(testDeserializeBody);
     CPPUNIT_TEST(testMap2string);
     CPPUNIT_TEST(testIterOverHeader);
     CPPUNIT_TEST(testWriteDifferences);
-//    CPPUNIT_TEST(testInputFilterHandler);
-//    CPPUNIT_TEST(tearDown);
-//    CPPUNIT_TEST(testOutputFilterHandler);
+    CPPUNIT_TEST(testInputFilterHandler);
+    CPPUNIT_TEST(tearDown);
+    CPPUNIT_TEST(testOutputFilterHandler);
+    CPPUNIT_TEST(testWriteCassandraDiff);
+//    CPPUNIT_TEST(testWriteSerializedRequests);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -58,5 +60,5 @@ public:
     void testIterOverHeader();
     void testWriteDifferences();
     void testOutputFilterHandler();
-
+    void testWriteSerializedRequests();
 };

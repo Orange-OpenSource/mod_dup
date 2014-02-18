@@ -53,8 +53,7 @@ std::ofstream gFile;
 const char * gFilePath;
 boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, "global_mutex");
 
-
-CompareConf::CompareConf() {
+CompareConf::CompareConf(): mCompareDisabled(false) {
 }
 
 
@@ -213,6 +212,23 @@ setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
     return NULL;
 }
 
+/**
+ * @brief Enable/Disable the utilization of the libws-diff tools
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @param pValue the value
+ * @return NULL if parameters are valid, otherwise a string describing the error
+ */
+const char*
+setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
+	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
+	lConf->mCompareDisabled= strcmp(pValue, "1") || strcmp(pValue, "true");
+    if(lConf->mCompareDisabled){
+    	Log::warn(42,"The use of the diffing library libws-diff has been disabled!");
+    }
+    return NULL;
+}
+
 /** @brief Declaration of configuration commands */
 command_rec gCmds[] = {
     // AP_INIT_(directive,
@@ -235,6 +251,11 @@ command_rec gCmds[] = {
                     0,
                     OR_ALL,
                     "Path of file where the differences will be logged."),
+		AP_INIT_TAKE1("DisableLibwsdiff",
+					reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
+					0,
+					OR_ALL,
+					"Disable the use of libws-diff tools. Print raw serialization of the data in the log file."),
     {0}
 };
 
