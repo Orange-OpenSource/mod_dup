@@ -133,9 +133,10 @@ bool writeCassandraDiff(std::string &pUniqueID);
 
 void writeSerializedRequest(const DupModule::RequestInfo* req);
 
-bool getLength(const std::string pString, const size_t pFirst, size_t &pLength );
+size_t getLength(const std::string pString, const size_t pFirst );
 
 apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo);
+apr_status_t deserializeHeader(DupModule::RequestInfo &pReqInfo,const std::string& header);
 
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 

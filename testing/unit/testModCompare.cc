@@ -271,13 +271,19 @@ void TestModCompare::testGetLength()
 {
     std::string lString("00000345Diego");
     size_t lFirst = 0;
-    size_t lLength = 0;
 
-    CPPUNIT_ASSERT(getLength( lString, lFirst, lLength ));
-    CPPUNIT_ASSERT(lLength == 345);
+    CPPUNIT_ASSERT(getLength( lString, lFirst)== 345 );
 
-    lString = "toto0345Diego";
-    CPPUNIT_ASSERT(!getLength( lString, lFirst, lLength ));
+    bool hasThrownError=false;
+    try{
+        lString = "toto0345Diego";
+        getLength( lString, lFirst);
+    }catch(const std::out_of_range &oor){
+    	hasThrownError=true;
+    }catch(boost::bad_lexical_cast){
+    	hasThrownError=true;
+    }
+    CPPUNIT_ASSERT(hasThrownError);
 }
 
 void TestModCompare::testDeserializeBody()

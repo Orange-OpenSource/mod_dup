@@ -29,6 +29,8 @@
 #include <math.h>
 #include <boost/tokenizer.hpp>
 #include <iomanip>
+#include <apache2/httpd.h>
+
 
 const char *c_UNIQUE_ID = "UNIQUE_ID";
 const size_t SECTION_SIZE_CHARS = 8 ;
@@ -138,25 +140,24 @@ bool writeCassandraDiff(std::string &pUniqueID)
  * @param pLength the length calculated
  * @return true if the conversion gets success, false otherwise
  */
-bool getLength(const std::string pString, const size_t pFirst, size_t &pLength )
+size_t getLength(const std::string pString, const size_t pFirst)
 {
+	size_t res;
     try
     {
-        pLength =   boost::lexical_cast<unsigned int>( pString.substr(pFirst,SECTION_SIZE_CHARS));
+        res =   boost::lexical_cast<unsigned int>( pString.substr(pFirst,SECTION_SIZE_CHARS));
     }
-    catch (boost::bad_lexical_cast &)
+    catch (boost::bad_lexical_cast & e)
     {
-        Log::error(12, "Invalid size value");
-        return false;
+    	Log::error(12, "Invalid size value");
+    	throw e;
     }
-
-    if( pLength > MAX_SECTION_SIZE)
+    if( res > MAX_SECTION_SIZE)
     {
         Log::error(12, "Value of length out of range");
-        return false;
+        throw std::out_of_range("Value of length out of range");
     }
-
-    return true;
+    return res;
 }
 
 /**
@@ -166,63 +167,70 @@ bool getLength(const std::string pString, const size_t pFirst, size_t &pLength )
  */
 apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo)
 {
-    int BAD_REQUEST = 400;
     size_t lBodyReqSize, lHeaderResSize, lBodyResSize;
+    size_t pos;
     std::string lResponseHeader;
     if ( pReqInfo.mBody.size() < 3*SECTION_SIZE_CHARS )
     {
         Log::error(11, "Unexpected body format");
         Log::error(13, "Current body size: %d", static_cast<int>(pReqInfo.mBody.size()));
-        return BAD_REQUEST;
+        return HTTP_BAD_REQUEST;
     }
-    if ( !getLength( pReqInfo.mBody, 0, lBodyReqSize ) )
-    {
-        return BAD_REQUEST;
-    }
-    if ( !getLength( pReqInfo.mBody, SECTION_SIZE_CHARS+lBodyReqSize, lHeaderResSize ))
-    {
-        return BAD_REQUEST;
-    }
-    lResponseHeader = pReqInfo.mBody.substr(2*SECTION_SIZE_CHARS + lBodyReqSize,lHeaderResSize);
+    try {
+    	pos=0;
+    	lBodyReqSize = getLength( pReqInfo.mBody, pos);
+    	pos+= SECTION_SIZE_CHARS;
+    	pReqInfo.mReqBody = pReqInfo.mBody.substr(pos,lBodyReqSize);
+    	pos+=lBodyReqSize;
 
-    if ( !getLength( pReqInfo.mBody, 2*SECTION_SIZE_CHARS + lBodyReqSize + lHeaderResSize, lBodyResSize ) )
-    {
-        return BAD_REQUEST;
-    }
-    try
-    {
-        pReqInfo.mReqBody = pReqInfo.mBody.substr(SECTION_SIZE_CHARS,lBodyReqSize);
-        lResponseHeader = pReqInfo.mBody.substr(2*SECTION_SIZE_CHARS + lBodyReqSize,lHeaderResSize);
-        pReqInfo.mResponseBody = pReqInfo.mBody.substr(3*SECTION_SIZE_CHARS + lBodyReqSize +  lHeaderResSize, lBodyResSize);
+    	lHeaderResSize = getLength( pReqInfo.mBody,pos);
+    	pos+= SECTION_SIZE_CHARS;
+    	lResponseHeader = pReqInfo.mBody.substr(pos,lHeaderResSize);
+    	pos+=lHeaderResSize;
+
+    	lBodyResSize = getLength( pReqInfo.mBody, pos);
+    	pos+= SECTION_SIZE_CHARS;
+    	pReqInfo.mResponseBody = pReqInfo.mBody.substr(pos, lBodyResSize);
+
+    	deserializeHeader(pReqInfo,lResponseHeader);
     }
     catch ( const std::out_of_range &oor)
     {
         Log::error(13, "Out of range error: %s", oor.what());
-        return BAD_REQUEST;
+        return HTTP_BAD_REQUEST;
+    }catch (boost::bad_lexical_cast & e ){
+    	return HTTP_BAD_REQUEST;
     }
 
+	return OK;
+}
+/**
+ * @brief extract the request body, the header answer and the response answer
+ * @param pReqInfo info of the original request
+ * @return a http status
+ */
+apr_status_t deserializeHeader(DupModule::RequestInfo &pReqInfo,const std::string& header)
+{
+	//deserialize the response header in a map
+	std::string lDelim(": ");
+	std::string lLine;
+	std::stringstream stmHeader;
+	stmHeader << header;
+	while (std::getline(stmHeader, lLine) )
+	{
+		size_t lPos = 0;
+		lPos = lLine.find(lDelim);
+		if (lPos == std::string::npos)
+		{
+			Log::error(13,"Invalid Header format" );
+			throw std::out_of_range("Invalid Header format");
+		}
+		std::string lKey = lLine.substr( 0, lPos );
+		std::string lValue = lLine.substr( lPos + lDelim.size(), lLine.size() - lPos - lDelim.size() );
+		pReqInfo.mResponseHeader[lKey] = lValue;
+	}
 
-    //deserialize the response header in a map
-    std::string lDelim(": ");
-    std::string lLine;
-    std::stringstream lHeader;
-    lHeader << lResponseHeader;
-    while (std::getline(lHeader, lLine) )
-    {
-        size_t lPos = 0;
-        lPos = lLine.find(lDelim);
-        if (lPos == std::string::npos)
-        {
-            Log::error(13, "Invalid Header format ");
-            return BAD_REQUEST;
-        }
-        std::string lKey = lLine.substr( 0, lPos );
-        std::string lValue = lLine.substr( lPos + lDelim.size(), lLine.size() - lPos - lDelim.size() );
-        pReqInfo.mResponseHeader[lKey] = lValue;
-    }
-
-    return OK;
-
+	return OK;
 }
 
 /*
