@@ -108,28 +108,28 @@ void TestModCompare::testInit()
 
 void TestModCompare::testConfig()
 {
-    //TODO
-    /*
     CompareConf *lDoHandle = new CompareConf();
 
-    CPPUNIT_ASSERT(setIgnoreList(NULL, (void *) lDoHandle, "pippo", ""));
-    CPPUNIT_ASSERT(setIgnoreList(NULL, (void *) lDoHandle, "", "pippo"));
-    CPPUNIT_ASSERT(setIgnoreList(NULL, (void *) lDoHandle, "toto", "pippo"));
-    CPPUNIT_ASSERT(!setIgnoreList(NULL, (void *) lDoHandle, "Header", "pippo"));
-    CPPUNIT_ASSERT(std::find( lDoHandle->mHeaderIgnoreList.begin(), lDoHandle->mHeaderIgnoreList.end(), "pippo") != lDoHandle->mHeaderIgnoreList.end());
-    CPPUNIT_ASSERT(!setIgnoreList(NULL, (void *) lDoHandle, "Body", "pluto"));
-    CPPUNIT_ASSERT(std::find( lDoHandle->mBodyIgnoreList.begin(), lDoHandle->mBodyIgnoreList.end(), "pluto") != lDoHandle->mBodyIgnoreList.end());
+    CPPUNIT_ASSERT(setHeaderList(NULL, (void *) lDoHandle, "pippo","myKey",  ""));
+    CPPUNIT_ASSERT(setHeaderList(NULL, (void *) lDoHandle, "","myKey", "pippo"));
+    CPPUNIT_ASSERT(setHeaderList(NULL, (void *) lDoHandle, "toto","myKey", "pippo"));
+    CPPUNIT_ASSERT(!setHeaderList(NULL, (void *) lDoHandle, "IGNORE", "myKey","pippo"));
+    CPPUNIT_ASSERT(!setHeaderList(NULL, (void *) lDoHandle, "STOP","myKey", "pluto"));
 
-    CPPUNIT_ASSERT(setStopList(NULL, (void *) lDoHandle, "pippo", ""));
-    CPPUNIT_ASSERT(setStopList(NULL, (void *) lDoHandle, "", "pippo"));
-    CPPUNIT_ASSERT(setStopList(NULL, (void *) lDoHandle, "toto", "pippo"));
-    CPPUNIT_ASSERT(!setStopList(NULL, (void *) lDoHandle, "Header", "pippo"));
-    CPPUNIT_ASSERT(std::find( lDoHandle->mHeaderStopList.begin(), lDoHandle->mHeaderStopList.end(), "pippo") != lDoHandle->mHeaderStopList.end());
-    CPPUNIT_ASSERT(!setStopList(NULL, (void *) lDoHandle, "Body", "pluto"));
-    CPPUNIT_ASSERT(std::find( lDoHandle->mBodyStopList.begin(), lDoHandle->mBodyStopList.end(), "pluto") != lDoHandle->mBodyStopList.end());
+    CPPUNIT_ASSERT(setBodyList(NULL, (void *) lDoHandle, "pippo", ""));
+    CPPUNIT_ASSERT(setBodyList(NULL, (void *) lDoHandle, "", "pippo"));
+    CPPUNIT_ASSERT(setBodyList(NULL, (void *) lDoHandle, "toto", "pippo"));
+    CPPUNIT_ASSERT(!setBodyList(NULL, (void *) lDoHandle, "IGNORE", "pippo"));
+    CPPUNIT_ASSERT(!setBodyList(NULL, (void *) lDoHandle, "STOP", "pluto"));
+
+    setDisableLibwsdiff(NULL, (void *) lDoHandle, "true");
+    CPPUNIT_ASSERT(lDoHandle->mCompareDisabled);
+    setDisableLibwsdiff(NULL, (void *) lDoHandle, "whatever");
+    CPPUNIT_ASSERT(!lDoHandle->mCompareDisabled);
+    setDisableLibwsdiff(NULL, (void *) lDoHandle, "1");
+    CPPUNIT_ASSERT(lDoHandle->mCompareDisabled);
 
     CPPUNIT_ASSERT( CompareConf::cleaner( (void *)lDoHandle ) == 0 );
-*/
 }
 
 void TestModCompare::testPrintRequest()
@@ -226,6 +226,7 @@ void TestModCompare::testWriteSerializedRequests(){
 					req.mDupResponseHeader == retrievedReq.mDupResponseHeader &&
 					req.mDupResponseBody == retrievedReq.mDupResponseBody);
 	}
+    //TODO prepare conf to check call writeSerializeRequest ok
 }
 
 void TestModCompare::testWriteDifferences()

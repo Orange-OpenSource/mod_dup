@@ -156,13 +156,12 @@ setBodyList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* p
  * @param pValue the reg_ex to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
-const char*
-setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pHeader, const char* pValue) {
+const char* setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pAffectedKey,const char* pValue) {
     if (!pValue || strlen(pValue) == 0) {
         return "Missing reg_ex value for the header";
     }
 
-    if (!pHeader || strlen(pHeader) == 0) {
+    if (!pAffectedKey || strlen(pAffectedKey) == 0) {
             return "Missing header value";
         }
 
@@ -171,8 +170,7 @@ setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType, const char*
     }
 
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-    std::string lListType(pListType);
-    std::string lHeader(pHeader);
+    std::string lHeader(pAffectedKey);
     std::string lValue(pValue);
 
     if (strcmp("STOP", pListType) == 0)
@@ -199,8 +197,7 @@ setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType, const char*
  * @param pValue the value to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
-const char*
-setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
+const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
     if (!pPath || strlen(pPath) == 0) {
         return "Missing path value";
     }
@@ -222,7 +219,7 @@ setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
 const char*
 setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-	lConf->mCompareDisabled= strcmp(pValue, "1") || strcmp(pValue, "true");
+	lConf->mCompareDisabled= strcmp(pValue, "1")==0 || strcmp(pValue, "true")==0;
     if(lConf->mCompareDisabled){
     	Log::warn(42,"The use of the diffing library libws-diff has been disabled!");
     }

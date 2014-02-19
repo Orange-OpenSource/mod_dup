@@ -114,8 +114,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
  * @param pValue the value to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
-const char*
-setIgnoreList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
+const char* setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pAffectedKey, const char* pValue);
 
 /**
  * @brief Set the list of errors who stop the comparison
@@ -125,8 +124,7 @@ setIgnoreList(cmd_parms* pParams, void* pCfg, const char* pListType, const char*
  * @param pValue the value to insert in the list
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
-const char*
-setStopList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
+const char* setBodyList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
 
 void
 printRequest(request_rec *pRequest, std::string pBody);
