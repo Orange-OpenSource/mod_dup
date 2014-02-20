@@ -288,7 +288,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         // Backup of info struct in the request context
         pF->ctx = info;
     } else if (pF->ctx == (void *)1) {
-        return OK;
+        return lStatus;
     }
 
     DupModule::RequestInfo *lBH = static_cast<DupModule::RequestInfo *>(pF->ctx);
@@ -312,10 +312,8 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     apr_brigade_cleanup(pB);
 
     lStatus =  deserializeBody(*lBH);
-    std::stringstream lStringSize;
-    lStringSize << lBH->mReqBody.size();
 #ifndef UNIT_TESTING
-    apr_table_set(pRequest->headers_in, "Content-Length", lStringSize.str().c_str());
+    apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lBH->mReqBody.size()).c_str());
     apr_brigade_write(pB, ap_filter_flush, pF, lBH->mReqBody.c_str(), lBH->mReqBody.length() );
 #endif
     apr_table_do(&iterateOverHeadersCallBack, &(lBH->mReqHeader), pRequest->headers_in, NULL);
@@ -349,7 +347,9 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
 
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
-    assert(tConf);
+    if( tConf == NULL ){
+    	return ap_pass_brigade(pFilter->next, pBrigade);
+    }
 
     if (pFilter->ctx == (void *) -1)
     {
@@ -357,7 +357,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
-    assert(pRequest->request_config);
+
     DupModule::RequestInfo *req = reinterpret_cast<DupModule::RequestInfo *>(ap_get_module_config(pRequest->request_config, &compare_module));
     if ( req == NULL)
     {
