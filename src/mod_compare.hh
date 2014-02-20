@@ -131,7 +131,7 @@ printRequest(request_rec *pRequest, std::string pBody);
 
 bool writeCassandraDiff(std::string &pUniqueID);
 
-void writeSerializedRequest(const DupModule::RequestInfo* req);
+void writeSerializedRequest(const DupModule::RequestInfo& req);
 
 size_t getLength(const std::string pString, const size_t pFirst );
 

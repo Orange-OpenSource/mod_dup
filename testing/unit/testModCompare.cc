@@ -210,7 +210,7 @@ void TestModCompare::testWriteSerializedRequests(){
     std::map<std::string,std::string> header3 = boost::assign::map_list_of("header","header1");
     DupModule::RequestInfo req(header1,"mybody1",header2,"mybody2",header3,"mybody3");
 
-    writeSerializedRequest(&req);
+    writeSerializedRequest(req);
 
     CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
     {
@@ -612,6 +612,11 @@ void TestModCompare::testOutputFilterHandler()
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
 
         // Adding eos to bb
+
+        //recreating and resetting the requestInfo since boost:scoped pointer has deleted it
+        DupModule::RequestInfo *info2 = new DupModule::RequestInfo(42);
+        ap_set_module_config(req->request_config, &compare_module, info2);
+
         apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
         apr_bucket *e = apr_bucket_eos_create(bA);
         CPPUNIT_ASSERT(e);

@@ -88,11 +88,11 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
  * @param header the header
  * @param body the body
  */
-void writeSerializedRequest(const DupModule::RequestInfo* req)
+void writeSerializedRequest(const DupModule::RequestInfo& req)
 {
 	boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
 	boost::archive::text_oarchive oa(gFile);
-    oa << (*req);
+    oa << req;
 }
 
 /**
@@ -353,12 +353,10 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     if (pFilter->ctx == (void *) -1)
     {
-        apr_brigade_cleanup(pBrigade);
-        apr_table_set(pRequest->headers_out, "Content-Length", "0");
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
+    boost::scoped_ptr<DupModule::RequestInfo> req(reinterpret_cast<DupModule::RequestInfo*>(ap_get_module_config(pRequest->request_config, &compare_module)));
 
-    DupModule::RequestInfo *req = reinterpret_cast<DupModule::RequestInfo *>(ap_get_module_config(pRequest->request_config, &compare_module));
     if ( req == NULL)
     {
         apr_brigade_cleanup(pBrigade);
@@ -391,7 +389,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
             std::string diffBody,diffHeader;
             if( tConf->mCompareDisabled){
-            	writeSerializedRequest(req);
+            	writeSerializedRequest(*req);
             }else{
 				clock_t start=clock();
 				if(tConf->mCompHeader.retrieveDiff(req->mReqHeader,req->mDupResponseHeader,diffHeader)){
