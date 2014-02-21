@@ -48,4 +48,4 @@ target_link_libraries(mod_dup ${APR_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARI
 
 add_library(mod_compare MODULE ${mod_compare_SOURCE_FILES})
 set_target_properties(mod_compare PROPERTIES PREFIX "")
-target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} boost_serialization boost_regex ws_diff)
+target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} boost_serialization ws_diff)
