@@ -241,34 +241,34 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 }
 
 /** @brief Declaration of configuration commands */
-command_rec gCmds[] = {
-    // AP_INIT_(directive,
-    //          function,
-    //          void * extra data,
-    //          overrides to allow in order to enable,
-    //          help message),
+    command_rec gCmds[] = {
+        // AP_INIT_(directive,
+        //          function,
+        //          void * extra data,
+        //          overrides to allow in order to enable,
+        //          help message),
         AP_INIT_TAKE2("BodyList",
-                    reinterpret_cast<const char *(*)()>(&setBodyList),
-                    0,
-                    ACCESS_CONF,
-                    "List of reg_ex to apply to the body for the comparison."),
+                      reinterpret_cast<const char *(*)()>(&setBodyList),
+                      0,
+                      ACCESS_CONF,
+                      "List of reg_ex to apply to the body for the comparison."),
         AP_INIT_TAKE3("HeaderList",
-                    reinterpret_cast<const char *(*)()>(&setHeaderList),
-                    0,
-                    ACCESS_CONF,
-                    "List of reg_ex to apply to the Header for the comparison."),
+                      reinterpret_cast<const char *(*)()>(&setHeaderList),
+                      0,
+                      ACCESS_CONF,
+                      "List of reg_ex to apply to the Header for the comparison."),
         AP_INIT_TAKE1("FilePath",
-                    reinterpret_cast<const char *(*)()>(&setFilePath),
-                    0,
-                    OR_ALL,
-                    "Path of file where the differences will be logged."),
-		AP_INIT_TAKE1("DisableLibwsdiff",
-					reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
-					0,
-					OR_ALL,
-					"Disable the use of libws-diff tools. Print raw serialization of the data in the log file."),
-    {0}
-};
+                      reinterpret_cast<const char *(*)()>(&setFilePath),
+                      0,
+                      OR_ALL,
+                      "Path of file where the differences will be logged."),
+        AP_INIT_TAKE1("DisableLibwsdiff",
+                      reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
+                      0,
+                      OR_ALL,
+                      "Disable the use of libws-diff tools. Print raw serialization of the data in the log file."),
+        {0}
+    };
 
 /**
  * @brief register hooks in apache
