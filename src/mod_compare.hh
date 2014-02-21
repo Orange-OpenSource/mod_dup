@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <list>
 #include <fstream>
+#include <ios>
 #include <boost/interprocess/sync/named_mutex.hpp>
 
 #include "Log.hh"
@@ -146,7 +147,9 @@ void map2string(const std::map< std::string, std::string> &pMap, std::string &pS
 
 int iterateOverHeadersCallBack(void *d, const char *key, const char *value);
 
-apr_status_t closeFile(void *);
+apr_status_t closeLogFile(void *);
+
+apr_status_t openLogFile(const char* filepath,std::_Ios_Openmode mode=std::_Ios_Openmode(0));
 
 const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath);
 
