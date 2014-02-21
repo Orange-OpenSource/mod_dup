@@ -41,6 +41,7 @@
 #include "CassandraDiff.h"
 #include "testBodies.hh"
 #include "RequestInfo.hh"
+#include "TfyTestRunner.hh"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -625,4 +626,20 @@ void TestModCompare::testOutputFilterHandler()
     }
 
 }
+
+#ifdef UNIT_TESTING
+//--------------------------------------
+// the main method
+//--------------------------------------
+int main(int argc, char* argv[])
+{
+    Log::init();
+    apr_initialize();
+    TfyTestRunner runner(argv[0]);
+    runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());
+    bool failed = runner.run();
+
+    return !failed;
+}
+#endif
 

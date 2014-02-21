@@ -22,10 +22,10 @@
  * Body to serve for tests purposes
  */
 
-extern char *testBody42;
+extern const char *testBody42;
 
-extern char *testBody43p1;
+extern const char *testBody43p1;
 
-extern char *testBody43p2;
+extern const char *testBody43p2;
 
 extern int bodyServed;
