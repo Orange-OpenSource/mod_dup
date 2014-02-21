@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -33,11 +33,11 @@ using namespace DupModule;
 
 void TestUrlCodec::testUrlCodec()
 {
-    apr_pool_t *lPool;
-    apr_pool_create(&lPool, 0);
+    apr_pool_t *lPool = 0;
+    apr_pool_create(&lPool, NULL);
 
-	boost::scoped_ptr<const IUrlCodec> urlCodec(getUrlCodec());
-	CPPUNIT_ASSERT(urlCodec.get() != NULL);
+    boost::scoped_ptr<const IUrlCodec> urlCodec(getUrlCodec());
+    CPPUNIT_ASSERT(urlCodec.get() != NULL);
     CPPUNIT_ASSERT_EQUAL(std::string(" "), urlCodec->decode("%20"));
     CPPUNIT_ASSERT_EQUAL(std::string("%20"), urlCodec->encode(lPool, " "));
 }

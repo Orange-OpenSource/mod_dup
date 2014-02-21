@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include "ThreadPool.hh"
 #include "MultiThreadQueue.hh"
 #include "testThreadPool.hh"
+#include "TfyTestRunner.hh"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -84,3 +85,19 @@ void TestThreadPool::run()
 
 	pool.stop();
 }
+
+#ifdef UNIT_TESTING
+//--------------------------------------
+// the main method
+//--------------------------------------
+int main(int argc, char* argv[])
+{
+    Log::init();
+
+    TfyTestRunner runner(argv[0]);
+    runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());
+    bool failed = runner.run();
+
+    return !failed;
+}
+#endif

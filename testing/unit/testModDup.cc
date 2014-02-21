@@ -23,6 +23,7 @@
 #include <http_request.h>
 #include <http_protocol.h>
 
+#include "TfyTestRunner.hh"
 #include "testModDup.hh"
 
 // cppunit
@@ -283,3 +284,19 @@ void TestModDup::testHighestDuplicationType()
 
 
 }
+
+#ifdef UNIT_TESTING
+//--------------------------------------
+// the main method
+//--------------------------------------
+int main(int argc, char* argv[])
+{
+    Log::init();
+    apr_initialize();
+    TfyTestRunner runner(argv[0]);
+    runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());
+    bool failed = runner.run();
+
+    return !failed;
+}
+#endif

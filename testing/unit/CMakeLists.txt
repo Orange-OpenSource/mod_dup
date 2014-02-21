@@ -42,26 +42,38 @@ file(GLOB lib_SOURCE_FILES
 add_library(mod_dup_lib SHARED ApacheStubs.cc ApacheCopyPaste.cc urlCodec.cc ${lib_SOURCE_FILES})
 
 set_target_properties(mod_dup_lib PROPERTIES PREFIX "")
-target_link_libraries(mod_dup_lib ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(mod_dup_lib ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} boost_serialization)
 
-file(GLOB mod_dup_test_SOURCE_FILES
-  testThreadPool.cc
-  testMultiThreadQueue.cc
-  testRequestProcessor.cc
-  testLog.cc
-  testUrlCodec.cc
-  testModDup.cc
-  testRunner.cc
-  testContextEnrichment.cc
-  testBodies.cc
-  testFilters.cc
-  testModCompare.cc
-)
+# file(GLOB mod_dup_test_SOURCE_FILES
+#   testBodies.cc
+#   testFilters.cc
+#   testModCompare.cc
+# )
 
-add_executable(mod_dup_test ${mod_dup_test_SOURCE_FILES})
+add_executable(testThread testThreadPool.cc testMultiThreadQueue.cc testBodies.cc)
+target_link_libraries(testThread mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff boost_serialization)
+add_test(testThread testThread)
 
-target_link_libraries(mod_dup_test mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} boost_serialization ws_diff)
+add_executable(testRequestProcessor testContextEnrichment.cc testRequestProcessor.cc testBodies.cc)
+target_link_libraries(testRequestProcessor mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ws_diff)
+add_test(testRequestProcessor testRequestProcessor)
+
+add_executable(testDup testLog.cc testUrlCodec.cc testModDup.cc testBodies.cc)
+target_link_libraries(testDup mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff  boost_serialization)
+add_test(testDup testDup)
+
+add_executable(testFilters testFilters.cc testBodies.cc)
+target_link_libraries(testFilters mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff  boost_serialization)
+add_test(testFilters testFilters)
+
+add_executable(testCompare testModCompare.cc testBodies.cc)
+target_link_libraries(testCompare mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff  boost_serialization)
+add_test(testCompare testCompare)
+
 
 add_test(mod_dup_UnitTestInit rm -f mod_dup_unittest.file)
-add_test(mod_dup_UnitTestsFirstRun mod_dup_test -x)
+#add_test(mod_dup_UnitTestsFirstRun mod_dup_test -x)
 
+if(BUILD_XML)
+  set_tests_properties(testThread testRequestProcessor testDup testFilters PROPERTIES ENVIRONMENT "UT_OUTPUT=xml")
+endif()

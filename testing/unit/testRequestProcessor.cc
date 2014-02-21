@@ -20,6 +20,7 @@
 #include "MultiThreadQueue.hh"
 #include "testRequestProcessor.hh"
 #include "mod_dup.hh"
+#include "TfyTestRunner.hh"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -515,3 +516,20 @@ void TestRequestProcessor::testKeySubstitutionOnBody()
     CPPUNIT_ASSERT_EQUAL(std::string("titi=value&tutu=tatae"), ri.mArgs);
     CPPUNIT_ASSERT_EQUAL(std::string("KEY1=what%3f%3f&TITI=replacedValue"), ri.mBody);
 }
+
+#ifdef UNIT_TESTING
+//--------------------------------------
+// the main method
+//--------------------------------------
+int main(int argc, char* argv[])
+{
+    Log::init();
+    apr_initialize();
+
+    TfyTestRunner runner(argv[0]);
+    runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());
+    bool failed = runner.run();
+
+    return !failed;
+}
+#endif

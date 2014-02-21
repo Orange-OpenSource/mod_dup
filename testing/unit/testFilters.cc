@@ -23,6 +23,7 @@
 #include <http_request.h>
 #include <http_protocol.h>
 
+#include "TfyTestRunner.hh"
 #include "MultiThreadQueue.hh"
 #include "testFilters.hh"
 #include "testModDup.hh"
@@ -448,3 +449,20 @@ void TestFilters::outputFilterHandlerTest() {
 
 
 }
+
+#ifdef UNIT_TESTING
+//--------------------------------------
+// the main method
+//--------------------------------------
+int main(int argc, char* argv[])
+{
+    Log::init();
+    apr_initialize();
+
+    TfyTestRunner runner(argv[0]);
+    runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());
+    bool failed = runner.run();
+
+    return !failed;
+}
+#endif
