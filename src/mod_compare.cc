@@ -51,7 +51,7 @@ const char* c_UNIQUE_ID = "UNIQUE_ID";
 
 std::ofstream gFile;
 const char * gFilePath;
-boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, "global_mutex");
+boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, "mod_compare_log_mutex");
 
 CompareConf::CompareConf(): mCompareDisabled(false) {
 }
