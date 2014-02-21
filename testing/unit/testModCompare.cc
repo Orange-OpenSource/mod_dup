@@ -153,8 +153,7 @@ void TestModCompare::testWriteCassandraDiff()
 {
 	std::string lPath( getenv("HOME") );
 	lPath.append("/log_differences_Cass.txt");
-	gFile.close();
-    gFile.open(lPath.c_str());
+	openLogFile(lPath.c_str());;
 
     CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
     std::string lID("IDtoto"),DiffCase("noDiffID");
@@ -171,7 +170,7 @@ void TestModCompare::testWriteCassandraDiff()
 
     CPPUNIT_ASSERT(CompareModule::writeCassandraDiff(lID));
 
-    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
+    CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
     {
 		std::ifstream readFile;
@@ -202,8 +201,7 @@ void TestModCompare::testWriteCassandraDiff()
 void TestModCompare::testWriteSerializedRequests(){
     std::string lPath( getenv("HOME") );
     lPath.append("/log_differences_serialized.txt");
-    gFile.close();
-    gFile.open(lPath);
+    openLogFile(lPath.c_str());
 
     std::map<std::string,std::string> header1 = boost::assign::map_list_of("header","header1");
     std::map<std::string,std::string> header2 = boost::assign::map_list_of("header","header1");
@@ -212,7 +210,7 @@ void TestModCompare::testWriteSerializedRequests(){
 
     writeSerializedRequest(req);
 
-    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
+    CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
     {
 		std::ifstream readFile;
 		readFile.open(lPath.c_str());
@@ -233,8 +231,7 @@ void TestModCompare::testWriteDifferences()
 {
     std::string lPath( getenv("HOME") );
     lPath.append("/log_differences.txt");
-    gFile.close();
-    gFile.open(lPath.c_str());
+    openLogFile(lPath.c_str());
 
     DupModule::RequestInfo lReqInfo;
     lReqInfo.mReqHeader["content-type"]= "plain/text";  //size = 11
@@ -244,7 +241,7 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mId=123;
 
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
-    CPPUNIT_ASSERT( closeFile( (void *)1) == APR_SUCCESS);
+    CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
     {
 		std::ifstream readFile;

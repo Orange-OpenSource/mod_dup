@@ -291,7 +291,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         return lStatus;
     }
 
-    DupModule::RequestInfo *lBH = static_cast<DupModule::RequestInfo *>(pF->ctx);
+    DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
     for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
          b != APR_BRIGADE_SENTINEL(pB);
          b = APR_BUCKET_NEXT(b) ) {
@@ -307,17 +307,17 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
             continue;
         }
 
-        lBH->mBody += std::string(lReqPart, lLength);
+        lRI->mBody += std::string(lReqPart, lLength);
     }
     apr_brigade_cleanup(pB);
 
-    lStatus =  deserializeBody(*lBH);
+    lStatus =  deserializeBody(*lRI);
 #ifndef UNIT_TESTING
-    apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lBH->mReqBody.size()).c_str());
-    apr_brigade_write(pB, ap_filter_flush, pF, lBH->mReqBody.c_str(), lBH->mReqBody.length() );
+    apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
+    apr_brigade_write(pB, ap_filter_flush, pF, lRI->mReqBody.c_str(), lRI->mReqBody.length() );
 #endif
-    apr_table_do(&iterateOverHeadersCallBack, &(lBH->mReqHeader), pRequest->headers_in, NULL);
-    printRequest(pRequest, lBH->mReqBody);
+    apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
+    printRequest(pRequest, lRI->mReqBody);
     return lStatus;
 }
 
@@ -328,8 +328,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Truncate the log before writing if the URI is set to "comp_truncate"
     std::string lArgs( static_cast<const char *>(pRequest->uri) );
     if ( lArgs.find("comp_truncate") != std::string::npos){
-        gFile.close();
-        gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
+    	gFile.close();
+    	openLogFile(gFilePath,std::ofstream::out | std::ofstream::trunc);
         apr_brigade_cleanup(pBrigade);
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
         return ap_pass_brigade(pFilter->next, pBrigade);
@@ -351,11 +351,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     	return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
-    if (pFilter->ctx == (void *) -1)
-    {
-        return ap_pass_brigade(pFilter->next, pBrigade);
-    }
     boost::scoped_ptr<DupModule::RequestInfo> req(reinterpret_cast<DupModule::RequestInfo*>(ap_get_module_config(pRequest->request_config, &compare_module)));
+    ap_set_module_config(pRequest->request_config, &compare_module, NULL);
 
     if ( req == NULL)
     {
