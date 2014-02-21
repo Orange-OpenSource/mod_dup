@@ -102,14 +102,14 @@ closeLogFile(void *) {
     return APR_SUCCESS;
 }
 
-apr_status_t
-openLogFile(const char * filepath,std::_Ios_Openmode mode) {
+apr_status_t openLogFile(const char * filepath,std::ios_base::openmode mode) {
     gFile.open(filepath,mode);
     if (!gFile.is_open()){
     	Log::warn(43,"Couldn't open correctly the file, we'll now attempt to close and reopen it");
     	gFile.close();
     	gFile.open(filepath,mode);
     	if (!gFile.is_open()){
+    		Log::error(43,std::string("Couldn't open the file :").append(filepath).c_str());
     		throw std::ofstream::failure(std::string("Couldn't open the file :").append(filepath));
     	}
     }
@@ -119,7 +119,7 @@ openLogFile(const char * filepath,std::_Ios_Openmode mode) {
 void
 childInit(apr_pool_t *pPool, server_rec *pServer)
 {
-	openLogFile(gFilePath, std::ofstream::out | std::ofstream::app );
+    gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
     apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeLogFile);
 }
 

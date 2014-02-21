@@ -149,7 +149,7 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value);
 
 apr_status_t closeLogFile(void *);
 
-apr_status_t openLogFile(const char* filepath,std::_Ios_Openmode mode=std::_Ios_Openmode(0));
+apr_status_t openLogFile(const char* filepath,std::ios_base::openmode mode=std::ios_base::out);
 
 const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath);
 

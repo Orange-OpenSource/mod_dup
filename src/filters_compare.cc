@@ -123,8 +123,6 @@ bool writeCassandraDiff(std::string &pUniqueID)
     diffStr << DIFF_SEPARATOR;
     diffStr.flush();
 
-    std::cout << diffStr.str();
-
     boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
     gFile << diffStr.rdbuf();
     gFile.flush();
@@ -328,8 +326,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Truncate the log before writing if the URI is set to "comp_truncate"
     std::string lArgs( static_cast<const char *>(pRequest->uri) );
     if ( lArgs.find("comp_truncate") != std::string::npos){
-    	gFile.close();
-    	openLogFile(gFilePath,std::ofstream::out | std::ofstream::trunc);
+        gFile.close();
+        gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
         apr_brigade_cleanup(pBrigade);
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
         return ap_pass_brigade(pFilter->next, pBrigade);

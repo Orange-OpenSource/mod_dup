@@ -152,9 +152,10 @@ void TestModCompare::testPrintRequest()
 
 void TestModCompare::testWriteCassandraDiff()
 {
-	std::string lPath( getenv("HOME") );
+	std::string lPath( getenv("PWD") );
 	lPath.append("/log_differences_Cass.txt");
-	openLogFile(lPath.c_str());;
+	gFile.close();
+    gFile.open(lPath.c_str());
 
     CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
     std::string lID("IDtoto"),DiffCase("noDiffID");
@@ -177,7 +178,7 @@ void TestModCompare::testWriteCassandraDiff()
 		std::ifstream readFile;
 		readFile.open(lPath.c_str());
 		std::stringstream buffer;
-		buffer << readFile.rdbuf() ;
+		buffer << readFile.rdbuf();
 
 		std::string assertRes("FieldInfo differences for pUniqueID : noDiffID\n"
 "Field name in the db : 'myName'\n"
@@ -200,9 +201,10 @@ void TestModCompare::testWriteCassandraDiff()
 }
 
 void TestModCompare::testWriteSerializedRequests(){
-    std::string lPath( getenv("HOME") );
+    std::string lPath( getenv("PWD") );
     lPath.append("/log_differences_serialized.txt");
-    openLogFile(lPath.c_str());
+	gFile.close();
+    gFile.open(lPath.c_str());
 
     std::map<std::string,std::string> header1 = boost::assign::map_list_of("header","header1");
     std::map<std::string,std::string> header2 = boost::assign::map_list_of("header","header1");
@@ -230,9 +232,10 @@ void TestModCompare::testWriteSerializedRequests(){
 
 void TestModCompare::testWriteDifferences()
 {
-    std::string lPath( getenv("HOME") );
+    std::string lPath( getenv("PWD") );
     lPath.append("/log_differences.txt");
-    openLogFile(lPath.c_str());
+    gFile.close();
+    gFile.open(lPath.c_str());
 
     DupModule::RequestInfo lReqInfo;
     lReqInfo.mReqHeader["content-type"]= "plain/text";  //size = 11
