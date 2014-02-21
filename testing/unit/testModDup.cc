@@ -204,7 +204,7 @@ void TestModDup::testConfig()
 
 
 
-    delete lParms->path;
+    delete [] lParms->path;
 }
 
 void TestModDup::testScope()

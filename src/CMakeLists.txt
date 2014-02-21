@@ -35,6 +35,12 @@ file(GLOB mod_compare_SOURCE_FILES
   Utils.cc
   RequestInfo.cc)
 
+
+find_package(Boost REQUIRED COMPONENTS regex)
+include_directories(${Boost_INCLUDE_DIRS})
+
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-regex1.40-dev | libboost-regex1.46-dev")
+
 # Compile as library
 add_library(mod_dup MODULE ${mod_dup_SOURCE_FILES})
 set_target_properties(mod_dup PROPERTIES PREFIX "")
