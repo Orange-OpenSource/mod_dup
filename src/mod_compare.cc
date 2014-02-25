@@ -265,7 +265,7 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
         AP_INIT_TAKE1("DisableLibwsdiff",
                       reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
                       0,
-                      OR_ALL,
+                      ACCESS_CONF,
                       "Disable the use of libws-diff tools. Print raw serialization of the data in the log file."),
         {0}
     };
