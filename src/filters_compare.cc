@@ -77,9 +77,15 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
     diffLog.flush();
 
-    boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
-    gFile << diffLog.str();
-    gFile.flush();
+    if (gFile.is_open()){
+        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+        gFile << diffLog.str();
+        gFile.flush();
+    }
+    else
+    {
+        Log::error(12, "File not correctly open");
+    }
 }
 
 /**
@@ -90,9 +96,15 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
  */
 void writeSerializedRequest(const DupModule::RequestInfo& req)
 {
-	boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
-	boost::archive::text_oarchive oa(gFile);
-    oa << req;
+    if (gFile.is_open()){
+        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+        boost::archive::text_oarchive oa(gFile);
+        oa << req;
+    }
+    else
+    {
+        Log::error(12, "File not correctly open");
+    }
 }
 
 /**

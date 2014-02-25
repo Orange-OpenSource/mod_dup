@@ -92,7 +92,11 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
     Log::init();
 
     ap_add_version_component(pPool, c_COMPONENT_VERSION) ;
-    return OK;
+    gMutex.unlock();
+
+    apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeLogFile);
+
+    return openLogFile(gFilePath, std::ofstream::out | std::ofstream::app);;
 }
 
 apr_status_t
@@ -105,23 +109,25 @@ closeLogFile(void *) {
 apr_status_t openLogFile(const char * filepath,std::ios_base::openmode mode) {
     gFile.open(filepath,mode);
     if (!gFile.is_open()){
-    	Log::warn(43,"Couldn't open correctly the file, we'll now attempt to close and reopen it");
-    	gFile.close();
+    	Log::error(43,"Couldn't open correctly the file");
+        return 400; // to modify
+
+        /*gFile.close();
     	gFile.open(filepath,mode);
     	if (!gFile.is_open()){
     		Log::error(43,std::string("Couldn't open the file :").append(filepath).c_str());
     		throw std::ofstream::failure(std::string("Couldn't open the file :").append(filepath));
-    	}
+    	}*/
     }
     return APR_SUCCESS;
 }
 
-void
+/*void
 childInit(apr_pool_t *pPool, server_rec *pServer)
 {
-    gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
-    apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeLogFile);
-}
+    //gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
+    //apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeLogFile);
+}*/
 
 /**
  * @brief Set the list of errors which stop the comparison
@@ -278,7 +284,7 @@ void
 registerHooks(apr_pool_t *pPool) {
 #ifndef UNIT_TESTING
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
-    ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
+    //ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
 #endif
