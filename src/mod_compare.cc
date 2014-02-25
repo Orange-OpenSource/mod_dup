@@ -218,7 +218,7 @@ const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
     Log::init();
     gFilePath = pPath;
     std::string lPath(gFilePath);
-    Log::error(12, "ecco qui il percorso del file %s", lPath.c_str());
+    //Log::error(12, "File path %s", lPath.c_str());
 
     return NULL;
 }
