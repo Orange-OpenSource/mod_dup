@@ -502,7 +502,7 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
                 ++count;
             }
         }
-        if (ctx.mScope & ApplicationScope::BODY) {
+        if ((ctx.mScope & ApplicationScope::BODY) && !rInfo.mBody.empty()) {
             std::string toSet = regex_replace(rInfo.mBody, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             if (!toSet.empty()) {
                 Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());

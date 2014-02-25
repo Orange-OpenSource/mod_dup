@@ -631,7 +631,6 @@ void TestModCompare::testOutputFilterHandler()
 }
 
 #ifdef UNIT_TESTING
-#include <ulimit.h>
 
 //--------------------------------------
 // the main method
@@ -640,10 +639,6 @@ int main(int argc, char* argv[])
 {
     Log::init();
 
-    struct rlimit rlim;
-    rlim.rlim_cur = (rlim_t) -1;
-    rlim.rlim_max = (rlim_t) -1;
-    setrlimit(RLIMIT_CORE, &rlim);
     apr_initialize();
     TfyTestRunner runner(argv[0]);
     runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());

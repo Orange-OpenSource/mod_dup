@@ -57,7 +57,16 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
     return false;
 }
 
-
+/*
+ * Translate_name level HOOK
+ *   - Read the body of a request.
+ *   - Analyse request (body and header) with a synchroneous call on RequestProcessor::enrichContext method
+ *   - If enrichment criteria are satisfied, the request context is enriched
+ *   - This context can be used by mod_rewrite to redirect/modify the request
+ *   - A RequestInfo object (containing the body) is stored in the request_config array. This object
+ *      will be used by the inputfilter named 'inputFilterBody2Brigade' that reinjects the body to the input filters that follow him
+ *   - A shared pointer manages the requestcontext object lifespan.
+ */
 int
 translateHook(request_rec *pRequest) {
     if (!pRequest->per_dir_config)
@@ -116,12 +125,12 @@ translateHook(request_rec *pRequest) {
 
 
 /**
- * Reinject the body we saved in earlyHook into a brigade
+ * InputFilter which target is to fill the brigade passed as an argument with
+ * the body read in the previous hook: 'translateName'
  */
 apr_status_t
 inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-
     request_rec *pRequest = pF->r;
     if (!pRequest || !pRequest->per_dir_config) {
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
@@ -140,18 +149,18 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
     }
     RequestInfo *info = shPtr->get();
     if (!pF->ctx) {
+        // No context associated with the filter, we serve the body
         if (!info->mBody.empty()) {
             apr_status_t st;
-            Log::warn(1, "Wrote body to brigade: %s",  info->mBody.c_str());
             if ((st = apr_brigade_write(pB, NULL, NULL, info->mBody.c_str(), info->mBody.size())) != APR_SUCCESS ) {
                 Log::warn(1, "Failed to write request body in a brigade: %s",  info->mBody.c_str());
                 return st;
             }
         }
-        // Marks the body as sent
+        // Marks that we do not have any more data to read
         pF->ctx = (void *) -1;
     }
-    // Marks that we do not have any more data to read
+    // Sending EOS to end the different calls to this filter
     apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
     assert(e);
     APR_BRIGADE_INSERT_TAIL(pB, e);
@@ -160,7 +169,7 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
 
 /*
  * Callback to iterate over the headers tables
- * Pushes a copy of key => value in a list
+ * Pushes a copy of key => value in a list passed without typing as the first argument
  */
 static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     RequestInfo::tHeaders *headers = reinterpret_cast<RequestInfo::tHeaders *>(d);
@@ -197,10 +206,9 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
  */
 class RequestContext {
 public:
-    apr_bucket_brigade  *mTmpBB;
-    RequestInfo         *mReq; /** Req is pushed to requestprocessor for duplication and will be deleted later*/
-    /* A copy of the pointer of the shared pointer allocated on the pool */
-    boost::shared_ptr<RequestInfo> *mShPtr;
+    apr_bucket_brigade  *mTmpBB; /** A temporary brigade which is an aggregate to this object */
+    RequestInfo         *mReq; /** Req is pushed to requestprocessor for duplication and will be deleted later */
+    boost::shared_ptr<RequestInfo> *mShPtr; /** The RequestInfo pointer pointer stored in the mReq module_config */
 
     RequestContext(ap_filter_t *pFilter) {
         mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
@@ -222,7 +230,11 @@ public:
 };
 
 /**
- * Here we can get the response body and finally duplicate or not
+ * Output filter handler
+ * Pushes the RequestInfo object to the RequestProcessor
+ * If the duplication type on the location includes a REQUEST_WITH_ANSWER type,
+ * the answer is stored in the RequestInfo object before being pushed to the
+ * RequestProcessor.
  */
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
@@ -239,7 +251,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Request answer analyse
     RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
     if (ctx == NULL) {
-        // First pass in the output filter => context init
+        // First pass in the output filter => context init. Allocation on pool
         void *space = apr_palloc(pRequest->pool, sizeof(RequestContext));
         ctx = new (space) RequestContext(pFilter);
         // Registering of the RequestContext on the pool
