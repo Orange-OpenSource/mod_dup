@@ -45,13 +45,16 @@ namespace alg = boost::algorithm;
 namespace CompareModule {
 
 
-const char *gName = "Compare";
-const char *c_COMPONENT_VERSION = "Compare/1.0";
+const char* gName = "Compare";
+const char* c_COMPONENT_VERSION = "Compare/1.0";
 const char* c_UNIQUE_ID = "UNIQUE_ID";
+const char* c_named_mutex = "mod_compare_log_mutex";
+bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
+boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, c_named_mutex);
+
 
 std::ofstream gFile;
 const char * gFilePath;
-boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, "mod_compare_log_mutex");
 
 CompareConf::CompareConf(): mCompareDisabled(false) {
 }
@@ -92,7 +95,6 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
     Log::init();
 
     ap_add_version_component(pPool, c_COMPONENT_VERSION) ;
-    gMutex.unlock();
 
     apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeLogFile);
 

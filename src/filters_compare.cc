@@ -84,7 +84,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     }
     else
     {
-        Log::error(12, "File not correctly open");
+        Log::error(12, "File not correctly opened");
     }
 }
 
@@ -103,7 +103,7 @@ void writeSerializedRequest(const DupModule::RequestInfo& req)
     }
     else
     {
-        Log::error(12, "File not correctly open");
+        Log::error(12, "File not correctly opened");
     }
 }
 
@@ -135,9 +135,14 @@ bool writeCassandraDiff(std::string &pUniqueID)
     diffStr << DIFF_SEPARATOR;
     diffStr.flush();
 
-    boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
-    gFile << diffStr.rdbuf();
-    gFile.flush();
+    if (gFile.is_open()){
+        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+        gFile << diffStr.rdbuf();
+        gFile.flush();
+    }
+    else {
+        Log::error(12, "File not correctly opened");
+    }
 
     lDiff.erase(pUniqueID);
 
