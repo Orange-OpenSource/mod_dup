@@ -139,7 +139,7 @@ size_t getLength(const std::string pString, const size_t pFirst );
 apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo);
 apr_status_t deserializeHeader(DupModule::RequestInfo &pReqInfo,const std::string& header);
 
-//void childInit(apr_pool_t *pPool, server_rec *pServer);
+void childInit(apr_pool_t *pPool, server_rec *pServer);
 
 void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& myDiffHeader , const std::string& myDiffBody, double time);
 
