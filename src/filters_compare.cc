@@ -404,8 +404,8 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             	writeSerializedRequest(*req);
             }else{
 				clock_t start=clock();
-				if(tConf->mCompHeader.retrieveDiff(req->mReqHeader,req->mDupResponseHeader,diffHeader)){
-					if (tConf->mCompBody.retrieveDiff(req->mReqBody,req->mDupResponseBody,diffBody)){
+				if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
+					if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
 						if(diffHeader.length()!=0 || diffBody.length()!=0){
 							writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
 						}
