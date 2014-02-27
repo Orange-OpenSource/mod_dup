@@ -101,14 +101,12 @@ void TestModCompare::testInit()
 
     std::string lPath( getenv("PWD") );
     lPath.append("/log_differences_Cass.txt");
-    gFile.close();
-    gFile.open(lPath.c_str());
+    setFilePath(lParms, NULL , lPath.c_str());
 
     CPPUNIT_ASSERT(postConfig(lParms->pool, lParms->pool, lParms->pool, lParms->server)==OK);
 
     CPPUNIT_ASSERT( createDirConfig(lParms->pool, NULL) );
 
-    setFilePath(lParms, NULL , "toto");
     //childInit(lParms->pool, lParms->server);
 }
 
