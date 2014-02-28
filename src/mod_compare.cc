@@ -280,6 +280,12 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
         {0}
     };
 
+#ifndef UNIT_TESTING
+static void insertOutputFilter(request_rec *pRequest) {
+    ap_add_output_filter(gName, NULL, pRequest, pRequest->connection);
+}
+#endif
+
 /**
  * @brief register hooks in apache
  * @param pPool the apache pool
@@ -291,6 +297,7 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     ap_register_output_filter(gName, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
+    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_MIDDLE);
 #endif
 }
 

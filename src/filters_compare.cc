@@ -294,11 +294,11 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         lReqID = DupModule::getNextReqId();
         std::string reqId = boost::lexical_cast<std::string>(lReqID);
         apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
-        //apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
         }
         else {
-            //lReqID = boost::lexical_cast<unsigned int>(std::string(lID));
-            //apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
+            lReqID = boost::lexical_cast<unsigned int>(std::string(lID));
+            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
         }
 
         DupModule::RequestInfo *info = new DupModule::RequestInfo(lReqID);
