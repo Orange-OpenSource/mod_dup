@@ -298,7 +298,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         }
         else {
             lReqID = boost::lexical_cast<unsigned int>(std::string(lID));
-            apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
+            //apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
         }
 
         DupModule::RequestInfo *info = new DupModule::RequestInfo(lReqID);
