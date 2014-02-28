@@ -297,7 +297,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         //apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
         }
         else {
-            lReqID = boost::lexical_cast<unsigned int>(std::string(lID));
+            //lReqID = boost::lexical_cast<unsigned int>(std::string(lID));
             //apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
         }
 
