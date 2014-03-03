@@ -302,7 +302,17 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         }
 
         DupModule::RequestInfo *info = new DupModule::RequestInfo(lReqID);
-        ap_set_module_config(pRequest->request_config, &compare_module, (void *)info);
+        // Allocation on a shared pointer on the request pool
+        // We guarantee that whatever happens, the RequestInfo will be deleted
+        void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
+        new (space) boost::shared_ptr<DupModule::RequestInfo>(info);
+        // Registering of the shared pointer destructor on the pool
+        apr_pool_cleanup_register(pRequest->pool, space, apr_pool_cleanup_null,
+                                  apr_pool_cleanup_null);
+        // Backup in request context
+        ap_set_module_config(pRequest->request_config, &compare_module, (void *)space);
+
+        //ap_set_module_config(pRequest->request_config, &compare_module, (void *)info);
 
         // Backup of info struct in the request context
         pF->ctx = info;
@@ -344,6 +354,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
+
     // Truncate the log before writing if the URI is set to "comp_truncate"
     std::string lArgs( static_cast<const char *>(pRequest->uri) );
     if ( lArgs.find("comp_truncate") != std::string::npos){
@@ -370,16 +381,17 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     	return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
-    boost::scoped_ptr<DupModule::RequestInfo> req(reinterpret_cast<DupModule::RequestInfo*>(ap_get_module_config(pRequest->request_config, &compare_module)));
-    ap_set_module_config(pRequest->request_config, &compare_module, NULL);
+    boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
 
-    if ( req == NULL)
+    if ( !shPtr)
     {
         apr_brigade_cleanup(pBrigade);
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
-    // Asynchronous push of request WITH the answer
+    DupModule::RequestInfo *req = shPtr->get();
+
+
     apr_bucket *currentBucket;
     while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade))
     {
@@ -400,31 +412,79 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
             writeCassandraDiff(lUniqueID);
 
-            //write headers in Map
-            apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
-
-            std::string diffBody,diffHeader;
-            if( tConf->mCompareDisabled){
-            	writeSerializedRequest(*req);
-            }else{
-				clock_t start=clock();
-				if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
-					if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
-						if(diffHeader.length()!=0 || diffBody.length()!=0){
-							writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
-						}
-					}
-				}
-            }
             //we want to avoid to send the response body on the network
             apr_table_set(pRequest->headers_out, "Content-Length", "0");
             apr_brigade_cleanup(pBrigade);
             rv =  ap_pass_brigade(pFilter->next, pBrigade);
-            pFilter->ctx = (void *) -1;
         }
     }
 
     return OK;
+}
+
+
+apr_status_t
+outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+
+    if (pFilter->ctx == (void *)-1){
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+    request_rec *pRequest = pFilter->r;
+
+    if (!pRequest || !pRequest->per_dir_config )
+    {
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+    std::string lArgs( static_cast<const char *>(pRequest->uri) );
+    if ( lArgs.find("comp_truncate") != std::string::npos){
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+
+    const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
+    if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
+    {
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+    struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    if( tConf == NULL ){
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+    boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
+
+    if ( !shPtr)
+    {
+        apr_brigade_cleanup(pBrigade);
+        apr_table_set(pRequest->headers_out, "Content-Length", "0");
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+    DupModule::RequestInfo *req = shPtr->get();
+
+
+    //write headers in Map
+    apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
+
+    std::string diffBody,diffHeader;
+    if( tConf->mCompareDisabled){
+        Log::error(13,"scrivoooo" );
+        writeSerializedRequest(*req);
+    }else{
+        clock_t start=clock();
+        if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
+            if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
+                if(diffHeader.length()!=0 || diffBody.length()!=0){
+                    writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
+                }
+            }
+        }
+    }
+
+    pFilter->ctx = (void *) -1;
+    return  ap_pass_brigade(pFilter->next, pBrigade);
 }
 
 };
