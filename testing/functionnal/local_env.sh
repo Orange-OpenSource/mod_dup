@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash -x
 
 BIN=`cd $1; echo $PWD`
 CONF=`cd $2; echo $PWD`
@@ -49,6 +49,8 @@ echo -n "COMPARE" > $APACHE_DIR/htdocs/dup_test/compare
 echo -n "REWRITTEN" > $APACHE_DIR/htdocs/dup_test/rewritten
 echo -n "HEADER_ONLY" > $APACHE_DIR/htdocs/dup_test/header_only
 echo -n "HEADER_AND_BODY" > $APACHE_DIR/htdocs/dup_test/header_and_body
+cat data/largeresponse > $APACHE_DIR/htdocs/dup_test/largeresponse
+
 
 echo "#!/usr/bin/env python
 

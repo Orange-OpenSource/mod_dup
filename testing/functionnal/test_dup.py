@@ -86,6 +86,7 @@ class TeeRequest:
             print "Url:", self.get_url()
         curl.setopt(curl.URL, self.get_url())
         curl.setopt(curl.WRITEFUNCTION, buf.write)
+        curl.setopt(curl.FOLLOWLOCATION, 1);
         if (len(self.body)):
             curl.setopt(curl.POST, 1)
             curl.setopt(curl.HTTPHEADER, ['Content-Type: text/xml; charset=utf-8',
