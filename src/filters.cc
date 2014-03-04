@@ -29,30 +29,29 @@ const unsigned int CMaxBytes = 8192;
 bool
 extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
     if (ap_get_brigade(pRequest->input_filters,
-                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) == APR_SUCCESS) {
-        // Read brigade content
-        for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
-             b != APR_BRIGADE_SENTINEL(bb);
-             b = APR_BUCKET_NEXT(b) ) {
-            // Metadata end of stream
-            if (APR_BUCKET_IS_EOS(b)) {
-                return true;
-            }
-            const char *data = 0;
-            apr_size_t len = 0;
-            apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
-            if (rv != APR_SUCCESS) {
-                Log::error(42, "Bucket read failed, skipping the rest of the body");
-                return true;
-            }
-            if (len) {
-                content.append(data, len);
-            }
-        }
+                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) != APR_SUCCESS) {
+      Log::error(42, "Get brigade failed, skipping the rest of the body");
+      return true;
     }
-    else {
-        Log::error(42, "Get brigade failed, skipping the rest of the body");
-        return true;
+
+    // Read brigade content
+    for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
+	 b != APR_BRIGADE_SENTINEL(bb);
+	 b = APR_BUCKET_NEXT(b) ) {
+      // Metadata end of stream
+      if (APR_BUCKET_IS_EOS(b) || APR_BUCKET_IS_METADATA(b) ) {
+		return true;
+      }
+      const char *data = 0;
+      apr_size_t len = 0;
+      apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+      if (rv != APR_SUCCESS) {
+	Log::error(42, "Bucket read failed, skipping the rest of the body");
+	return true;
+      }
+      if (len) {
+		content.append(data, len);
+      }
     }
     return false;
 }
@@ -131,6 +130,10 @@ translateHook(request_rec *pRequest) {
 apr_status_t
 inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
+  if (pMode != AP_MODE_READBYTES) {
+    return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+  }
+
     request_rec *pRequest = pF->r;
     if (!pRequest || !pRequest->per_dir_config) {
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
@@ -275,38 +278,31 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
     // Asynchronous push of request WITH the answer
     apr_bucket *currentBucket;
-    while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade)) {
-        const char *data;
-        apr_size_t len;
-        apr_status_t rv;
-        rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+    for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) { 
+      if (APR_BUCKET_IS_EOS(currentBucket)) {
+	// Pushing the answer to the processor      
+	prepareRequestInfo(tConf, pRequest, *(ctx->mReq), true);
+	printRequest(pRequest, ctx->mReq, tConf);
+	gThreadPool->push(*ctx->mShPtr);
+	pFilter->ctx = (void *) -1;
+	continue;
+      }
+      else if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
+	/* Ignore it, but don't try to read data from it */
+	continue;
+      }
 
-        if ((rv == APR_SUCCESS) && (data != NULL)) {
-            ctx->mReq->mAnswer.append(data, len);
-        }
-        /* Remove bucket e from bb. */
-        APR_BUCKET_REMOVE(currentBucket);
-        /* Insert it into  temporary brigade. */
-        APR_BRIGADE_INSERT_HEAD(ctx->mTmpBB, currentBucket);
-        /* Pass brigade downstream. */
-        rv = ap_pass_brigade(pFilter->next, ctx->mTmpBB);
-        if (rv != APR_SUCCESS) {
-            // Something went wrong, no duplication performed
-            pFilter->ctx = (void *) -1;
-            return rv;
-        }
-        if (APR_BUCKET_IS_EOS(currentBucket)) {
-            // Pushing the answer to the processor
-            prepareRequestInfo(tConf, pRequest, *(ctx->mReq), true);
-            printRequest(pRequest, ctx->mReq, tConf);
-            gThreadPool->push(*ctx->mShPtr);
-            pFilter->ctx = (void *) -1;
-        }
-        else {
-            apr_brigade_cleanup(ctx->mTmpBB);
-        }
+      const char *data;
+      apr_size_t len;
+      apr_status_t rv;
+      rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+      
+      if ((rv == APR_SUCCESS) && (data != NULL)) {
+	ctx->mReq->mAnswer.append(data, len);
+      }
     }
-    return OK;
+
+    return ap_pass_brigade(pFilter->next, pBrigade);
 }
 
 };
