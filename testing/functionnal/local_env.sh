@@ -3,6 +3,7 @@
 BIN=`cd $1; echo $PWD`
 CONF=`cd $2; echo $PWD`
 
+ORIG=$PWD 
 ROOT=`cd ../../build; echo $PWD`
 APACHE_DIR=$ROOT/apache2
 APACHE_SRC=$APACHE_DIR/src
@@ -49,6 +50,9 @@ echo -n "COMPARE" > $APACHE_DIR/htdocs/dup_test/compare
 echo -n "REWRITTEN" > $APACHE_DIR/htdocs/dup_test/rewritten
 echo -n "HEADER_ONLY" > $APACHE_DIR/htdocs/dup_test/header_only
 echo -n "HEADER_AND_BODY" > $APACHE_DIR/htdocs/dup_test/header_and_body
+echo -n "BODY" > $APACHE_DIR/htdocs/dup_test/comp_test1
+echo -n "BODY2" > $APACHE_DIR/htdocs/dup_test/comp_test2
+echo -n "The log has been truncated" > $APACHE_DIR/htdocs/dup_test/comp_truncate
 
 echo "#!/usr/bin/env python
 
@@ -67,7 +71,8 @@ print len(body)
 " > $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 chmod +x $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 
-sed 's|{{ROOT}}|'"$ROOT"'|;s|{{APACHE_MODS}}|'"$APACHE_MODS"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $PWD/httpd.conf.templ > $APACHE_DIR/conf/custom_httpd.conf
+sed 's|{{APACHE_DIR}}|'"$APACHE_DIR"'|;' $CONF/compare.conf.tpl > $CONF/compare.conf
+sed 's|{{ROOT}}|'"$ROOT"'|;s|{{APACHE_MODS}}|'"$APACHE_MODS"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $ORIG/httpd.conf.templ > $APACHE_DIR/conf/custom_httpd.conf
 
 
 # restart apache
