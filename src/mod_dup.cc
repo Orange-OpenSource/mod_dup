@@ -484,13 +484,14 @@ registerHooks(apr_pool_t *pPool) {
     ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
 
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
-    ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
+        ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
 
     // One of the first to get the body of the response
     ap_register_output_filter(gNameOutBody, outputBodyFilterHandler, NULL, AP_FTYPE_RESOURCE);
-    // And one of the last to get all the headers in and out
-    ap_register_output_filter(gNameOutHeaders, outputHeadersFilterHandler, NULL, AP_FTYPE_CONNECTION);
+    // Just after protocol to be sure that headers out is filled but request_rec is still valid
+    // using type connection produced calls to the filter with invalid brigades
+    ap_register_output_filter(gNameOutHeaders, outputHeadersFilterHandler, NULL, AP_FTYPE_TRANSCODE);
 
     ap_hook_insert_filter(&insertOutputBodyFilter, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_insert_filter(&insertOutputHeadersFilter, NULL, NULL, APR_HOOK_MIDDLE);

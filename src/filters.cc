@@ -232,6 +232,7 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
+
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
     assert(reqInfo);
     RequestInfo * ri = reqInfo->get();
@@ -275,7 +276,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
   if ( pFilter->ctx == (void *) -1 ) {
     return ap_pass_brigade(pFilter->next, pBrigade);
   }
-  
+ 
     request_rec *pRequest = pFilter->r;
     // Reject requests that do not meet our requirements
     if (!pRequest) {
