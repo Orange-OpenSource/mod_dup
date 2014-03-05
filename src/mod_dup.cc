@@ -46,7 +46,8 @@ ThreadPool<boost::shared_ptr<RequestInfo> >    *gThreadPool;
 
 const char *gName = "Dup";
 const char *gNameBody2Brigade = "DupBody2Brigade";
-const char *gNameOut = "DupOut";
+const char *gNameOutBody = "DupOutBody";
+const char *gNameOutHeaders = "DupOutHeaders";
 
 const char *c_COMPONENT_VERSION = "Dup/1.0";
 const char* c_UNIQUE_ID = "UNIQUE_ID";
@@ -452,11 +453,18 @@ static void insertInputFilter(request_rec *pRequest) {
     }
 }
 
-static void insertOutputFilter(request_rec *pRequest) {
+static void insertOutputBodyFilter(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     assert(tConf);
     if (tConf->dirName) {
-        ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+        ap_add_output_filter(gNameOutBody, NULL, pRequest, pRequest->connection);
+    }
+}
+static void insertOutputHeadersFilter(request_rec *pRequest) {
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    assert(tConf);
+    if (tConf->dirName) {
+        ap_add_output_filter(gNameOutHeaders, NULL, pRequest, pRequest->connection);
     }
 }
 #endif
@@ -475,12 +483,18 @@ registerHooks(apr_pool_t *pPool) {
     // Here we want to be almost the last filter
     ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
 
-    // And now one of the first
-    ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
     ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
-    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_MIDDLE);
+
+    // One of the first to get the body of the response
+    ap_register_output_filter(gNameOutBody, outputBodyFilterHandler, NULL, AP_FTYPE_RESOURCE);
+    // And one of the last to get all the headers in and out
+    ap_register_output_filter(gNameOutHeaders, outputHeadersFilterHandler, NULL, AP_FTYPE_CONNECTION);
+
+    ap_hook_insert_filter(&insertOutputBodyFilter, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_insert_filter(&insertOutputHeadersFilter, NULL, NULL, APR_HOOK_MIDDLE);
+
 #endif
 }
 
