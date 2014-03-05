@@ -282,7 +282,13 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
  * @brief the output filter callback
  */
 apr_status_t
-outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
+outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
+
+/**
+ * @brief the output filter callback
+ */
+apr_status_t
+outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
 
 /*
  * Method that calls the destructor of an object which type is templated

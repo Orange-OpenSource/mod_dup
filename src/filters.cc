@@ -181,7 +181,7 @@ static int iterateOverHeadersCallBack(void *d, const char *key, const char *valu
 }
 
 static void
-prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r, bool withAnswer) {
+prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
     // Basic
     r.mPoison = false;
     r.mConfPath = tConf->dirName;
@@ -190,10 +190,6 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r, bool w
 
     // Copy headers in
     apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
-    if (withAnswer) {
-        // Copy headers out
-        apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersOut, pRequest->headers_out, NULL);
-    }
 }
 
 static void
@@ -204,91 +200,56 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
     Log::debug("### Request args: %s", pRequest->args);
 }
 
-/*
- * Request context used during brigade run
- */
-class RequestContext {
-public:
-    apr_bucket_brigade  *mTmpBB; /** A temporary brigade which is an aggregate to this object */
-    RequestInfo         *mReq; /** Req is pushed to requestprocessor for duplication and will be deleted later */
-    boost::shared_ptr<RequestInfo> *mShPtr; /** The RequestInfo pointer pointer stored in the mReq module_config */
-
-    RequestContext(ap_filter_t *pFilter) {
-        mTmpBB = apr_brigade_create(pFilter->r->pool, pFilter->c->bucket_alloc);
-        mShPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module));
-        mReq = mShPtr->get();
-        assert(mReq);
-    }
-
-    RequestContext()
-        : mTmpBB(NULL)
-        , mReq(NULL) {
-    }
-
-    ~RequestContext() {
-        if (mTmpBB) {
-            apr_brigade_cleanup(mTmpBB);
-        }
-    }
-};
-
 /**
- * Output filter handler
- * Pushes the RequestInfo object to the RequestProcessor
- * If the duplication type on the location includes a REQUEST_WITH_ANSWER type,
- * the answer is stored in the RequestInfo object before being pushed to the
- * RequestProcessor.
+ * Output Body filter handler
+ * Writes the response body to the RequestInfo
+ * Unless not needed because we only duplicate request and no reponses
  */
 apr_status_t
-outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
     // Reject requests that do not meet our requirements
-    if (!pRequest || !pRequest->per_dir_config)
-        return ap_pass_brigade(pFilter->next, pBrigade);
+    if ( pFilter->ctx == (void *) -1 ) {
+      return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+    if (!pRequest || !pRequest->per_dir_config) {
+      ap_remove_output_filter(pFilter);
+      return ap_pass_brigade(pFilter->next, pBrigade);
+    }
 
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
+      ap_remove_output_filter(pFilter);
          return ap_pass_brigade(pFilter->next, pBrigade);
-    }
-
-    // Request answer analyse
-    RequestContext *ctx = static_cast<RequestContext *>(pFilter->ctx);
-    if (ctx == NULL) {
-        // First pass in the output filter => context init. Allocation on pool
-        void *space = apr_palloc(pRequest->pool, sizeof(RequestContext));
-        ctx = new (space) RequestContext(pFilter);
-        // Registering of the RequestContext on the pool
-        apr_pool_cleanup_register(pRequest->pool, space, cleaner<RequestContext>,
-                                  apr_pool_cleanup_null);
-        pFilter->ctx = ctx;
-    } else if (ctx == (void *) -1) {
-        // Output filter already did his job, we return
-        return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     // We need to get the highest one as we haven't matched which rule it is yet
     if (tConf->getHighestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
-        // Asynchronous push of request WITHOUT the answer
-        RequestInfo *rH = ctx->mReq;
-        prepareRequestInfo(tConf, pRequest, *ctx->mReq, false);
-        printRequest(pRequest, rH, tConf);
-        gThreadPool->push(*ctx->mShPtr);
+        // No need to get the brigades here if we don't forward the answer
         pFilter->ctx = (void *) -1;
+	ap_remove_output_filter(pFilter);
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
-    // Asynchronous push of request WITH the answer
+
+
+    boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
+    assert(reqInfo);
+    RequestInfo * ri = reqInfo->get();
+    assert(ri);
+    
+    // Pushing the answer to the processor      
+    prepareRequestInfo(tConf, pRequest, *ri);
+
+    // Write the response body to the RequestInfo if found
     apr_bucket *currentBucket;
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) { 
       if (APR_BUCKET_IS_EOS(currentBucket)) {
-	// Pushing the answer to the processor      
-	prepareRequestInfo(tConf, pRequest, *(ctx->mReq), true);
-	printRequest(pRequest, ctx->mReq, tConf);
-	gThreadPool->push(*ctx->mShPtr);
+	ap_remove_output_filter(pFilter);
 	pFilter->ctx = (void *) -1;
 	continue;
       }
       else if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
-	/* Ignore it, but don't try to read data from it */
 	continue;
       }
 
@@ -298,11 +259,58 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
       rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
       
       if ((rv == APR_SUCCESS) && (data != NULL)) {
-	ctx->mReq->mAnswer.append(data, len);
+	ri->mAnswer.append(data, len);
       }
     }
 
     return ap_pass_brigade(pFilter->next, pBrigade);
 }
+
+/**
+ * Output filter handler
+ * Retrieves in/out headers
+ * Pushes the RequestInfo object to the RequestProcessor
+ */
+apr_status_t
+outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+  if ( pFilter->ctx == (void *) -1 ) {
+    return ap_pass_brigade(pFilter->next, pBrigade);
+  }
+ 
+    request_rec *pRequest = pFilter->r;
+    // Reject requests that do not meet our requirements
+    if (!pRequest) {
+      ap_remove_output_filter(pFilter);
+      return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+    if (!pRequest->per_dir_config ) {
+      ap_remove_output_filter(pFilter);
+      return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
+      ap_remove_output_filter(pFilter);
+      return ap_pass_brigade(pFilter->next, pBrigade);
+    }
+
+
+    boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
+    assert(reqInfo);
+    RequestInfo * ri = reqInfo->get();
+    assert(ri);
+
+    // Copy headers out
+    apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
+    printRequest(pRequest, ri, tConf);
+    gThreadPool->push(*reqInfo);
+
+    pFilter->ctx = (void *) -1;
+    ap_remove_output_filter(pFilter);
+
+    return ap_pass_brigade(pFilter->next, pBrigade);
+
+}
+
 
 };
