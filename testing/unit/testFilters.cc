@@ -288,7 +288,7 @@ void TestFilters::outputFilterHandlerTest() {
     filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
     apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
     req->per_dir_config = NULL;
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
  }
 
 {
@@ -303,7 +303,7 @@ void TestFilters::outputFilterHandlerTest() {
     filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
     filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
     apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
  }
 
 {
@@ -322,7 +322,7 @@ void TestFilters::outputFilterHandlerTest() {
     DupConf *conf = new DupConf();
     conf->dirName = strdup("/spp/main");
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
  }
 
 {
@@ -347,9 +347,9 @@ void TestFilters::outputFilterHandlerTest() {
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
     // Second call, tests context backup
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
  }
 
 {
@@ -379,16 +379,17 @@ void TestFilters::outputFilterHandlerTest() {
     CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, apr_brigade_write(bb, NULL, NULL, testBody42, std::string(testBody42).size()));
 
     // First call, must extract this data
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
 
     // Adding eos to bb
     apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
     apr_bucket *e = apr_bucket_eos_create(bA);
     CPPUNIT_ASSERT(e);
     APR_BRIGADE_INSERT_TAIL(bb, e);
+    filter->ctx = (void *) -1;
 
     // Second call, tests context backup
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
 
     CPPUNIT_ASSERT_EQUAL(std::string(testBody42), info->mAnswer);
 
@@ -423,20 +424,23 @@ void TestFilters::outputFilterHandlerTest() {
 
     // Setting answer to read
     apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputHeadersFilterHandler(filter, bb));
+    filter->ctx = (void *)1;
     // Sending part one
     CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, apr_brigade_write(bb, NULL, NULL, testBody43p1, std::string(testBody43p1).size()));
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
-
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
     // Sending part two
+    apr_brigade_cleanup(bb);
     CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, apr_brigade_write(bb, NULL, NULL, testBody43p2, std::string(testBody43p2).size()));
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
 
     // Sending eos
     apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
     apr_bucket *e = apr_bucket_eos_create(bA);
     CPPUNIT_ASSERT(e);
+    apr_brigade_cleanup(bb);
     APR_BRIGADE_INSERT_TAIL(bb, e);
-    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputFilterHandler(filter, bb));
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, outputBodyFilterHandler(filter, bb));
 
     CPPUNIT_ASSERT_EQUAL(std::string(testBody43p1) + std::string(testBody43p2),
                          info->mAnswer);

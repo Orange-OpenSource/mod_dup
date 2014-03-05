@@ -164,3 +164,8 @@ ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *)
 {
     return APR_SUCCESS;
 }
+
+AP_DECLARE(void)
+ap_remove_output_filter(ap_filter_t *pFilter)
+{
+}
