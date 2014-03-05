@@ -354,6 +354,12 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
+    apr_status_t lStatus;
+    if (pFilter->ctx == (void *)-1){
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        return lStatus;
+    }
 
     // Truncate the log before writing if the URI is set to "comp_truncate"
     std::string lArgs( static_cast<const char *>(pRequest->uri) );
@@ -362,62 +368,48 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
         apr_brigade_cleanup(pBrigade);
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
+        pFilter->ctx = (void *) -1;
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     if (!pRequest || !pRequest->per_dir_config)
     {
-        return ap_pass_brigade(pFilter->next, pBrigade);
+        pFilter->ctx = (void *) -1;
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        return lStatus;
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
-        return ap_pass_brigade(pFilter->next, pBrigade);
+        lStatus = ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        pFilter->ctx = (void *) -1;
+        return lStatus;
     }
 
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if( tConf == NULL ){
-    	return ap_pass_brigade(pFilter->next, pBrigade);
+        pFilter->ctx = (void *) -1;
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        return lStatus;
     }
 
     boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
 
     if ( !shPtr)
     {
+        pFilter->ctx = (void *) -1;
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        apr_table_set(pRequest->headers_out, "Content-Length", "0");
-        return ap_pass_brigade(pFilter->next, pBrigade);
+        return lStatus;
     }
     DupModule::RequestInfo *req = shPtr->get();
 
 
     apr_bucket *currentBucket;
-   /* while ((currentBucket = APR_BRIGADE_FIRST(pBrigade)) != APR_BRIGADE_SENTINEL(pBrigade))
-    {
-        const char *data;
-        apr_size_t len;
-        apr_status_t rv;
-        rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
-
-        if ((rv == APR_SUCCESS) && (data != NULL))
-        {
-            req->mDupResponseBody.append(data, len);
-        }
-        // Remove bucket e from bb.
-        APR_BUCKET_REMOVE(currentBucket);
-
-        if (APR_BUCKET_IS_EOS(currentBucket))
-        {
-            std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
-            writeCassandraDiff(lUniqueID);
-
-            //we want to avoid to send the response body on the network
-            apr_table_set(pRequest->headers_out, "Content-Length", "0");
-            apr_brigade_cleanup(pBrigade);
-            rv =  ap_pass_brigade(pFilter->next, pBrigade);
-        }
-    }*/
 
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
           if (APR_BUCKET_IS_EOS(currentBucket)) {
@@ -453,41 +445,29 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 apr_status_t
 outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
+    apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
-        return ap_pass_brigade(pFilter->next, pBrigade);
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        return lStatus;
     }
 
     request_rec *pRequest = pFilter->r;
 
-    if (!pRequest || !pRequest->per_dir_config )
-    {
-        return ap_pass_brigade(pFilter->next, pBrigade);
-    }
-
-    std::string lArgs( static_cast<const char *>(pRequest->uri) );
-    if ( lArgs.find("comp_truncate") != std::string::npos){
-        return ap_pass_brigade(pFilter->next, pBrigade);
-    }
-
-
-    const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
-    if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
-    {
-        return ap_pass_brigade(pFilter->next, pBrigade);
-    }
-
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if( tConf == NULL ){
-        return ap_pass_brigade(pFilter->next, pBrigade);
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        return lStatus;
     }
 
     boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
 
     if ( !shPtr)
     {
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        apr_table_set(pRequest->headers_out, "Content-Length", "0");
-        return ap_pass_brigade(pFilter->next, pBrigade);
+        return lStatus;
     }
     DupModule::RequestInfo *req = shPtr->get();
 
@@ -511,7 +491,9 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
 
     pFilter->ctx = (void *) -1;
-    return  ap_pass_brigade(pFilter->next, pBrigade);
+    lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
+    apr_brigade_cleanup(pBrigade);
+    return lStatus;
 }
 
 };

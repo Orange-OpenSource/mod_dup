@@ -139,7 +139,7 @@
           <stringProp name="TestPlan.comments">All cases have status OK</stringProp>
         </GenericController>
         <hashTree>
-          <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="Status Error" enabled="true"/>
+          <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="Status Error" enabled="false"/>
           <hashTree>
             <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
               <collectionProp name="HeaderManager.headers">
