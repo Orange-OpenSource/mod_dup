@@ -65,6 +65,7 @@ namespace DupModule {
 		template<typename Archive>
 		void serialize(Archive & ar, const unsigned int version)
 		{
+		    ar & mRequest;
 			ar & mReqHeader;
 			ar & mReqBody;
 			ar & mResponseHeader;
@@ -87,6 +88,8 @@ namespace DupModule {
         std::string mBody;
         /** @brief The query answer */
         std::string mAnswer;
+        /** @brief The request uri */
+        std::string mRequest;
         /** @brief The header part of the query */
         mapStr mReqHeader;
         /** @brief The header part of the query */

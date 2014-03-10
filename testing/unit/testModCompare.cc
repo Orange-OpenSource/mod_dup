@@ -256,7 +256,7 @@ void TestModCompare::testWriteDifferences()
 		readFile.open(lPath.c_str());
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
-		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time : 0.001s\n"
+		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time : 0.001s\n\n\n"
 				"agent-type: myAgent\n"
 				"content-type: plain/text\n"
 				"date: TODAY\n"
@@ -268,7 +268,7 @@ void TestModCompare::testWriteDifferences()
 				"myBodyDiff\n"
 				"END DIFFERENCE n°:123\n");
 		std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
-		CPPUNIT_ASSERT(buffer.str()==assertRes);
+		CPPUNIT_ASSERT_EQUAL(buffer.str(), assertRes);
     }
 }
 

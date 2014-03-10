@@ -70,6 +70,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     if (time > 0){
     	diffLog << " / Elapsed time : " << time << "s";
     }
+    diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
     diffLog << DIFF_SEPARATOR << headerDiff << std::endl;
@@ -471,13 +472,12 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
     DupModule::RequestInfo *req = shPtr->get();
 
-
+    req->mRequest = std::string(pRequest->unparsed_uri);
     //write headers in Map
     apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
 
     std::string diffBody,diffHeader;
     if( tConf->mCompareDisabled){
-        Log::error(13,"scrivoooo" );
         writeSerializedRequest(*req);
     }else{
         clock_t start=clock();
