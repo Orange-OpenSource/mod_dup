@@ -303,7 +303,18 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
     printRequest(pRequest, ri, tConf);
-    gThreadPool->push(*reqInfo);
+    
+    
+    if ( tConf->synchronous ) {
+        static __thread CURL * lCurl = NULL;
+        if ( ! lCurl ) {
+            lCurl = gProcessor->initCurl(); 
+        }
+        gProcessor->runOne(*ri, lCurl);
+    }
+    else {
+        gThreadPool->push(*reqInfo);
+    }
 
     pFilter->ctx = (void *) -1;
     ap_remove_output_filter(pFilter);

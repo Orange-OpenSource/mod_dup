@@ -60,6 +60,7 @@ DupConf::DupConf()
     : currentApplicationScope(ApplicationScope::HEADER)
     , dirName(NULL)
     , currentDupDestination()
+    , synchronous(false)
     , mCurrentDuplicationType(DuplicationType::NONE)
     , mHighestDuplicationType(DuplicationType::NONE) {
     srand(time(NULL));
@@ -281,6 +282,18 @@ setActive(cmd_parms* pParams, void* pCfg) {
 }
 
 const char*
+setSynchronous(cmd_parms* pParams, void* pCfg) {
+    struct DupConf *lConf = reinterpret_cast<DupConf *>(pCfg);
+    if (!lConf) {
+        return "No per_dir conf defined. This should never happen!";
+    }
+
+    lConf->synchronous = true;
+    
+    return NULL;
+}
+
+const char*
 setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
@@ -434,6 +447,12 @@ command_rec gCmds[] = {
                   "VarName: The name of the variable to define"
                   "MatchRegex: The regex that must match to define the variable"
                   "SetRegex: The value to set if MatchRegex matches"),
+    AP_INIT_NO_ARGS("DupSync",
+                    reinterpret_cast<const char *(*)()>(&setSynchronous),
+                    0,
+                    ACCESS_CONF,
+                    "Duplicating Synchronously. "
+                    "This is only needed if no filter or substitution is defined."),
     AP_INIT_NO_ARGS("Dup",
                     reinterpret_cast<const char *(*)()>(&setActive),
                     0,
