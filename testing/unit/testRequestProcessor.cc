@@ -206,6 +206,31 @@ void TestRequestProcessor::testFilterBasic()
 
 }
 
+void TestRequestProcessor::testFilterOnNotMatching()
+{
+    DupConf conf;
+    conf.currentApplicationScope = ApplicationScope::ALL;
+
+    {
+    	// Exemple of negativ look ahead matching
+        RequestProcessor proc;
+        proc.addFilter("/toto","DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
+        		"(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
+        		"(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))",conf);
+        RequestInfo ri = RequestInfo(1,"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd");
+        CPPUNIT_ASSERT(proc.processRequest( ri));
+
+        RequestInfo ri2 = RequestInfo(1,"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred");
+        CPPUNIT_ASSERT(!proc.processRequest(ri2));
+
+        RequestInfo ri3 = RequestInfo(1,"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf");
+		CPPUNIT_ASSERT(!proc.processRequest(ri3));
+
+		RequestInfo ri4 = RequestInfo(1,"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
+		CPPUNIT_ASSERT(!proc.processRequest(ri4));
+    }
+}
+
 void TestRequestProcessor::testFilter()
 {
     RequestProcessor proc;

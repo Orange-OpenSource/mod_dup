@@ -42,6 +42,7 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testRequestInfo);
     CPPUNIT_TEST(testKeySubstitutionOnBody);
     CPPUNIT_TEST(testTimeout);
+    CPPUNIT_TEST(testFilterOnNotMatching);
 
     CPPUNIT_TEST_SUITE_END();
 
@@ -58,6 +59,7 @@ public:
     void testContextEnrichment();
     void testRequestInfo();
     void testTimeout();
+    void testFilterOnNotMatching();
 
     /**
      * Tests the key substitution on the request body
