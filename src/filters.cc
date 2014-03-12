@@ -71,8 +71,6 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
  */
 int
 translateHook(request_rec *pRequest) {
-    Log::warn(1, "### IN TRANSLATE");
-
     if (!pRequest->per_dir_config)
         return DECLINED;
     DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
@@ -123,9 +121,8 @@ translateHook(request_rec *pRequest) {
     info->mConfPath = tConf->dirName;
     info->mArgs = pRequest->args ? pRequest->args : "";
     gProcessor->enrichContext(pRequest, *info);
-    Log::warn(1, "### OUT OF TRANSLATE");
     pRequest->read_length = 0;
-    return OK;
+    return DECLINED;
 }
 
 
@@ -158,6 +155,9 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
     RequestInfo *info = shPtr->get();
 
     if (pF->ctx != (void *) -1) {
+        if (!pF->ctx) {
+            pRequest->remaining = info->mBody.size();
+        }
         long int read = (long int) pF->ctx;
         int bSize = info->mBody.size();
         int toRead = std::min((bSize - read), pReadbytes);
@@ -327,12 +327,12 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
     printRequest(pRequest, ri, tConf);
-    
-    
+
+
     if ( tConf->synchronous ) {
         static __thread CURL * lCurl = NULL;
         if ( ! lCurl ) {
-            lCurl = gProcessor->initCurl(); 
+            lCurl = gProcessor->initCurl();
         }
         gProcessor->runOne(*ri, lCurl);
     }
