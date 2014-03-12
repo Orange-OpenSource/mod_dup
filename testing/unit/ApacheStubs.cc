@@ -136,34 +136,19 @@ AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
         assert(apr_brigade_write(bb, NULL, NULL, testBody42, std::string(testBody42).size()) == APR_SUCCESS);
     } else if ((void *)filter == (void *)0x43) {
         if (!bodyServed) {
-            assert(apr_brigade_write(bb, NULL, NULL, testBody43p1, readbytes) == APR_SUCCESS);
+            assert(apr_brigade_write(bb, NULL, NULL, testBody43p1,
+                                     std::string(testBody43p1).size()) == APR_SUCCESS);
             bodyServed = 1;
             return APR_SUCCESS;
         } else if (bodyServed == 1) {
-            assert(apr_brigade_write(bb, NULL, NULL, testBody43p2, readbytes) == APR_SUCCESS);
+            assert(apr_brigade_write(bb, NULL, NULL,
+                                     testBody43p2, std::string(testBody43p2).size()) == APR_SUCCESS);
             bodyServed = 2;
             return APR_SUCCESS;
         }
     } else if ((void *)filter == (void *)0x44) {
         return 1;
-    } else if (!filter) {
-        std::string body = std::string(testBody43p1) + std::string(testBody43p2);
-        int toRead = std::min(body.size() - bodyServed, (long unsigned int)readbytes);
-        // We request a real test brigade
-        assert(apr_brigade_write(bb, NULL, NULL, body.c_str() + bodyServed
-                                 , toRead) == APR_SUCCESS);
-        bodyServed += toRead;
-        std::cout << "NOT FILTER: Writing: " << toRead << std::endl;
-        if (bodyServed >= body.size()) {
-            std::cout << "BodyServed" << bodyServed << " | " << body.size() << std::endl;
-            apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
-            apr_bucket *e = apr_bucket_eos_create(bA);
-            assert(e);
-            APR_BRIGADE_INSERT_TAIL(bb, e);
-        }
-        return APR_SUCCESS;
-    }
-    apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
+    }    apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
     apr_bucket *e = apr_bucket_eos_create(bA);
     assert(e);
     APR_BRIGADE_INSERT_TAIL(bb, e);
@@ -193,5 +178,5 @@ ap_remove_input_filter(ap_filter_t *pFilter)
 }
 
 apr_status_t 	ap_filter_flush (apr_bucket_brigade *bb, void *ctx) {
-
+    return APR_SUCCESS;
 }

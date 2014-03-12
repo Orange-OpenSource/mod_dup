@@ -170,8 +170,6 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
 
             read += toRead;
             pRequest->remaining -= toRead;
-            Log::warn(1, "Read: %d, toRead: %d, read_length: %d, remaining %d, clength %d", read, toRead, pRequest->read_length, pRequest->remaining
-                      , pRequest->clength);
         }
         // Request context update
         if (pRequest->remaining <= 0) {
