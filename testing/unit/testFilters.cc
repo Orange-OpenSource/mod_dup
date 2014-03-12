@@ -216,7 +216,7 @@ void TestFilters::inputFilterBody2BrigadeTest() {
      filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
      filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
      apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
-     RequestInfo *info = new RequestInfo(42);
+     RequestInfo *info = new RequestInfo(std::string("42"));
      boost::shared_ptr<RequestInfo> shPtr(info);
      ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -244,7 +244,7 @@ void TestFilters::inputFilterBody2BrigadeTest() {
      filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
      apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
 
-     RequestInfo *info = new RequestInfo(42);
+     RequestInfo *info = new RequestInfo(std::string("42"));
      boost::shared_ptr<RequestInfo> shPtr(info);
      ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -343,7 +343,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::HEADER_ONLY);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(42);
+    RequestInfo *info = new RequestInfo(std::string("42"));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -370,7 +370,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::REQUEST_WITH_ANSWER);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(42);
+    RequestInfo *info = new RequestInfo(std::string("42"));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -413,7 +413,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::REQUEST_WITH_ANSWER);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(42);
+    RequestInfo *info = new RequestInfo(std::string("42"));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 

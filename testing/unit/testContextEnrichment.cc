@@ -107,7 +107,7 @@ void TestContextEnrichment::testEnrichHeader() {
                                      "myVar", "value1", "toSet"));
 
     // Creation of a request object as it would be filled by the earlyhook filter
-    RequestInfo *info = new RequestInfo(DupModule::getNextReqId());
+    RequestInfo *info = new RequestInfo(std::string("42"));
 
     info->mConfPath = mParms->path;
     info->mArgs = "&arg1=value1&arg2=value2";
@@ -137,7 +137,7 @@ void TestContextEnrichment::testEnrichBody() {
                                      "myVar", "value1", "toSet"));
 
     // Creation of a request object as it would be filled by the earlyhook filter
-    RequestInfo *info = new RequestInfo(DupModule::getNextReqId());
+    RequestInfo *info = new RequestInfo(std::string("42"));
 
     info->mConfPath = mParms->path;
     info->mArgs = "&arg1=valueNOT&arg2=value2";
@@ -168,7 +168,7 @@ void TestContextEnrichment::testEnrichBoth() {
                                      "myVar", "Hey Joe", "toSet"));
 
     // Creation of a request object as it would be filled by the earlyhook filter
-    RequestInfo *info = new RequestInfo(DupModule::getNextReqId());
+    RequestInfo *info = new RequestInfo(std::string("42"));
 
     info->mConfPath = mParms->path;
 

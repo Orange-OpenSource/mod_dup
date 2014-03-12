@@ -291,18 +291,19 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         // If there is no UNIQUE_ID in the request header copy thr Request ID generated in both headers
         const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
         unsigned int lReqID;
+        DupModule::RequestInfo *info;
         if( lID == NULL){
         lReqID = DupModule::getNextReqId();
         std::string reqId = boost::lexical_cast<std::string>(lReqID);
         apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+        info = new DupModule::RequestInfo(reqId);
         }
         else {
-            lReqID = boost::lexical_cast<unsigned int>(std::string(lID));
+            info = new DupModule::RequestInfo(std::string(lID));
             apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
         }
 
-        DupModule::RequestInfo *info = new DupModule::RequestInfo(lReqID);
         // Allocation on a shared pointer on the request pool
         // We guarantee that whatever happens, the RequestInfo will be deleted
         void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
