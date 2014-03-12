@@ -444,6 +444,30 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     delete content;
 }
 
+void
+RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
+    const tFilter *matchedFilter;
+    if ((matchedFilter = processRequest(reqInfo))) {
+        __sync_fetch_and_add(&mDuplicatedCount, 1);
+        performCurlCall(pCurl, *matchedFilter, reqInfo);
+    }
+}
+
+CURL * RequestProcessor::initCurl()
+{
+    CURL * lCurl = curl_easy_init();
+    if (!lCurl) {
+        Log::error(402, "Could not init curl request object.");
+        return NULL;
+    }
+    curl_easy_setopt(lCurl, CURLOPT_USERAGENT, gUserAgent);
+    // Activer l'option provoque des timeouts sur des requests avec un fort payload
+    curl_easy_setopt(lCurl, CURLOPT_TIMEOUT_MS, mTimeout);
+    curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
+    
+    return lCurl;
+}
+
 /**
  * @brief Run the infinite loop which pops new requests of the given queue, processes them and sends the over to the configured destination
  * @param pQueue the queue which gets filled with incoming requests
@@ -453,15 +477,10 @@ RequestProcessor::run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue)
 {
     Log::debug("New worker thread started");
 
-    CURL * lCurl = curl_easy_init();
+    CURL * lCurl = initCurl();
     if (!lCurl) {
-        Log::error(402, "Could not init curl request object.");
         return;
     }
-    curl_easy_setopt(lCurl, CURLOPT_USERAGENT, gUserAgent);
-    // Activer l'option provoque des timeouts sur des requests avec un fort payload
-    curl_easy_setopt(lCurl, CURLOPT_TIMEOUT_MS, mTimeout);
-    curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
 
     for (;;) {
         boost::shared_ptr<RequestInfo> lQueueItemShared = pQueue.pop();
@@ -471,11 +490,7 @@ RequestProcessor::run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue)
             Log::debug("Received poison pill. Exiting.");
             break;
         }
-        const tFilter *matchedFilter;
-        if ((matchedFilter = processRequest(*lQueueItem))) {
-            __sync_fetch_and_add(&mDuplicatedCount, 1);
-            performCurlCall(lCurl, *matchedFilter, *lQueueItem);
-        }
+        runOne(*lQueueItem, lCurl);
     }
     curl_easy_cleanup(lCurl);
 }

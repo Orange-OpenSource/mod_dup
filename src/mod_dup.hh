@@ -65,6 +65,8 @@ public:
 
     /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
+    
+    bool                                        synchronous;
 
     void setCurrentDuplicationType(DuplicationType::eDuplicationType dt);
 
@@ -78,6 +80,7 @@ private:
 
     /** @brief the highest duplication type based on successive current ones*/
     DuplicationType::eDuplicationType          mHighestDuplicationType;
+    
 };
 
 /**

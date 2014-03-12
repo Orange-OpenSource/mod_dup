@@ -319,6 +319,19 @@ namespace DupModule {
         run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue);
 
         /**
+         * @brief perform curl for one request if it matches
+         * @param reqInfo the RequestInfo instance for this request
+         * @param pCurl a preinitialized curl handle
+         */
+        void runOne(RequestInfo &reqInfo, CURL * pCurl);
+
+        /**
+         * @brief initialize curl handle and common curl options
+         * @return a curl handle
+         */
+        CURL * initCurl();
+        
+        /**
          * @brief Define some environnement variables if the query matches the criteria defined
          * using the DupEnrichContext directive
          * @param pRequest the apache request structure
