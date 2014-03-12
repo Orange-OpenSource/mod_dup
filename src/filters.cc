@@ -172,14 +172,15 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
             pRequest->remaining -= toRead;
             Log::warn(1, "Read: %d, toRead: %d, read_length: %d, remaining %d, clength %d", read, toRead, pRequest->read_length, pRequest->remaining
                       , pRequest->clength);
-            // Request context update
-            if (pRequest->remaining <= 0) {
-                Log::warn(1, "Setting ctx to -1");
-                pF->ctx = (void *) -1;
-            } else {
-                pF->ctx = (void*)(read);
-            }
         }
+        // Request context update
+        if (pRequest->remaining <= 0) {
+            Log::warn(1, "Setting ctx to -1");
+            pF->ctx = (void *) -1;
+        } else {
+            pF->ctx = (void*)(read);
+        }
+
     }  else {
         // Sending EOS to end the eventual calls to this filter after it has served it's purpose
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
