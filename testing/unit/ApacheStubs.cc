@@ -161,6 +161,12 @@ AP_DECLARE(ap_filter_t *) ap_add_input_filter(const char *name, void *ctx,
 	return NULL;
 }
 
+AP_DECLARE(ap_filter_t *) ap_add_output_filter(const char *name, void *ctx,
+                                              request_rec *r, conn_rec *c)
+{
+	return NULL;
+}
+
 apr_status_t
 ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *)
 {
