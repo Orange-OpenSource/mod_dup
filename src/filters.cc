@@ -33,15 +33,18 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
       Log::error(42, "Get brigade failed, skipping the rest of the body");
       return true;
     }
+    Log::error(42, "Get brigade SUCCESS");
 
     // Read brigade content
     for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
 	 b != APR_BRIGADE_SENTINEL(bb);
 	 b = APR_BUCKET_NEXT(b) ) {
       // Metadata end of stream
-      if (APR_BUCKET_IS_EOS(b) || APR_BUCKET_IS_METADATA(b) ) {
-		return true;
+      if (APR_BUCKET_IS_EOS(b)) {
+          return true;
       }
+      if (APR_BUCKET_IS_METADATA(b))
+          continue;
       const char *data = 0;
       apr_size_t len = 0;
       apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
@@ -50,7 +53,7 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
 	return true;
       }
       if (len) {
-		content.append(data, len);
+          content.append(data, len);
       }
     }
     return false;
@@ -68,6 +71,8 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
  */
 int
 translateHook(request_rec *pRequest) {
+    Log::warn(1, "### IN TRANSLATE");
+
     if (!pRequest->per_dir_config)
         return DECLINED;
     DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
@@ -118,8 +123,9 @@ translateHook(request_rec *pRequest) {
     info->mConfPath = tConf->dirName;
     info->mArgs = pRequest->args ? pRequest->args : "";
     gProcessor->enrichContext(pRequest, *info);
-
-    return DECLINED;
+    Log::warn(1, "### OUT OF TRANSLATE");
+    pRequest->read_length = 0;
+    return OK;
 }
 
 
@@ -130,43 +136,57 @@ translateHook(request_rec *pRequest) {
 apr_status_t
 inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-  if (pMode != AP_MODE_READBYTES) {
-    return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-  }
+    Log::warn(1, "inputFilterBody2Brigade");
 
     request_rec *pRequest = pF->r;
     if (!pRequest || !pRequest->per_dir_config) {
+        // Request not for us
+        // Insert EOS or return ap_get_brigade?
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         assert(e);
         APR_BRIGADE_INSERT_TAIL(pB, e);
         return APR_SUCCESS;
     }
-    // Retrieve request info from context
+
+   // Retrieve request info from context
     boost::shared_ptr<RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pRequest->request_config, &dup_module));
     if (!shPtr) {
-        // Should not happen
-        apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
-        assert(e);
-        APR_BRIGADE_INSERT_TAIL(pB, e);
+        // // Should not happen
+        Log::warn(1, "NO SHPTR");
         return APR_SUCCESS;
     }
     RequestInfo *info = shPtr->get();
-    if (!pF->ctx) {
-        // No context associated with the filter, we serve the body
-        if (!info->mBody.empty()) {
+
+    if (pF->ctx != (void *) -1) {
+        long int read = (long int) pF->ctx;
+        int bSize = info->mBody.size();
+        int toRead = std::min((bSize - read), pReadbytes);
+        if (toRead > 0) {
             apr_status_t st;
-            if ((st = apr_brigade_write(pB, NULL, NULL, info->mBody.c_str(), info->mBody.size())) != APR_SUCCESS ) {
+            if ((st = apr_brigade_write(pB, NULL, NULL, info->mBody.c_str() + read, toRead)) != APR_SUCCESS ) {
                 Log::warn(1, "Failed to write request body in a brigade: %s",  info->mBody.c_str());
                 return st;
             }
+
+            read += toRead;
+            pRequest->remaining -= toRead;
+            Log::warn(1, "Read: %d, toRead: %d, read_length: %d, remaining %d, clength %d", read, toRead, pRequest->read_length, pRequest->remaining
+                      , pRequest->clength);
+            // Request context update
+            if (pRequest->remaining <= 0) {
+                Log::warn(1, "Setting ctx to -1");
+                pF->ctx = (void *) -1;
+            } else {
+                pF->ctx = (void*)(read);
+            }
         }
-        // Marks that we do not have any more data to read
-        pF->ctx = (void *) -1;
+    }  else {
+        // Sending EOS to end the eventual calls to this filter after it has served it's purpose
+        apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
+        assert(e);
+        Log::warn(1, "INSERTING EOS 2");
+        APR_BRIGADE_INSERT_TAIL(pB, e);
     }
-    // Sending EOS to end the different calls to this filter
-    apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
-    assert(e);
-    APR_BRIGADE_INSERT_TAIL(pB, e);
     return APR_SUCCESS;
 }
 
@@ -207,6 +227,8 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
  */
 apr_status_t
 outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    Log::warn(1, "$$$$ OUTPUT BODY");
+
     request_rec *pRequest = pFilter->r;
     // Reject requests that do not meet our requirements
     if ( pFilter->ctx == (void *) -1 ) {
@@ -237,13 +259,13 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     assert(reqInfo);
     RequestInfo * ri = reqInfo->get();
     assert(ri);
-    
-    // Pushing the answer to the processor      
+
+    // Pushing the answer to the processor
     prepareRequestInfo(tConf, pRequest, *ri);
 
     // Write the response body to the RequestInfo if found
     apr_bucket *currentBucket;
-    for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) { 
+    for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
       if (APR_BUCKET_IS_EOS(currentBucket)) {
 	ap_remove_output_filter(pFilter);
 	pFilter->ctx = (void *) -1;
@@ -257,7 +279,7 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
       apr_size_t len;
       apr_status_t rv;
       rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
-      
+
       if ((rv == APR_SUCCESS) && (data != NULL)) {
 	ri->mAnswer.append(data, len);
       }
@@ -273,10 +295,12 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
  */
 apr_status_t
 outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    Log::warn(1, "$$$$ OUTPUT HEADER");
+
   if ( pFilter->ctx == (void *) -1 ) {
     return ap_pass_brigade(pFilter->next, pBrigade);
   }
- 
+
     request_rec *pRequest = pFilter->r;
     // Reject requests that do not meet our requirements
     if (!pRequest) {

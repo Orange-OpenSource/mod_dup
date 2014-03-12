@@ -30,6 +30,7 @@
 #include <boost/serialization/string.hpp>
 #include <boost/archive/basic_text_oarchive.hpp>
 
+struct apr_bucket_brigade;
 namespace DupModule {
 
     /*
@@ -102,7 +103,7 @@ namespace DupModule {
         mapStr mDupResponseHeader;
         /** @brief The body part of the answer of the duplicated request*/
         std::string mDupResponseBody;
-
+        apr_bucket_brigade *bb;
         typedef std::list<std::pair<std::string, std::string> > tHeaders;
 
         /** @brief list that represents the headers of the incoming request */
