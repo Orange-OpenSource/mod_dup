@@ -42,6 +42,8 @@ namespace DupModule {
     extern const char *gName;
     extern const char *gNameBody2Brigade;
     extern const char *gNameOut;
+    extern const char *gNameOutBody;
+    extern const char *gNameOutHeaders;
 
     extern RequestProcessor                             *gProcessor;
     extern ThreadPool<boost::shared_ptr<RequestInfo> >  *gThreadPool;
@@ -65,7 +67,7 @@ public:
 
     /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
-    
+
     bool                                        synchronous;
 
     void setCurrentDuplicationType(DuplicationType::eDuplicationType dt);
@@ -80,7 +82,7 @@ private:
 
     /** @brief the highest duplication type based on successive current ones*/
     DuplicationType::eDuplicationType          mHighestDuplicationType;
-    
+
 };
 
 /**

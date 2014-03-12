@@ -33,8 +33,6 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
       Log::error(42, "Get brigade failed, skipping the rest of the body");
       return true;
     }
-    Log::error(42, "Get brigade SUCCESS");
-
     // Read brigade content
     for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
 	 b != APR_BRIGADE_SENTINEL(bb);
@@ -133,24 +131,17 @@ translateHook(request_rec *pRequest) {
 apr_status_t
 inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    Log::warn(1, "inputFilterBody2Brigade");
-
     request_rec *pRequest = pF->r;
     if (!pRequest || !pRequest->per_dir_config) {
-        // Request not for us
-        // Insert EOS or return ap_get_brigade?
-        apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
-        assert(e);
-        APR_BRIGADE_INSERT_TAIL(pB, e);
-        return APR_SUCCESS;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
-   // Retrieve request info from context
+    // Retrieve request info from context
     boost::shared_ptr<RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pRequest->request_config, &dup_module));
     if (!shPtr) {
-        // // Should not happen
-        Log::warn(1, "NO SHPTR");
-        return APR_SUCCESS;
+        // Happens after a rewrite on a location that we do not treat
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+
     }
     RequestInfo *info = shPtr->get();
 
@@ -172,9 +163,10 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
             pRequest->remaining -= toRead;
         }
         // Request context update
-        if (pRequest->remaining <= 0) {
-            Log::warn(1, "Setting ctx to -1");
+        if (read >= bSize) {
             pF->ctx = (void *) -1;
+             ap_add_output_filter(gNameOutHeaders, NULL, pRequest, pRequest->connection);
+             ap_add_output_filter(gNameOutBody, NULL, pRequest, pRequest->connection);
         } else {
             pF->ctx = (void*)(read);
         }
@@ -183,7 +175,6 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
         // Sending EOS to end the eventual calls to this filter after it has served it's purpose
         apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
         assert(e);
-        Log::warn(1, "INSERTING EOS 2");
         APR_BRIGADE_INSERT_TAIL(pB, e);
     }
     return APR_SUCCESS;
@@ -226,23 +217,22 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
  */
 apr_status_t
 outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::warn(1, "$$$$ OUTPUT BODY");
 
     request_rec *pRequest = pFilter->r;
     // Reject requests that do not meet our requirements
     if ( pFilter->ctx == (void *) -1 ) {
-      return ap_pass_brigade(pFilter->next, pBrigade);
+        return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     if (!pRequest || !pRequest->per_dir_config) {
-      ap_remove_output_filter(pFilter);
-      return ap_pass_brigade(pFilter->next, pBrigade);
+        ap_remove_output_filter(pFilter);
+        return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
-      ap_remove_output_filter(pFilter);
-         return ap_pass_brigade(pFilter->next, pBrigade);
+        ap_remove_output_filter(pFilter);
+        return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     // We need to get the highest one as we haven't matched which rule it is yet
@@ -255,9 +245,15 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
 
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
-    assert(reqInfo);
+    if (!reqInfo) {
+	ap_remove_output_filter(pFilter);
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
     RequestInfo * ri = reqInfo->get();
-    assert(ri);
+    if (!ri) {
+	ap_remove_output_filter(pFilter);
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
 
     // Pushing the answer to the processor
     prepareRequestInfo(tConf, pRequest, *ri);
@@ -294,7 +290,6 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
  */
 apr_status_t
 outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::warn(1, "$$$$ OUTPUT HEADER");
 
   if ( pFilter->ctx == (void *) -1 ) {
     return ap_pass_brigade(pFilter->next, pBrigade);
@@ -321,7 +316,9 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
     assert(reqInfo);
     RequestInfo * ri = reqInfo->get();
-    assert(ri);
+    if (!ri) {
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
 
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
