@@ -349,6 +349,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
     pFilter->ctx = (void *) -1;
 
+
     printRequest(pRequest, ri, tConf);
     return ap_pass_brigade(pFilter->next, pBrigade);
 }
