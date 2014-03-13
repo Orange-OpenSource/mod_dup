@@ -331,7 +331,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
             pF->ctx = (void *)1;
             continue;
         }
-        else if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
+        else if ( APR_BUCKET_IS_METADATA(b) ) {
             /* Ignore it, but don't try to read data from it */
             continue;
         }
