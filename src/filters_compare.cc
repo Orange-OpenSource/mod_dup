@@ -261,6 +261,40 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     return 1;
 }
 
+const unsigned int CMaxBytes = 8192;
+
+bool
+extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
+    if (ap_get_brigade(pRequest->input_filters,
+                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) != APR_SUCCESS) {
+      Log::error(42, "Get brigade failed, skipping the rest of the body");
+      return true;
+    }
+    // Read brigade content
+    for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
+     b != APR_BRIGADE_SENTINEL(bb);
+     b = APR_BUCKET_NEXT(b) ) {
+      // Metadata end of stream
+      if (APR_BUCKET_IS_EOS(b)) {
+          return true;
+      }
+      if (APR_BUCKET_IS_METADATA(b))
+          continue;
+      const char *data = 0;
+      apr_size_t len = 0;
+      apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+      if (rv != APR_SUCCESS) {
+    Log::error(42, "Bucket read failed, skipping the rest of the body");
+    return true;
+      }
+      if (len) {
+          content.append(data, len);
+      }
+    }
+    return false;
+}
+
+
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
     apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
@@ -323,7 +357,12 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     }
 
     DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
-    for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
+    while (!extractBrigadeContent(pB, pRequest, lRI->mBody)){
+            apr_brigade_cleanup(pB);
+        }
+    pF->ctx = (void *)1;
+    apr_brigade_cleanup(pB);
+    /*for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
          b != APR_BRIGADE_SENTINEL(pB);
          b = APR_BUCKET_NEXT(b) ) {
         // Metadata end of stream
@@ -332,7 +371,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
             continue;
         }
         else if ( APR_BUCKET_IS_METADATA(b) ) {
-            /* Ignore it, but don't try to read data from it */
+            // Ignore it, but don't try to read data from it
             continue;
         }
         const char* lReqPart = NULL;
@@ -343,7 +382,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         }
         lRI->mBody += std::string(lReqPart, lLength);
     }
-    apr_brigade_cleanup(pB);
+    apr_brigade_cleanup(pB);*/
 
     lStatus =  deserializeBody(*lRI);
 #ifndef UNIT_TESTING
