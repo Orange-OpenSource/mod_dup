@@ -230,13 +230,11 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
 
     if (!pRequest || !pRequest->per_dir_config) {
-        ap_remove_output_filter(pFilter);
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
-        ap_remove_output_filter(pFilter);
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
@@ -244,19 +242,22 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (tConf->getHighestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
         // No need to get the brigades here if we don't forward the answer
         pFilter->ctx = (void *) -1;
-	ap_remove_output_filter(pFilter);
+        //	ap_remove_output_filter(pFilter);
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
 
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
     if (!reqInfo) {
-	ap_remove_output_filter(pFilter);
+        //	ap_remove_output_filter(pFilter);
+        pFilter->ctx = (void *) -1;
+
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
     RequestInfo * ri = reqInfo->get();
     if (!ri) {
-	ap_remove_output_filter(pFilter);
+        //	ap_remove_output_filter(pFilter);
+        pFilter->ctx = (void *) -1;
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
@@ -264,7 +265,7 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_bucket *currentBucket;
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
       if (APR_BUCKET_IS_EOS(currentBucket)) {
-	ap_remove_output_filter(pFilter);
+          //	ap_remove_output_filter(pFilter);
 	pFilter->ctx = (void *) -1;
 	continue;
       }
@@ -300,25 +301,33 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
     // Reject requests that do not meet our requirements
     if (!pRequest) {
-      ap_remove_output_filter(pFilter);
-      return ap_pass_brigade(pFilter->next, pBrigade);
+        pFilter->ctx = (void *) -1;
+        return ap_pass_brigade(pFilter->next, pBrigade);
     }
     if (!pRequest->per_dir_config ) {
-      ap_remove_output_filter(pFilter);
+        pFilter->ctx = (void *) -1;
       return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
-      ap_remove_output_filter(pFilter);
+        pFilter->ctx = (void *) -1;
       return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
 
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
-    assert(reqInfo);
+
+    if (!reqInfo) {
+        //	ap_remove_output_filter(pFilter);
+        pFilter->ctx = (void *) -1;
+
+        return ap_pass_brigade(pFilter->next, pBrigade);
+    }
     RequestInfo * ri = reqInfo->get();
     if (!ri) {
+        //	ap_remove_output_filter(pFilter);
+        pFilter->ctx = (void *) -1;
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
 
@@ -339,11 +348,8 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         gThreadPool->push(*reqInfo);
     }
     pFilter->ctx = (void *) -1;
-    ap_remove_output_filter(pFilter);
 
     printRequest(pRequest, ri, tConf);
-
-
     return ap_pass_brigade(pFilter->next, pBrigade);
 }
 
