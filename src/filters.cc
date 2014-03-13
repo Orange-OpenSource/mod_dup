@@ -172,8 +172,6 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
         // Request context update
         if (read >= bSize) {
             pF->ctx = (void *) -1;
-             ap_add_output_filter(gNameOutBody, NULL, pRequest, pRequest->connection);
-             ap_add_output_filter(gNameOutHeaders, NULL, pRequest, pRequest->connection);
         } else {
             pF->ctx = (void*)(read);
         }
