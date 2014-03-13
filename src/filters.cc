@@ -114,13 +114,11 @@ translateHook(request_rec *pRequest) {
 
     const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     // Copy Request ID in both headers
-    //std::string reqId = boost::lexical_cast<std::string>(info->mId);
-    if( lID == NULL){
+    if(lID == NULL) {
         apr_table_set(pRequest->headers_in, c_UNIQUE_ID, info->mId.c_str());
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, info->mId.c_str());
     }
-    else
-    {
+    else {
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
     }
 
@@ -174,8 +172,8 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
         // Request context update
         if (read >= bSize) {
             pF->ctx = (void *) -1;
-             ap_add_output_filter(gNameOutHeaders, NULL, pRequest, pRequest->connection);
              ap_add_output_filter(gNameOutBody, NULL, pRequest, pRequest->connection);
+             ap_add_output_filter(gNameOutHeaders, NULL, pRequest, pRequest->connection);
         } else {
             pF->ctx = (void*)(read);
         }
@@ -201,14 +199,14 @@ static int iterateOverHeadersCallBack(void *d, const char *key, const char *valu
 
 static void
 prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
+    // Copy headers in
+    apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
+
     // Basic
     r.mPoison = false;
     r.mConfPath = tConf->dirName;
     r.mPath = pRequest->uri;
     r.mArgs = pRequest->args ? pRequest->args : "";
-
-    // Copy headers in
-    apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
 }
 
 static void
@@ -263,9 +261,6 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 	ap_remove_output_filter(pFilter);
         return ap_pass_brigade(pFilter->next, pBrigade);
     }
-
-    // Pushing the answer to the processor
-    prepareRequestInfo(tConf, pRequest, *ri);
 
     // Write the response body to the RequestInfo if found
     apr_bucket *currentBucket;
@@ -331,8 +326,9 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
-    printRequest(pRequest, ri, tConf);
 
+    // Pushing the answer to the processor
+    prepareRequestInfo(tConf, pRequest, *ri);
 
     if ( tConf->synchronous ) {
         static __thread CURL * lCurl = NULL;
@@ -344,12 +340,13 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     else {
         gThreadPool->push(*reqInfo);
     }
-
     pFilter->ctx = (void *) -1;
     ap_remove_output_filter(pFilter);
 
-    return ap_pass_brigade(pFilter->next, pBrigade);
+    printRequest(pRequest, ri, tConf);
 
+
+    return ap_pass_brigade(pFilter->next, pBrigade);
 }
 
 

@@ -1,9 +1,9 @@
-#!/bin/bash -x
+#!/bin/bash
 
 BIN=`cd $1; echo $PWD`
 CONF=`cd $2; echo $PWD`
 
-ORIG=$PWD 
+ORIG=$PWD
 ROOT=`cd ../../build; echo $PWD`
 APACHE_DIR=$ROOT/apache2
 APACHE_SRC=$APACHE_DIR/src
@@ -72,7 +72,7 @@ print len(body)
 " > $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 chmod +x $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 
-sed 's|{{APACHE_DIR}}|'"$APACHE_DIR"'|;' $CONF/compare.conf.tpl > $CONF/compare.conf
+#sed 's|{{APACHE_DIR}}|'"$APACHE_DIR"'|;' $CONF/compare.conf.tpl > $CONF/compare.conf
 sed 's|{{ROOT}}|'"$ROOT"'|;s|{{APACHE_MODS}}|'"$APACHE_MODS"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $ORIG/httpd.conf.templ > $APACHE_DIR/conf/custom_httpd.conf
 
 
