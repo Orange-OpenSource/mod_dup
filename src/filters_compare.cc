@@ -329,7 +329,11 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         // Metadata end of stream
         if ( APR_BUCKET_IS_EOS(b) ) {
             pF->ctx = (void *)1;
-            break;
+            continue;
+        }
+        else if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
+            /* Ignore it, but don't try to read data from it */
+            continue;
         }
         const char* lReqPart = NULL;
         apr_size_t lLength = 0;
@@ -337,7 +341,6 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
             continue;
         }
-
         lRI->mBody += std::string(lReqPart, lLength);
     }
     apr_brigade_cleanup(pB);
