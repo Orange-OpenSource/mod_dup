@@ -76,7 +76,9 @@ translateHook(request_rec *pRequest) {
         // Not a location that we treat, we decline the request
         return DECLINED;
     }
-    RequestInfo *info = new RequestInfo(DupModule::getNextReqId());
+    unsigned int lReqID = DupModule::getNextReqId();
+    std::string reqId = boost::lexical_cast<std::string>(lReqID);
+    RequestInfo *info = new RequestInfo(reqId);
     // Allocation on a shared pointer on the request pool
     // We guarantee that whatever happens, the RequestInfo will be deleted
     void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
@@ -110,10 +112,17 @@ translateHook(request_rec *pRequest) {
     apr_brigade_cleanup(bb);
     // Body read :)
 
+    const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     // Copy Request ID in both headers
-    std::string reqId = boost::lexical_cast<std::string>(info->mId);
-    apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
-    apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+    //std::string reqId = boost::lexical_cast<std::string>(info->mId);
+    if( lID == NULL){
+        apr_table_set(pRequest->headers_in, c_UNIQUE_ID, info->mId.c_str());
+        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, info->mId.c_str());
+    }
+    else
+    {
+        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
+    }
 
     // Synchronous context enrichment
     info->mConfPath = tConf->dirName;

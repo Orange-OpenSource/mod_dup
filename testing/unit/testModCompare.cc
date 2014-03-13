@@ -246,7 +246,7 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mReqHeader["agent-type"]= "myAgent";  //size = 11
     lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
     lReqInfo.mReqBody="MyClientRequest";
-    lReqInfo.mId=123;
+    lReqInfo.mId=std::string("123");
 
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
@@ -608,7 +608,7 @@ void TestModCompare::testOutputFilterHandler()
 
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
 
-        DupModule::RequestInfo *info = new DupModule::RequestInfo(42);
+        DupModule::RequestInfo *info = new DupModule::RequestInfo(std::string("42"));
         void *space = apr_palloc(req->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
         new (space) boost::shared_ptr<DupModule::RequestInfo>(info);
         ap_set_module_config(req->request_config, &compare_module, (void *)space);
@@ -621,7 +621,7 @@ void TestModCompare::testOutputFilterHandler()
         // Adding eos to bb
 
         //recreating and resetting the requestInfo since boost:scoped pointer has deleted it
-        DupModule::RequestInfo *info2 = new DupModule::RequestInfo(42);
+        DupModule::RequestInfo *info2 = new DupModule::RequestInfo(std::string("42"));
         void *space2 = apr_palloc(req->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
         new (space2) boost::shared_ptr<DupModule::RequestInfo>(info2);
         ap_set_module_config(req->request_config, &compare_module, (void *)space2);

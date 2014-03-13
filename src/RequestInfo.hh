@@ -78,7 +78,7 @@ namespace DupModule {
         /** @brief True if the request processor should stop ater seeing this object. */
         bool mPoison;
         /** @brief The query unique ID. */
-        unsigned int mId;
+        std::string mId;
         /** @brief The location (in the conf) which matched this query. */
         std::string mConfPath;
         /** @brief The path part of the request. */
@@ -118,7 +118,7 @@ namespace DupModule {
          * @param pPath The path part of the request
          * @param pConfPath The parameters part of the query (without leading ?)
          */
-        RequestInfo(unsigned int id, const std::string &pConfPath, const std::string &pPath,
+        RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
                     const std::string &pArgs, const std::string *body = 0);
 
         /**
@@ -129,7 +129,7 @@ namespace DupModule {
         /**
          * @brief Constructs a request initialising it's id
          */
-        RequestInfo(unsigned int id);
+        RequestInfo(std::string id);
 
         /**
          * @brief Constructs a poisonous object causing the processor to stop when read
