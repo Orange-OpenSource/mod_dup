@@ -30,6 +30,9 @@
 #include <boost/tokenizer.hpp>
 #include <iomanip>
 #include <apache2/httpd.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
+#include <boost/date_time/time_facet.hpp>
 
 
 const char *c_UNIQUE_ID = "UNIQUE_ID";
@@ -65,11 +68,18 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     std::string lReqHeader;
     map2string( pReqInfo.mReqHeader, lReqHeader );
     std::stringstream diffLog;
+    boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S.%f");
+    std::stringstream date_stream;
+    diffLog.imbue(std::locale(std::cout.getloc(), facet));
 
     diffLog << "BEGIN NEW REQUEST DIFFERENCE n°: " << pReqInfo.mId ;
     if (time > 0){
     	diffLog << " / Elapsed time : " << time << "s";
     }
+#ifndef UNIT_TESTING
+    diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
+#endif
+    writeCassandraDiff( pReqInfo.mId, diffLog );
     diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
@@ -113,7 +123,36 @@ void writeSerializedRequest(const DupModule::RequestInfo& req)
  * @param pUniqueID the UNIQUE_ID of the request to check
  * @return true if there are differences, false otherwise
  */
-bool writeCassandraDiff(std::string &pUniqueID)
+void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr)
+{
+    typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
+
+    CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
+    boost::lock_guard<boost::mutex>  lLock(lDiff.getMutex());
+
+    std::pair <tMultiMapDiff::iterator, tMultiMapDiff::iterator> lPairIter;
+    lPairIter = lDiff.equal_range(pUniqueID);
+    if ( lPairIter.first ==  lPairIter.second )
+    {
+        return;
+    }
+
+
+    diffStr << std::endl << "FieldInfo differences for pUniqueID : " << pUniqueID << "\n";
+    for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
+    	diffStr << lPairIter.first->second;
+    }
+    diffStr << DIFF_SEPARATOR;
+
+    lDiff.erase(pUniqueID);
+}
+
+/**
+ * @brief checks if there are differences in Cassandra
+ * @param pUniqueID the UNIQUE_ID of the request to check
+ * @return true if there are differences, false otherwise
+ */
+bool checkCassandraDiff(const std::string &pUniqueID)
 {
     typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
 
@@ -126,26 +165,6 @@ bool writeCassandraDiff(std::string &pUniqueID)
     {
         return false;
     }
-
-    std::stringstream diffStr;
-
-    diffStr << "FieldInfo differences for pUniqueID : " << pUniqueID << "\n";
-    for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
-    	diffStr << lPairIter.first->second;
-    }
-    diffStr << DIFF_SEPARATOR;
-    diffStr.flush();
-
-    if (gFile.is_open()){
-        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
-        gFile << diffStr.rdbuf();
-        gFile.flush();
-    }
-    else {
-        Log::error(12, "File not correctly opened");
-    }
-
-    lDiff.erase(pUniqueID);
 
     return true;
 }
@@ -457,9 +476,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
           if (APR_BUCKET_IS_EOS(currentBucket)) {
-              std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
-              writeCassandraDiff(lUniqueID);
-
               //we want to avoid to send the response body on the network
               apr_table_set(pRequest->headers_out, "Content-Length", "0");
               apr_brigade_cleanup(pBrigade);
@@ -526,7 +542,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         clock_t start=clock();
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
-                if(diffHeader.length()!=0 || diffBody.length()!=0){
+                if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){
                     writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
                 }
             }

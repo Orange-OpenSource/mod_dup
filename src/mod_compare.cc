@@ -60,7 +60,7 @@ boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, c_n
 std::ofstream gFile;
 const char * gFilePath;
 
-CompareConf::CompareConf(): mCompareDisabled(false) {
+CompareConf::CompareConf(): mCompareDisabled(false), mIsActive(false) {
 }
 
 
@@ -252,6 +252,15 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
     return NULL;
 }
 
+const char*
+setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
+    CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
+
+    lConf->mIsActive= true;
+
+    return NULL;
+}
+
 /** @brief Declaration of configuration commands */
     command_rec gCmds[] = {
         // AP_INIT_(directive,
@@ -274,6 +283,11 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
                       0,
                       OR_ALL,
                       "Path of file where the differences will be logged."),
+        AP_INIT_NO_ARGS("Compare",
+                      reinterpret_cast<const char *(*)()>(&setCompare),
+                      0,
+                      ACCESS_CONF,
+                      "Activate mod_compare."),
         AP_INIT_TAKE1("DisableLibwsdiff",
                       reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
                       0,
@@ -285,15 +299,27 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 #ifndef UNIT_TESTING
 
 static void insertInputFilter(request_rec *pRequest) {
-    ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
+    CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    assert(lConf);
+    if (lConf->mIsActive){
+        ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
+    }
 }
 
 static void insertOutputFilter(request_rec *pRequest) {
-    ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+    CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    assert(lConf);
+    if (lConf->mIsActive){
+        ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
+    }
 }
 
 static void insertOutputFilter2(request_rec *pRequest) {
-    ap_add_output_filter(gNameOut2, NULL, pRequest, pRequest->connection);
+    CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    assert(lConf);
+    if (lConf->mIsActive){
+        ap_add_output_filter(gNameOut2, NULL, pRequest, pRequest->connection);
+    }
 }
 #endif
 

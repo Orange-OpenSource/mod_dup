@@ -62,6 +62,7 @@ public:
     LibWsDiff::StringCompareBody mCompBody;
     LibWsDiff::MapCompare mCompHeader;
     bool mCompareDisabled;
+    bool mIsActive;
 
 };
 
@@ -133,7 +134,7 @@ const char* setBodyList(cmd_parms* pParams, void* pCfg, const char* pListType, c
 void
 printRequest(request_rec *pRequest, std::string pBody);
 
-bool writeCassandraDiff(std::string &pUniqueID);
+void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr);
 
 void writeSerializedRequest(const DupModule::RequestInfo& req);
 
@@ -157,6 +158,8 @@ apr_status_t openLogFile(const char* filepath,std::ios_base::openmode mode=std::
 const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath);
 
 const char* setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue);
+
+bool checkCassandraDiff(const std::string &pUniqueID);
 
 }
 
