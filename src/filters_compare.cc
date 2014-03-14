@@ -265,7 +265,7 @@ const unsigned int CMaxBytes = 8192;
 
 bool
 extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
-    if (ap_get_brigade(pRequest->input_filters,
+    if (ap_get_brigade(pRequest->next,
                        bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) != APR_SUCCESS) {
       Log::error(42, "Get brigade failed, skipping the rest of the body");
       return true;
