@@ -297,28 +297,28 @@ extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &cont
 
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-    if (lStatus != APR_SUCCESS) {
-        return lStatus;
-    }
+    apr_status_t lStatus;// = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+   /* if (lStatus != APR_SUCCESS) {
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    }*/
     request_rec *pRequest = pF->r;
     if (!pRequest)
     {
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     if(pRequest->per_dir_config == NULL){
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if (!tConf) {
-            return lStatus; // SHOULD NOT HAPPEN
+            return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);; // SHOULD NOT HAPPEN
     }
     // No context? new request
     if (!pF->ctx) {
@@ -353,7 +353,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         // Backup of info struct in the request context
         pF->ctx = info;
     } else if (pF->ctx == (void *)1) {
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
