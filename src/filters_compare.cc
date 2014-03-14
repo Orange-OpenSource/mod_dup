@@ -264,8 +264,8 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
 const unsigned int CMaxBytes = 8192;
 
 bool
-extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
-    if (ap_get_brigade(pRequest->next,
+extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content) {
+    if (ap_get_brigade(pF->next,
                        bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) != APR_SUCCESS) {
       Log::error(42, "Get brigade failed, skipping the rest of the body");
       return true;
@@ -357,7 +357,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     }
 
     DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
-    while (!extractBrigadeContent(pB, pRequest, lRI->mBody)){
+    while (!extractBrigadeContent(pB, pF, lRI->mBody)){
             apr_brigade_cleanup(pB);
         }
     pF->ctx = (void *)1;
