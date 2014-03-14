@@ -190,7 +190,7 @@ void TestModCompare::testWriteCassandraDiff()
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
 
-		std::string assertRes("\nFieldInfo differences for pUniqueID : noDiffID\n"
+		std::string assertRes("\nFieldInfo from Cassandra Driver :\n"
 "Field name in the db : 'myName'\n"
 "Multivalue/Collection index/key : 'myMultiValueKey'\n"
 "Value retrieved in Database : 'myDbValue'\n"
@@ -200,7 +200,7 @@ void TestModCompare::testWriteCassandraDiff()
 "Value retrieved in Database : 'myOtherDbValue'\n"
 "Value about to be set from Request : 'myOtherReqValue'\n"
 "-------------------\n"
-"\nFieldInfo differences for pUniqueID : IDtoto\n"
+"\nFieldInfo from Cassandra Driver :\n"
 "Field name in the db : 'toto'\n"
 "Multivalue/Collection index/key : 'pippo'\n"
 "Value retrieved in Database : 'pepita'\n"

@@ -79,10 +79,10 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
 #ifndef UNIT_TESTING
     diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
 #endif
-    writeCassandraDiff( pReqInfo.mId, diffLog );
     diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
+    writeCassandraDiff( pReqInfo.mId, diffLog );
     diffLog << DIFF_SEPARATOR << headerDiff << std::endl;
     diffLog << DIFF_SEPARATOR << bodyDiff << std::endl;
     diffLog << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
@@ -138,7 +138,7 @@ void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr
     }
 
 
-    diffStr << std::endl << "FieldInfo differences for pUniqueID : " << pUniqueID << "\n";
+    diffStr << std::endl << "FieldInfo from Cassandra Driver :" << "\n";
     for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
     	diffStr << lPairIter.first->second;
     }
