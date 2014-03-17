@@ -91,17 +91,26 @@ namespace DupModule {
      */
     class tFilter : public tElementBase{
     public:
+
+        enum eFilterTypes {
+            REGULAR,
+            PREVENT_DUPLICATION,
+        };
+
         tFilter(const std::string &regex,
                 ApplicationScope::eApplicationScope scope,
                 const std::string &currentDupDestination,
-                DuplicationType::eDuplicationType dupType);
+                DuplicationType::eDuplicationType dupType,
+                tFilter::eFilterTypes fType = eFilterTypes::REGULAR);
 
-        virtual ~tFilter(){}
+        virtual ~tFilter();
 
         std::string mField;                                     /** The key or field the filter applies on */
         std::string mDestination;                               /** The host to duplicate the request to if the filter matches
                                                                     the destination in &lt;host>[:&lt;port>] format */
         DuplicationType::eDuplicationType mDuplicationType;     /** The duplication type for this filter */
+
+        eFilterTypes mFilterType;
     };
 
     /**
@@ -234,7 +243,7 @@ namespace DupModule {
          */
         void
         addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
-                  const DupConf &pAssociatedConf);
+                  const DupConf &pAssociatedConf, tFilter::eFilterTypes fType);
 
         /**
          * @brief Add a RAW filter for all requests on a given path
@@ -330,7 +339,7 @@ namespace DupModule {
          * @return a curl handle
          */
         CURL * initCurl();
-        
+
         /**
          * @brief Define some environnement variables if the query matches the criteria defined
          * using the DupEnrichContext directive

@@ -311,8 +311,8 @@ setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
     return NULL;
 }
 
-const char*
-setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
+static const char*
+_setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter, tFilter::eFilterTypes fType) {
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
         return lErrorMsg;
@@ -322,12 +322,24 @@ setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilte
     assert(conf);
 
     try {
-        gProcessor->addFilter(pParams->path, pField, pFilter, *conf);
+        gProcessor->addFilter(pParams->path, pField, pFilter, *conf, fType);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in filter definition.";
     }
     return NULL;
 }
+
+
+const char*
+setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
+    return _setFilter(pParams, pCfg, pField, pFilter, tFilter::eFilterTypes::REGULAR);
+}
+
+const char*
+setPreventFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
+    return _setFilter(pParams, pCfg, pField, pFilter, tFilter::eFilterTypes::PREVENT_DUPLICATION);
+}
+
 
 const char*
 setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
@@ -419,6 +431,12 @@ command_rec gCmds[] = {
                   ACCESS_CONF,
                   "Filter incoming request fields before duplicating them. "
                   "If one or more filters are specified, at least one of them has to match."),
+    AP_INIT_TAKE2("DupPreventFilter",
+                  reinterpret_cast<const char *(*)()>(&setPreventFilter),
+                  0,
+                  ACCESS_CONF,
+                  "Cancels request duplication if matches"),
+
     AP_INIT_TAKE1("DupRawFilter",
                   reinterpret_cast<const char *(*)()>(&setRawFilter),
                   0,

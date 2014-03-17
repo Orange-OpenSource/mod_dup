@@ -43,7 +43,7 @@ void TestRequestProcessor::testRun()
     conf.currentApplicationScope = ApplicationScope::ALL;
     conf.currentDupDestination = "Honolulu:8080";
     // Filter
-    proc.addFilter("/toto", "INFO", "[my]+", conf);
+    proc.addFilter("/toto", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
 
     // This request won't go anywhere, but at least we exersize the loop in proc.run()
     queue.push(boost::shared_ptr<RequestInfo>(new RequestInfo(std::string("42"),"/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&")));
@@ -63,7 +63,7 @@ void TestRequestProcessor::testFilterAndSubstitution()
     DupConf conf;
     conf.currentApplicationScope = ApplicationScope::ALL;
     // Filter
-    proc.addFilter("/toto", "INFO", "[my]+", conf);
+    proc.addFilter("/toto", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
     proc.addRawFilter("/toto", "[my]+", conf);
     conf.currentApplicationScope = ApplicationScope::HEADER;
     proc.addSubstitution("/toto", "INFO", "[i]", "f", conf);
@@ -171,7 +171,7 @@ void TestRequestProcessor::testFilterBasic()
     {
         // Simple Filter MATCH
         RequestProcessor proc;
-        proc.addFilter("/toto", "INFO", "[my]+", conf);
+        proc.addFilter("/toto", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
         RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "INFO=myinfo");
         CPPUNIT_ASSERT(proc.processRequest( ri));
     }
@@ -179,7 +179,7 @@ void TestRequestProcessor::testFilterBasic()
     {
         // Simple Filter NO MATCH
         RequestProcessor proc;
-        proc.addFilter("/toto", "INFO", "KIDO", conf);
+        proc.addFilter("/toto", "INFO", "KIDO", conf, tFilter::eFilterTypes::REGULAR);
         RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "INFO=myinfo");
         CPPUNIT_ASSERT(!proc.processRequest( ri));
     }
@@ -188,7 +188,7 @@ void TestRequestProcessor::testFilterBasic()
     conf.currentApplicationScope = ApplicationScope::BODY;
         // Filter applied on body only NO MATCH
         RequestProcessor proc;
-        proc.addFilter("/toto", "INFO", "my", conf);
+        proc.addFilter("/toto", "INFO", "my", conf, tFilter::eFilterTypes::REGULAR);
         RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "INFO=myinfo");
         CPPUNIT_ASSERT(!proc.processRequest( ri));
     }
@@ -196,7 +196,7 @@ void TestRequestProcessor::testFilterBasic()
     {
         // Filter applied on body only MATCH
         RequestProcessor proc;
-        proc.addFilter("/bb", "BODY", "hello", conf);
+        proc.addFilter("/bb", "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         std::string body = "BODY=hello";
         RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
         CPPUNIT_ASSERT(proc.processRequest( ri));
@@ -214,20 +214,22 @@ void TestRequestProcessor::testFilterOnNotMatching()
     {
     	// Exemple of negativ look ahead matching
         RequestProcessor proc;
-        proc.addFilter("/toto","DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
-        		"(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
-        		"(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))",conf);
+        proc.addFilter("/toto","DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre, tFilter::eFilterTypes::REGULAR)"
+                       "(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
+                       "(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))", conf,
+                       tFilter::eFilterTypes::REGULAR);
         RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd");
         CPPUNIT_ASSERT(proc.processRequest( ri));
 
+        std::cout << "IN" << std::endl;
         RequestInfo ri2 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred");
         CPPUNIT_ASSERT(!proc.processRequest(ri2));
 
         RequestInfo ri3 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf");
-		CPPUNIT_ASSERT(!proc.processRequest(ri3));
+        CPPUNIT_ASSERT(!proc.processRequest(ri3));
 
-		RequestInfo ri4 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
-		CPPUNIT_ASSERT(!proc.processRequest(ri4));
+        RequestInfo ri4 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
+        CPPUNIT_ASSERT(!proc.processRequest(ri4));
     }
 }
 
@@ -235,7 +237,7 @@ void TestRequestProcessor::testFilter()
 {
     RequestProcessor proc;
 
-    // // // proc.addFilter("/toto", "INFO", "[my]+", conf);
+    // // // proc.addFilter("/toto", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
     // // // RequestInfo ri = RequestInfo(1,"/toto", "/toto/pws/titi/", "INFO=myinfo");
     // // // CPPUNIT_ASSERT(proc.processRequest( ri));
 
@@ -258,7 +260,7 @@ void TestRequestProcessor::testFilter()
 
     // Filter
     conf.currentApplicationScope = ApplicationScope::HEADER;
-    proc.addFilter("/toto", "titi", "^ta", conf);
+    proc.addFilter("/toto", "titi", "^ta", conf, tFilter::eFilterTypes::REGULAR);
     query = "titi=tata&tutu";
     ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest( ri));
@@ -293,7 +295,7 @@ void TestRequestProcessor::testFilter()
 
     // Two filters on same path - either of them has to match
     conf.currentApplicationScope = ApplicationScope::HEADER;
-    proc.addFilter("/toto", "titi", "[tu]{2,15}", conf);
+    proc.addFilter("/toto", "titi", "[tu]{2,15}", conf, tFilter::eFilterTypes::REGULAR);
     query = "titi=tata&tutu";
     ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest( ri));
@@ -310,7 +312,7 @@ void TestRequestProcessor::testFilter()
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("titi=t"));
 
     // Two filters on different paths
-    proc.addFilter("/some/path", "x", "^.{3,5}$", conf);
+    proc.addFilter("/some/path", "x", "^.{3,5}$", conf, tFilter::eFilterTypes::REGULAR);
     query = "x=1234";
     ri = RequestInfo(std::string("42"),"/some/path", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest( ri));
@@ -339,7 +341,7 @@ void TestRequestProcessor::testFilter()
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("ti=tu"));
 
     // // Filter escaped characters
-    proc.addFilter("/escaped", "y", "^ ", conf);
+    proc.addFilter("/escaped", "y", "^ ", conf, tFilter::eFilterTypes::REGULAR);
     query = "y=%20";
     ri = RequestInfo(std::string("42"),"/escaped", "/toto", query);
     CPPUNIT_ASSERT(proc.processRequest( ri));
@@ -515,7 +517,7 @@ void TestRequestProcessor::testTimeout() {
     DupConf conf;
     conf.currentApplicationScope = ApplicationScope::ALL;
     conf.currentDupDestination = "Honolulu:8080";
-    proc.addFilter("/spp/main", "SID", "mySid", conf);
+    proc.addFilter("/spp/main", "SID", "mySid", conf, tFilter::eFilterTypes::REGULAR);
 
     queue.push(boost::shared_ptr<RequestInfo>(new RequestInfo(std::string("42"),"/spp/main", "/spp/main", "SID=mySid")));
     queue.push(POISON_REQUEST);

@@ -78,12 +78,13 @@ RequestProcessor::getDuplicatedCount() {
 
 void
 RequestProcessor::addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
-                            const DupConf &pAssociatedConf) {
+                            const DupConf &pAssociatedConf, tFilter::eFilterTypes fType) {
 
     mCommands[pPath].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
                                                                      tFilter(pFilter, pAssociatedConf.currentApplicationScope,
                                                                              pAssociatedConf.currentDupDestination,
-                                                                             pAssociatedConf.getCurrentDuplicationType())));
+                                                                             pAssociatedConf.getCurrentDuplicationType(),
+                                                                             fType)));
 }
 
 void
@@ -91,7 +92,8 @@ RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFil
                                 const DupConf &pAssociatedConf) {
     mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, pAssociatedConf.currentApplicationScope,
                                                    pAssociatedConf.currentDupDestination,
-                                                   pAssociatedConf.getCurrentDuplicationType()));
+                                                   pAssociatedConf.getCurrentDuplicationType(),
+                                                   tFilter::eFilterTypes::REGULAR));
 }
 
 void
@@ -136,7 +138,10 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
 }
 
 const tFilter *
-RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs, ApplicationScope::eApplicationScope scope){
+RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs,
+                                 ApplicationScope::eApplicationScope scope){
+    const tFilter *matched = NULL;
+
     // Key filter matching
     BOOST_FOREACH (const tKeyVal &lKeyVal, pParsedArgs) {
         // Key Iteration
@@ -146,12 +151,14 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
         for (std::multimap<std::string, tFilter>::iterator it = lFilterIter.first; it != lFilterIter.second; ++it) {
             if ((it->second.mScope & scope) &&                                  // Scope check
                 boost::regex_search(lKeyVal.second, it->second.mRegex)) {        // Regex match
-                Log::debug("Key filter matched: %s | %s", lKeyVal.second.c_str(), it->second.mRegex.str().c_str());
-                return &it->second;
+                if (it->second.mFilterType == tFilter::PREVENT_DUPLICATION) {
+                    return NULL;
+                }
+                matched =  &it->second;
             }
         }
     }
-    return NULL;
+    return matched;
 }
 
 template <class T>
@@ -550,10 +557,15 @@ tElementBase::~tElementBase() {
 
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
                  const std::string &currentDupDestination,
-                 DuplicationType::eDuplicationType dupType)
+                 DuplicationType::eDuplicationType dupType,
+                 tFilter::eFilterTypes fType)
     : tElementBase(regex, scope)
     , mDestination(currentDupDestination)
-    , mDuplicationType(dupType) {
+    , mDuplicationType(dupType)
+    , mFilterType(fType) {
+}
+
+tFilter::~tFilter() {
 }
 
 tElementBase::tElementBase(const tElementBase &other) {
