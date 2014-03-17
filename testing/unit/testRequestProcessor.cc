@@ -202,7 +202,15 @@ void TestRequestProcessor::testFilterBasic()
         CPPUNIT_ASSERT(proc.processRequest( ri));
     }
 
-
+    {
+        // Filter applied on body only MATCH stopped by PREVENT filter type
+        RequestProcessor proc;
+        proc.addFilter("/bb", "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
+        proc.addFilter("/bb", "STOP", "true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
+        std::string body = "BODY=hello&STOP=true";
+        RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        CPPUNIT_ASSERT(!proc.processRequest( ri));
+    }
 
 }
 
