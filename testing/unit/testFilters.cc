@@ -216,7 +216,7 @@ void TestFilters::inputFilterBody2BrigadeTest() {
      filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
      filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
      apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
-     RequestInfo *info = new RequestInfo(42);
+     RequestInfo *info = new RequestInfo(std::string("42"));
      boost::shared_ptr<RequestInfo> shPtr(info);
      ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -244,19 +244,39 @@ void TestFilters::inputFilterBody2BrigadeTest() {
      filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
      apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
 
-     RequestInfo *info = new RequestInfo(42);
+     RequestInfo *info = new RequestInfo(std::string("42"));
      boost::shared_ptr<RequestInfo> shPtr(info);
      ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
      info->mBody = testBody43p1;
      info->mBody += testBody43p2;
-     CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, inputFilterBody2Brigade(filter, bb, AP_MODE_READBYTES,
-                                                               APR_BLOCK_READ, 8192));
-
-
-     // Compare the brigade content to what should have been sent
+     bodyServed = 0;
      std::string result;
-     extractBrigadeContent(bb, req, result);
+     bool done = false;
+     std::cout << "Massive body: " << info->mBody.size() << std::endl;
+     while (!done) {
+         apr_brigade_cleanup(bb);
+         CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, inputFilterBody2Brigade(filter, bb, AP_MODE_READBYTES,
+                                                                   APR_BLOCK_READ, 8192));
+         for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
+              b != APR_BRIGADE_SENTINEL(bb);
+              b = APR_BUCKET_NEXT(b) ) {
+             // Metadata end of stream
+             if (APR_BUCKET_IS_EOS(b)) {
+                 done = true;
+             }
+             if (APR_BUCKET_IS_METADATA(b))
+                 continue;
+             const char *data = 0;
+             apr_size_t len = 0;
+             apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+             if (len) {
+                 result.append(data, len);
+             }
+         }
+     }
+     // Compare the brigade content to what should have been sent
+     CPPUNIT_ASSERT_EQUAL(std::string(testBody43p1).size() + std::string(testBody43p2).size(), result.size());
      CPPUNIT_ASSERT_EQUAL(result, std::string(testBody43p1) + std::string(testBody43p2));
  }
 }
@@ -343,7 +363,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::HEADER_ONLY);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(42);
+    RequestInfo *info = new RequestInfo(std::string("42"));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -370,7 +390,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::REQUEST_WITH_ANSWER);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(42);
+    RequestInfo *info = new RequestInfo(std::string("42"));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -413,7 +433,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::REQUEST_WITH_ANSWER);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(42);
+    RequestInfo *info = new RequestInfo(std::string("42"));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 

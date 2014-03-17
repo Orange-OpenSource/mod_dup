@@ -163,18 +163,24 @@ void TestModCompare::testWriteCassandraDiff()
 
     CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
     std::string lID("IDtoto"),DiffCase("noDiffID");
-    CPPUNIT_ASSERT(!CompareModule::writeCassandraDiff(lID));
+    std::stringstream lSS;
+    CompareModule::writeCassandraDiff(lID, lSS);
 
     CassandraDiff::FieldInfo lFieldInfo1("myName", "myMultiValueKey", "myDbValue", "myReqValue");
     CassandraDiff::FieldInfo lFieldInfo2("myOtherData", "myOtherMultiValueKey", "myOtherDbValue", "myOtherReqValue");
     lDiff.insert(std::pair<std::string, CassandraDiff::FieldInfo>(DiffCase,lFieldInfo1));
     lDiff.insert(std::pair<std::string, CassandraDiff::FieldInfo>(DiffCase,lFieldInfo2));
-    CPPUNIT_ASSERT(CompareModule::writeCassandraDiff(DiffCase));
+    CompareModule::writeCassandraDiff(DiffCase, lSS);
 
     CassandraDiff::FieldInfo lFieldInfo("toto", "pippo", "pepita", "maradona");
     lDiff.insert( std::pair<std::string, CassandraDiff::FieldInfo>(lID, lFieldInfo) );
 
-    CPPUNIT_ASSERT(CompareModule::writeCassandraDiff(lID));
+    CompareModule::writeCassandraDiff(lID, lSS);
+    if (gFile.is_open()){
+        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+        gFile << lSS.str();
+        gFile.flush();
+    }
 
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
@@ -184,7 +190,7 @@ void TestModCompare::testWriteCassandraDiff()
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
 
-		std::string assertRes("FieldInfo differences for pUniqueID : noDiffID\n"
+		std::string assertRes("\nFieldInfo from Cassandra Driver :\n"
 "Field name in the db : 'myName'\n"
 "Multivalue/Collection index/key : 'myMultiValueKey'\n"
 "Value retrieved in Database : 'myDbValue'\n"
@@ -194,13 +200,13 @@ void TestModCompare::testWriteCassandraDiff()
 "Value retrieved in Database : 'myOtherDbValue'\n"
 "Value about to be set from Request : 'myOtherReqValue'\n"
 "-------------------\n"
-"FieldInfo differences for pUniqueID : IDtoto\n"
+"\nFieldInfo from Cassandra Driver :\n"
 "Field name in the db : 'toto'\n"
 "Multivalue/Collection index/key : 'pippo'\n"
 "Value retrieved in Database : 'pepita'\n"
 "Value about to be set from Request : 'maradona'\n"
 "-------------------\n");
-		CPPUNIT_ASSERT(buffer.str()==assertRes);
+		CPPUNIT_ASSERT_EQUAL(buffer.str(), assertRes);
     }
 }
 
@@ -246,7 +252,7 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mReqHeader["agent-type"]= "myAgent";  //size = 11
     lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
     lReqInfo.mReqBody="MyClientRequest";
-    lReqInfo.mId=123;
+    lReqInfo.mId=std::string("123");
 
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
@@ -608,7 +614,7 @@ void TestModCompare::testOutputFilterHandler()
 
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
 
-        DupModule::RequestInfo *info = new DupModule::RequestInfo(42);
+        DupModule::RequestInfo *info = new DupModule::RequestInfo(std::string("42"));
         void *space = apr_palloc(req->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
         new (space) boost::shared_ptr<DupModule::RequestInfo>(info);
         ap_set_module_config(req->request_config, &compare_module, (void *)space);
@@ -621,7 +627,7 @@ void TestModCompare::testOutputFilterHandler()
         // Adding eos to bb
 
         //recreating and resetting the requestInfo since boost:scoped pointer has deleted it
-        DupModule::RequestInfo *info2 = new DupModule::RequestInfo(42);
+        DupModule::RequestInfo *info2 = new DupModule::RequestInfo(std::string("42"));
         void *space2 = apr_palloc(req->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
         new (space2) boost::shared_ptr<DupModule::RequestInfo>(info2);
         ap_set_module_config(req->request_config, &compare_module, (void *)space2);

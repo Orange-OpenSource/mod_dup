@@ -427,7 +427,7 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     } else {
         // Regular GET case
         curl_easy_setopt(curl, CURLOPT_HTTPGET, 1);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, NULL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
     Log::debug(">> Duplicating: %s", uri.c_str());
@@ -464,7 +464,7 @@ CURL * RequestProcessor::initCurl()
     // Activer l'option provoque des timeouts sur des requests avec un fort payload
     curl_easy_setopt(lCurl, CURLOPT_TIMEOUT_MS, mTimeout);
     curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
-    
+
     return lCurl;
 }
 
@@ -485,6 +485,7 @@ RequestProcessor::run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue)
     for (;;) {
         boost::shared_ptr<RequestInfo> lQueueItemShared = pQueue.pop();
         RequestInfo *lQueueItem = lQueueItemShared.get();
+
         if (lQueueItem->isPoison()) {
             // Master tells us to stop
             Log::debug("Received poison pill. Exiting.");

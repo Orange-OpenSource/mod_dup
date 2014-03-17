@@ -118,6 +118,7 @@ AP_CORE_DECLARE(ap_conf_vector_t *) ap_create_request_config(apr_pool_t *p)
 }
 
 int bodyServed = 0;
+#include <iostream>
 
 AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
                                         apr_bucket_brigade *bb,
@@ -128,25 +129,26 @@ AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
 
     apr_pool_t *pool = NULL;
     apr_pool_create(&pool, 0);
-
+    std::cout << "Filter " << filter << std::endl;
     // No filter, simply forge an EOS
-    if ((void *)filter == (void *)0x42) {
-        // We request a real test brigade
+    if (((void *)filter == (void *)0x42)) {
+
         assert(apr_brigade_write(bb, NULL, NULL, testBody42, std::string(testBody42).size()) == APR_SUCCESS);
     } else if ((void *)filter == (void *)0x43) {
         if (!bodyServed) {
-            assert(apr_brigade_write(bb, NULL, NULL, testBody43p1, std::string(testBody43p1).size()) == APR_SUCCESS);
+            assert(apr_brigade_write(bb, NULL, NULL, testBody43p1,
+                                     std::string(testBody43p1).size()) == APR_SUCCESS);
             bodyServed = 1;
             return APR_SUCCESS;
         } else if (bodyServed == 1) {
-            assert(apr_brigade_write(bb, NULL, NULL, testBody43p2, std::string(testBody43p2).size()) == APR_SUCCESS);
+            assert(apr_brigade_write(bb, NULL, NULL,
+                                     testBody43p2, std::string(testBody43p2).size()) == APR_SUCCESS);
             bodyServed = 2;
             return APR_SUCCESS;
         }
     } else if ((void *)filter == (void *)0x44) {
         return 1;
-    }
-    apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
+    }    apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
     apr_bucket *e = apr_bucket_eos_create(bA);
     assert(e);
     APR_BRIGADE_INSERT_TAIL(bb, e);
@@ -154,6 +156,12 @@ AP_DECLARE(apr_status_t) ap_get_brigade(ap_filter_t *filter,
 }
 
 AP_DECLARE(ap_filter_t *) ap_add_input_filter(const char *name, void *ctx,
+                                              request_rec *r, conn_rec *c)
+{
+	return NULL;
+}
+
+AP_DECLARE(ap_filter_t *) ap_add_output_filter(const char *name, void *ctx,
                                               request_rec *r, conn_rec *c)
 {
 	return NULL;
@@ -168,4 +176,13 @@ ap_pass_brigade(ap_filter_t *, apr_bucket_brigade *)
 AP_DECLARE(void)
 ap_remove_output_filter(ap_filter_t *pFilter)
 {
+}
+
+AP_DECLARE(void)
+ap_remove_input_filter(ap_filter_t *pFilter)
+{
+}
+
+apr_status_t 	ap_filter_flush (apr_bucket_brigade *bb, void *ctx) {
+    return APR_SUCCESS;
 }

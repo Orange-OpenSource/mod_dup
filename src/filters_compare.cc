@@ -30,6 +30,9 @@
 #include <boost/tokenizer.hpp>
 #include <iomanip>
 #include <apache2/httpd.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
+#include <boost/date_time/time_facet.hpp>
 
 
 const char *c_UNIQUE_ID = "UNIQUE_ID";
@@ -65,14 +68,21 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     std::string lReqHeader;
     map2string( pReqInfo.mReqHeader, lReqHeader );
     std::stringstream diffLog;
+    boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S.%f");
+    std::stringstream date_stream;
+    diffLog.imbue(std::locale(std::cout.getloc(), facet));
 
     diffLog << "BEGIN NEW REQUEST DIFFERENCE n°: " << pReqInfo.mId ;
     if (time > 0){
     	diffLog << " / Elapsed time : " << time << "s";
     }
+#ifndef UNIT_TESTING
+    diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
+#endif
     diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
+    writeCassandraDiff( pReqInfo.mId, diffLog );
     diffLog << DIFF_SEPARATOR << headerDiff << std::endl;
     diffLog << DIFF_SEPARATOR << bodyDiff << std::endl;
     diffLog << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
@@ -113,7 +123,36 @@ void writeSerializedRequest(const DupModule::RequestInfo& req)
  * @param pUniqueID the UNIQUE_ID of the request to check
  * @return true if there are differences, false otherwise
  */
-bool writeCassandraDiff(std::string &pUniqueID)
+void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr)
+{
+    typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
+
+    CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
+    boost::lock_guard<boost::mutex>  lLock(lDiff.getMutex());
+
+    std::pair <tMultiMapDiff::iterator, tMultiMapDiff::iterator> lPairIter;
+    lPairIter = lDiff.equal_range(pUniqueID);
+    if ( lPairIter.first ==  lPairIter.second )
+    {
+        return;
+    }
+
+
+    diffStr << std::endl << "FieldInfo from Cassandra Driver :" << "\n";
+    for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
+    	diffStr << lPairIter.first->second;
+    }
+    diffStr << DIFF_SEPARATOR;
+
+    lDiff.erase(pUniqueID);
+}
+
+/**
+ * @brief checks if there are differences in Cassandra
+ * @param pUniqueID the UNIQUE_ID of the request to check
+ * @return true if there are differences, false otherwise
+ */
+bool checkCassandraDiff(const std::string &pUniqueID)
 {
     typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
 
@@ -126,26 +165,6 @@ bool writeCassandraDiff(std::string &pUniqueID)
     {
         return false;
     }
-
-    std::stringstream diffStr;
-
-    diffStr << "FieldInfo differences for pUniqueID : " << pUniqueID << "\n";
-    for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
-    	diffStr << lPairIter.first->second;
-    }
-    diffStr << DIFF_SEPARATOR;
-    diffStr.flush();
-
-    if (gFile.is_open()){
-        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
-        gFile << diffStr.rdbuf();
-        gFile.flush();
-    }
-    else {
-        Log::error(12, "File not correctly opened");
-    }
-
-    lDiff.erase(pUniqueID);
 
     return true;
 }
@@ -261,48 +280,83 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     return 1;
 }
 
+const unsigned int CMaxBytes = 8192;
+
+bool
+extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content) {
+    if (ap_get_brigade(pF->next,
+                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) != APR_SUCCESS) {
+      Log::error(42, "Get brigade failed, skipping the rest of the body");
+      return true;
+    }
+    // Read brigade content
+    for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
+     b != APR_BRIGADE_SENTINEL(bb);
+     b = APR_BUCKET_NEXT(b) ) {
+      // Metadata end of stream
+      if (APR_BUCKET_IS_EOS(b)) {
+          return true;
+      }
+      if (APR_BUCKET_IS_METADATA(b))
+          continue;
+      const char *data = 0;
+      apr_size_t len = 0;
+      apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+      if (rv != APR_SUCCESS) {
+    Log::error(42, "Bucket read failed, skipping the rest of the body");
+    return true;
+      }
+      if (len) {
+          content.append(data, len);
+      }
+    }
+    return false;
+}
+
+
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    apr_status_t lStatus = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-    if (lStatus != APR_SUCCESS) {
-        return lStatus;
-    }
+    apr_status_t lStatus;// = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+   /* if (lStatus != APR_SUCCESS) {
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    }*/
     request_rec *pRequest = pF->r;
     if (!pRequest)
     {
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     if(pRequest->per_dir_config == NULL){
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if (!tConf) {
-            return lStatus; // SHOULD NOT HAPPEN
+            return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);; // SHOULD NOT HAPPEN
     }
     // No context? new request
     if (!pF->ctx) {
         // If there is no UNIQUE_ID in the request header copy thr Request ID generated in both headers
         const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
         unsigned int lReqID;
+        DupModule::RequestInfo *info;
         if( lID == NULL){
         lReqID = DupModule::getNextReqId();
         std::string reqId = boost::lexical_cast<std::string>(lReqID);
         apr_table_set(pRequest->headers_in, c_UNIQUE_ID, reqId.c_str());
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, reqId.c_str());
+        info = new DupModule::RequestInfo(reqId);
         }
         else {
-            lReqID = boost::lexical_cast<unsigned int>(std::string(lID));
+            info = new DupModule::RequestInfo(std::string(lID));
             apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
         }
 
-        DupModule::RequestInfo *info = new DupModule::RequestInfo(lReqID);
         // Allocation on a shared pointer on the request pool
         // We guarantee that whatever happens, the RequestInfo will be deleted
         void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
@@ -318,17 +372,26 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         // Backup of info struct in the request context
         pF->ctx = info;
     } else if (pF->ctx == (void *)1) {
-        return lStatus;
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
-    for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
+    while (!extractBrigadeContent(pB, pF, lRI->mBody)){
+            apr_brigade_cleanup(pB);
+        }
+    pF->ctx = (void *)1;
+    apr_brigade_cleanup(pB);
+    /*for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
          b != APR_BRIGADE_SENTINEL(pB);
          b = APR_BUCKET_NEXT(b) ) {
         // Metadata end of stream
         if ( APR_BUCKET_IS_EOS(b) ) {
             pF->ctx = (void *)1;
-            break;
+            continue;
+        }
+        else if ( APR_BUCKET_IS_METADATA(b) ) {
+            // Ignore it, but don't try to read data from it
+            continue;
         }
         const char* lReqPart = NULL;
         apr_size_t lLength = 0;
@@ -336,10 +399,9 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
             continue;
         }
-
         lRI->mBody += std::string(lReqPart, lLength);
     }
-    apr_brigade_cleanup(pB);
+    apr_brigade_cleanup(pB);*/
 
     lStatus =  deserializeBody(*lRI);
 #ifndef UNIT_TESTING
@@ -414,9 +476,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
           if (APR_BUCKET_IS_EOS(currentBucket)) {
-              std::string lUniqueID( apr_table_get(pRequest->headers_in, c_UNIQUE_ID) );
-              writeCassandraDiff(lUniqueID);
-
               //we want to avoid to send the response body on the network
               apr_table_set(pRequest->headers_out, "Content-Length", "0");
               apr_brigade_cleanup(pBrigade);
@@ -483,7 +542,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         clock_t start=clock();
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
-                if(diffHeader.length()!=0 || diffBody.length()!=0){
+                if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){
                     writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
                 }
             }

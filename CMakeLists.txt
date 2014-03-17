@@ -63,7 +63,7 @@ endif()
 if(BUILD_UNIT_TESTS)
   enable_testing()
   add_custom_target(check make -j4 all
-    COMMAND make test)
+    COMMAND make test ARGS='-V')
 endif()
 
 if(BUILD_COVERAGE)
@@ -79,7 +79,7 @@ if(BUILD_COVERAGE)
     add_custom_target(coverage-unit
       COMMAND make coverage-clean
       COMMAND make -j2 all
-      COMMAND make test
+      COMMAND make test ARGS='-V'
       COMMAND make coverage-unitP)
 
     add_custom_target(coverage-functional
