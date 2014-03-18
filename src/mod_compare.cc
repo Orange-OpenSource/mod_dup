@@ -54,7 +54,20 @@ const char* c_COMPONENT_VERSION = "Compare/1.0";
 const char* c_UNIQUE_ID = "UNIQUE_ID";
 const char* c_named_mutex = "mod_compare_log_mutex";
 bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
-boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, c_named_mutex);
+
+
+boost::interprocess::named_mutex &getGlobalMutex() {
+    try {
+        static boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, c_named_mutex);
+        return gMutex;
+    } catch (boost::interprocess::interprocess_exception e) {
+        // Just in case the log has not been init yet
+        Log::init();
+        Log::error(42, "Cannot initialize global mutex named: %s. What: %s", c_named_mutex, e.what());
+        throw e;
+    }
+}
+
 
 
 std::ofstream gFile;

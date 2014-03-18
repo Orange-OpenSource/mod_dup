@@ -46,7 +46,9 @@ namespace CompareModule {
 
 extern std::ofstream gFile;
 extern const char* gFilePath;
-extern boost::interprocess::named_mutex gMutex;
+
+boost::interprocess::named_mutex &getGlobalMutex();
+
 
 /**
  * A class that holds the configuration specific to the location

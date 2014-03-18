@@ -89,7 +89,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog.flush();
 
     if (gFile.is_open()){
-        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
         gFile << diffLog.str();
         gFile.flush();
     }
@@ -108,7 +108,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
 void writeSerializedRequest(const DupModule::RequestInfo& req)
 {
     if (gFile.is_open()){
-        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+        boost::lock_guard<boost::interprocess::named_mutex> fileLock(getGlobalMutex());
         boost::archive::text_oarchive oa(gFile);
         oa << req;
     }

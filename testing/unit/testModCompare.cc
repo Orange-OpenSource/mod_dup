@@ -177,7 +177,7 @@ void TestModCompare::testWriteCassandraDiff()
 
     CompareModule::writeCassandraDiff(lID, lSS);
     if (gFile.is_open()){
-        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(gMutex);
+        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
         gFile << lSS.str();
         gFile.flush();
     }
