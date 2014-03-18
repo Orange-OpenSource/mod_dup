@@ -57,9 +57,14 @@ bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
 
 
 boost::interprocess::named_mutex &getGlobalMutex() {
+    Log::error(42, "IN GET GLOBAL MUTEX: %s", c_named_mutex);
+
+    static boost::interprocess::named_mutex *gMutex = NULL;
     try {
-        static boost::interprocess::named_mutex gMutex(boost::interprocess::open_or_create, c_named_mutex);
-        return gMutex;
+        if (!gMutex) {
+            gMutex = new boost::interprocess::named_mutex(boost::interprocess::open_or_create, c_named_mutex);
+        }
+        return *gMutex;
     } catch (boost::interprocess::interprocess_exception e) {
         // Just in case the log has not been init yet
         Log::init();
