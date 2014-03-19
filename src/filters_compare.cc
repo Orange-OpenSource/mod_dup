@@ -475,11 +475,6 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_bucket *currentBucket;
 
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
-        if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
-            /* Ignore it, but don't try to read data from it */
-            continue;
-        }
-
         const char *data;
         apr_size_t len;
         apr_status_t rv;
