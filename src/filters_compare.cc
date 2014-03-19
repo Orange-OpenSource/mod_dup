@@ -475,30 +475,21 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_bucket *currentBucket;
 
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
-          if (APR_BUCKET_IS_EOS(currentBucket)) {
-              Log::error (42, "Output bosy setting EOS");
-              //we want to avoid to send the response body on the network
-              // apr_table_set(pRequest->headers_out, "Content-Length", "0");
-              // //   apr_brigade_cleanup(pBrigade);
-              // pFilter->ctx = (void *) -1;
-              // return ap_pass_brigade(pFilter->next, pBrigade);
-              continue;
-          }
-          else if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
-              /* Ignore it, but don't try to read data from it */
-              continue;
-          }
-
-          const char *data;
-          apr_size_t len;
-          apr_status_t rv;
-          rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
-
-          if ((rv == APR_SUCCESS) && (data != NULL))
-          {
-              req->mDupResponseBody.append(data, len);
-          }
+        if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
+            /* Ignore it, but don't try to read data from it */
+            continue;
         }
+
+        const char *data;
+        apr_size_t len;
+        apr_status_t rv;
+        rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+
+        if ((rv == APR_SUCCESS) && (data != NULL))
+            {
+                req->mDupResponseBody.append(data, len);
+            }
+    }
 
     return ap_pass_brigade(pFilter->next, pBrigade);
 }
@@ -510,7 +501,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        //        apr_brigade_cleanup(pBrigade);
+        // apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
