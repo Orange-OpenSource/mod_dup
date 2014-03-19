@@ -72,7 +72,7 @@ print len(body)
 " > $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 chmod +x $APACHE_DIR/htdocs/cgi_bin/get_body_size.cgi
 
-#sed 's|{{APACHE_DIR}}|'"$APACHE_DIR"'|;' $CONF/compare.conf.tpl > $CONF/compare.conf
+sed 's|{{APACHE_DIR}}|'"$APACHE_DIR"'|;' $CONF/compare.conf.tpl > $CONF/compare.conf
 sed 's|{{ROOT}}|'"$ROOT"'|;s|{{APACHE_MODS}}|'"$APACHE_MODS"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $ORIG/httpd.conf.templ > $APACHE_DIR/conf/custom_httpd.conf
 
 
