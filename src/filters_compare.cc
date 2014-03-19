@@ -420,7 +420,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -429,7 +429,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if ( lArgs.find("comp_truncate") != std::string::npos){
         gFile.close();
         gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
-        apr_brigade_cleanup(pBrigade);
+        //        apr_brigade_cleanup(pBrigade);
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
         pFilter->ctx = (void *) -1;
         return ap_pass_brigade(pFilter->next, pBrigade);
@@ -439,7 +439,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     {
         pFilter->ctx = (void *) -1;
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -447,7 +447,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
         lStatus = ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //        apr_brigade_cleanup(pBrigade);
         pFilter->ctx = (void *) -1;
         return lStatus;
     }
@@ -456,7 +456,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if( tConf == NULL ){
         pFilter->ctx = (void *) -1;
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -466,25 +466,25 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     {
         pFilter->ctx = (void *) -1;
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
     DupModule::RequestInfo *req = shPtr->get();
-
 
     apr_bucket *currentBucket;
 
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
           if (APR_BUCKET_IS_EOS(currentBucket)) {
+              Log::error (42, "Output bosy setting EOS");
               //we want to avoid to send the response body on the network
               apr_table_set(pRequest->headers_out, "Content-Length", "0");
-              apr_brigade_cleanup(pBrigade);
-
-        continue;
+              //   apr_brigade_cleanup(pBrigade);
+              pFilter->ctx = (void *) -1;
+              return ap_pass_brigade(pFilter->next, pBrigade);
           }
           else if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
-        /* Ignore it, but don't try to read data from it */
-        continue;
+              /* Ignore it, but don't try to read data from it */
+              continue;
           }
 
           const char *data;
@@ -498,7 +498,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
           }
         }
 
-    return ap_pass_brigade(pFilter->next, pBrigade);;
+    return ap_pass_brigade(pFilter->next, pBrigade);
 }
 
 
@@ -508,7 +508,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -517,7 +517,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if( tConf == NULL ){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -526,7 +526,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if ( !shPtr)
     {
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
+        //        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
     DupModule::RequestInfo *req = shPtr->get();
@@ -540,6 +540,8 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         writeSerializedRequest(*req);
     }else{
         clock_t start=clock();
+        Log::error(42, "Response value: %s", req->mDupResponseBody.c_str());
+        Log::error(42, "Dup body : %s", req->mResponseBody.c_str());
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
                 if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){
