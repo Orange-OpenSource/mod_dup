@@ -37,6 +37,10 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
     for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
 	 b != APR_BRIGADE_SENTINEL(bb);
 	 b = APR_BUCKET_NEXT(b) ) {
+      // Metadata end of stream
+      if (APR_BUCKET_IS_EOS(b)) {
+          return true;
+      }
       if (APR_BUCKET_IS_METADATA(b))
           continue;
       const char *data = 0;
@@ -48,10 +52,6 @@ extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string
       }
       if (len) {
           content.append(data, len);
-      }
-      // Metadata end of stream
-      if (APR_BUCKET_IS_EOS(b)) {
-          return true;
       }
     }
     return false;
@@ -269,9 +269,9 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
       //     //	pFilter->ctx = (void *) -1;
       //   continue;
       // }
-      // if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
-      //   continue;
-      // }
+        // if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
+        //     continue;
+        // }
 
       const char *data;
       apr_size_t len;
