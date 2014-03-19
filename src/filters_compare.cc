@@ -473,7 +473,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     DupModule::RequestInfo *req = shPtr->get();
 
     apr_bucket *currentBucket;
-
+    apr_status_t rv;
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
     //     if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
     //         /* Ignore it, but don't try to read data from it */
@@ -482,7 +482,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
         const char *data;
         apr_size_t len;
-        apr_status_t rv;
+
         rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
 
         if ((rv == APR_SUCCESS) && (data != NULL))
@@ -491,7 +491,9 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             }
     }
 
-    return ap_pass_brigade(pFilter->next, pBrigade);
+    rv = ap_pass_brigade(pFilter->next, pBrigade);
+    apr_brigade_cleanup(pBrigade);
+    return rv;
 }
 
 

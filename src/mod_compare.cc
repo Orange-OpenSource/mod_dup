@@ -352,11 +352,11 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_RESOURCE => only the body will be read ( the headers_out not set yet)
-    ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_CONTENT_SET);
+    ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_CONNECTION => only the response header will be read
     ap_register_output_filter(gNameOut2, outputFilterHandler2, NULL, AP_FTYPE_TRANSCODE);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
-    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
     ap_hook_insert_filter(&insertOutputFilter2, NULL, NULL, APR_HOOK_LAST);
 #endif
 }
