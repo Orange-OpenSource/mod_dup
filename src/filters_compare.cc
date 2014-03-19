@@ -540,8 +540,8 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         writeSerializedRequest(*req);
     }else{
         clock_t start=clock();
-        Log::error(42, "Response value: %s", req->mDupResponseBody.c_str());
-        Log::error(42, "Dup body : %s", req->mResponseBody.c_str());
+        Log::error(42, "Response value: %d", req->mDupResponseBody.size());
+        Log::error(42, "Dup body : %d", req->mResponseBody.size());
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
                 if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){
