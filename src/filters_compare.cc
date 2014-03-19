@@ -227,6 +227,7 @@ apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo)
     	pos+= SECTION_SIZE_CHARS;
     	pReqInfo.mResponseBody = pReqInfo.mBody.substr(pos, lBodyResSize);
 
+        Log::error(42, "Deserialized sizes: BodyReq:%ld Header:%ld Bodyres:%ld ", lBodyReqSize, lHeaderResSize, lBodyResSize);
     	deserializeHeader(pReqInfo,lResponseHeader);
     }
     catch ( const std::out_of_range &oor)
@@ -446,9 +447,9 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
     {
+        pFilter->ctx = (void *) -1;
         lStatus = ap_pass_brigade(pFilter->next, pBrigade);
         //        apr_brigade_cleanup(pBrigade);
-        pFilter->ctx = (void *) -1;
         return lStatus;
     }
 
@@ -558,9 +559,8 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
 
     pFilter->ctx = (void *) -1;
-    lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-    apr_brigade_cleanup(pBrigade);
-    return lStatus;
+
+    return ap_pass_brigade(pFilter->next, pBrigade);
 }
 
 };
