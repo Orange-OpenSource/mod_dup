@@ -264,12 +264,12 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Write the response body to the RequestInfo if found
     apr_bucket *currentBucket;
     for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
-      if (APR_BUCKET_IS_EOS(currentBucket)) {
-          //	ap_remove_output_filter(pFilter);
-	pFilter->ctx = (void *) -1;
-	continue;
-      }
-      else if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
+      // if (APR_BUCKET_IS_EOS(currentBucket)) {
+      //     //	ap_remove_output_filter(pFilter);
+      //     //	pFilter->ctx = (void *) -1;
+      //   continue;
+      // }
+      if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
 	continue;
       }
 
