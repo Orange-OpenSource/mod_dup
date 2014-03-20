@@ -55,7 +55,8 @@ RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std
       mId(id),
       mConfPath(pConfPath),
       mPath(pPath),
-      mArgs(pArgs) {
+      mArgs(pArgs),
+      eos_seen(false){
     if (pBody)
         mBody = *pBody;
 }
@@ -66,7 +67,9 @@ RequestInfo::RequestInfo(mapStr reqHeader,std::string reqBody,mapStr respHeader,
 	mResponseHeader(respHeader),
 	mResponseBody(respBody),
 	mDupResponseHeader(dupHeader),
-	mDupResponseBody(dupBody){}
+	mDupResponseBody(dupBody),
+        eos_seen(false){
+}
 
 RequestInfo::RequestInfo(std::string id)
     : mPoison(false),

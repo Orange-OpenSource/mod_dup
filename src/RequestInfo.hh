@@ -112,6 +112,9 @@ namespace DupModule {
         /** @brief list that represents the headers of the request answer */
         tHeaders mHeadersOut;
 
+        bool eos_seen;
+
+
         /**
          * @brief Constructs the object using the three strings.
          * @param pConfPath The location (in the conf) which matched this query

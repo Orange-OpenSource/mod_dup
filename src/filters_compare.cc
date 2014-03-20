@@ -478,6 +478,11 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         const char *data;
         apr_size_t len;
 
+        if (APR_BUCKET_IS_EOS(currentBucket)) {
+            req->eos_seen = 1;
+            continue;
+        }
+
         rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
 
         if ((rv == APR_SUCCESS) && (data != NULL)) {
@@ -512,12 +517,18 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
 
-    if ( !shPtr) {
+    if ( !shPtr || !shPtr->get()) {
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
+
     DupModule::RequestInfo *req = shPtr->get();
+    if (!req->eos_seen) {
+        lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        return lStatus;
+    }
 
     req->mRequest = std::string(pRequest->unparsed_uri);
     //write headers in Map
