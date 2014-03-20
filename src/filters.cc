@@ -213,9 +213,6 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
     Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("### Request args: %s", pRequest->args);
-    Log::debug("### Answer size: %ld", pBH->mAnswer.size());
-    Log::debug("### Answer end: %s", pBH->mAnswer.c_str() + pBH->mAnswer.size()  -20);
-
 }
 
 /**
@@ -225,7 +222,6 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
  */
 apr_status_t
 outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::error(42, "Body filter");
     request_rec *pRequest = pFilter->r;
     // Reject requests that do not meet our requirements
     if ((pFilter->ctx == (void *) -1) || !pRequest || !pRequest->per_dir_config) {
@@ -263,9 +259,7 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
           currentBucket != APR_BRIGADE_SENTINEL(pBrigade);
           currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
 
-
         if (APR_BUCKET_IS_EOS(currentBucket)) {
-            Log::error(42, "End of stream BODY");
             ri->eos_seen = true;
             pFilter->ctx = (void *) -1;
             rv = ap_pass_brigade(pFilter->next, pBrigade);
@@ -297,7 +291,6 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
  */
 apr_status_t
 outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::error(42, "Headers filter");
     apr_status_t rv;
     if ( pFilter->ctx == (void *) -1 ) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
@@ -351,7 +344,6 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         gProcessor->runOne(*ri, lCurl);
     }
     else {
-        Log::error(42, "Headers push");
         gThreadPool->push(*reqInfo);
     }
     pFilter->ctx = (void *) -1;
