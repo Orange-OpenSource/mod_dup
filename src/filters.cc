@@ -177,10 +177,7 @@ inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t
         }
 
     }  else {
-        // Sending EOS to end the eventual calls to this filter after it has served it's purpose
-        apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
-        assert(e);
-        APR_BRIGADE_INSERT_TAIL(pB, e);
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
     return APR_SUCCESS;
 }
@@ -223,22 +220,15 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
 apr_status_t
 outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     request_rec *pRequest = pFilter->r;
+    apr_status_t rv;
     // Reject requests that do not meet our requirements
     if ((pFilter->ctx == (void *) -1) || !pRequest || !pRequest->per_dir_config) {
-        return ap_pass_brigade(pFilter->next, pBrigade);
-    }
-    apr_status_t rv;
-    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
-    if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return rv;
     }
-
-    // We need to get the highest one as we haven't matched which rule it is yet
-    if (tConf->getHighestDuplicationType() != DuplicationType::REQUEST_WITH_ANSWER) {
-        // No need to get the brigades here if we don't forward the answer
-        pFilter->ctx = (void *) -1;
+    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    if ((!tConf) || (!tConf->dirName) || (tConf->getHighestDuplicationType() == DuplicationType::NONE)) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return rv;
@@ -270,13 +260,17 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         if (APR_BUCKET_IS_METADATA(currentBucket))
             continue;
 
-        const char *data;
-        apr_size_t len;
-        rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+        // We need to get the highest one as we haven't matched which rule it is yet
+        if (tConf->getHighestDuplicationType() == DuplicationType::REQUEST_WITH_ANSWER) {
 
-        if ((rv == APR_SUCCESS) && data) {
-            // Appends the part read to the answer
-            ri->mAnswer.append(data, len);
+            const char *data;
+            apr_size_t len;
+            rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+
+            if ((rv == APR_SUCCESS) && data) {
+                // Appends the part read to the answer
+                ri->mAnswer.append(data, len);
+            }
         }
     }
     rv = ap_pass_brigade(pFilter->next, pBrigade);
