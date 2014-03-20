@@ -421,7 +421,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        //apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -430,26 +430,25 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if ( lArgs.find("comp_truncate") != std::string::npos){
         gFile.close();
         gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
-        //        apr_brigade_cleanup(pBrigade);
         apr_table_set(pRequest->headers_out, "Content-Length", "0");
         pFilter->ctx = (void *) -1;
-        return ap_pass_brigade(pFilter->next, pBrigade);
+        lStatus = ap_pass_brigade(pFilter->next, pBrigade);
+        apr_brigade_cleanup(pBrigade);
+        return lStatus;
     }
 
-    if (!pRequest || !pRequest->per_dir_config)
-    {
+    if (!pRequest || !pRequest->per_dir_config) {
         pFilter->ctx = (void *) -1;
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        //        apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
-    if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
-    {
+    if ( ( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) ) {
         pFilter->ctx = (void *) -1;
         lStatus = ap_pass_brigade(pFilter->next, pBrigade);
-        //        apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -457,38 +456,33 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if( tConf == NULL ){
         pFilter->ctx = (void *) -1;
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        //apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
     boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
 
-    if ( !shPtr)
-    {
+    if (!shPtr || !shPtr->get()) {
         pFilter->ctx = (void *) -1;
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        //apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
     DupModule::RequestInfo *req = shPtr->get();
 
     apr_bucket *currentBucket;
     apr_status_t rv;
-    for ( currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
-    //     if ( APR_BUCKET_IS_METADATA(currentBucket) ) {
-    //         /* Ignore it, but don't try to read data from it */
-    //         continue;
-    //     }
-
+    for ( currentBucket = APR_BRIGADE_FIRST(pBrigade);
+          currentBucket != APR_BRIGADE_SENTINEL(pBrigade);
+          currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
         const char *data;
         apr_size_t len;
 
         rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
 
-        if ((rv == APR_SUCCESS) && (data != NULL))
-            {
-                req->mDupResponseBody.append(data, len);
-            }
+        if ((rv == APR_SUCCESS) && (data != NULL)) {
+            req->mDupResponseBody.append(data, len);
+        }
     }
 
     rv = ap_pass_brigade(pFilter->next, pBrigade);
@@ -503,7 +497,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        // apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -512,7 +506,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if( tConf == NULL ){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        //        apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
 
@@ -521,7 +515,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if ( !shPtr)
     {
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
-        //        apr_brigade_cleanup(pBrigade);
+        apr_brigade_cleanup(pBrigade);
         return lStatus;
     }
     DupModule::RequestInfo *req = shPtr->get();
@@ -550,10 +544,10 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             }
         }
     }
-
     pFilter->ctx = (void *) -1;
-
-    return ap_pass_brigade(pFilter->next, pBrigade);
+    lStatus = ap_pass_brigade(pFilter->next, pBrigade);
+    apr_brigade_cleanup(pBrigade);
+    return lStatus;
 }
 
 };
