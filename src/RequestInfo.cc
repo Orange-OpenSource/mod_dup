@@ -73,11 +73,13 @@ RequestInfo::RequestInfo(mapStr reqHeader,std::string reqBody,mapStr respHeader,
 
 RequestInfo::RequestInfo(std::string id)
     : mPoison(false),
-      mId(id) {
+      mId(id),
+      eos_seen(false) {
 }
 
 RequestInfo::RequestInfo() :
-    mPoison(true){
+    mPoison(true),
+    eos_seen(false){
 }
 
 bool

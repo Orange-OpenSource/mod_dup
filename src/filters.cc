@@ -265,9 +265,12 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
 
         if (APR_BUCKET_IS_EOS(currentBucket)) {
-            Log::error(42, "End of stream");
-            ri->eos_seen = 1;
-            continue;
+            Log::error(42, "End of stream BODY");
+            ri->eos_seen = true;
+            pFilter->ctx = (void *) -1;
+            rv = ap_pass_brigade(pFilter->next, pBrigade);
+            apr_brigade_cleanup(pBrigade);
+            return rv;
         }
 
         if (APR_BUCKET_IS_METADATA(currentBucket))
@@ -332,7 +335,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
 
-    if (ri->eos_seen) {
+    if (!ri->eos_seen) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return rv;
@@ -348,7 +351,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         gProcessor->runOne(*ri, lCurl);
     }
     else {
-        Log::error(42, "Headers filter");
+        Log::error(42, "Headers push");
         gThreadPool->push(*reqInfo);
     }
     pFilter->ctx = (void *) -1;
