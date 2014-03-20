@@ -260,14 +260,17 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
           currentBucket != APR_BRIGADE_SENTINEL(pBrigade);
           currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
 
-      const char *data;
-      apr_size_t len;
-      rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+        if (APR_BUCKET_IS_METADATA(currentBucket))
+            continue;
 
-      if ((rv == APR_SUCCESS) && (data != NULL)) {
-          // Appends the part read to the answer
-          ri->mAnswer.append(data, len);
-      }
+        const char *data;
+        apr_size_t len;
+        rv = apr_bucket_read(currentBucket, &data, &len, APR_BLOCK_READ);
+
+        if ((rv == APR_SUCCESS) && data) {
+            // Appends the part read to the answer
+            ri->mAnswer.append(data, len);
+        }
     }
     rv = ap_pass_brigade(pFilter->next, pBrigade);
     apr_brigade_cleanup(pBrigade);
