@@ -388,11 +388,12 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
 
     std::string lBodyToSend = lRI->mReqBody;
-    while (lBodyToSend.size() > CMaxBytes){
-        apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.substr(0,CMaxBytes).c_str(), CMaxBytes );
+    const unsigned int lBytesToRead = 8000;
+    while (lBodyToSend.size() > lBytesToRead){
+        apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.substr(0,lBytesToRead).c_str(), lBytesToRead );
         ap_pass_brigade(pF->next, pB);
         apr_brigade_cleanup(pB);
-        lBodyToSend = lBodyToSend.substr(CMaxBytes);
+        lBodyToSend = lBodyToSend.substr(lBytesToRead);
     }
     apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.c_str(), lBodyToSend.length() );
 #endif
