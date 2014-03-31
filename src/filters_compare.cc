@@ -382,33 +382,21 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         }
     pF->ctx = (void *)1;
     apr_brigade_cleanup(pB);
-    /*for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
-         b != APR_BRIGADE_SENTINEL(pB);
-         b = APR_BUCKET_NEXT(b) ) {
-        // Metadata end of stream
-        if ( APR_BUCKET_IS_EOS(b) ) {
-            pF->ctx = (void *)1;
-            continue;
-        }
-        else if ( APR_BUCKET_IS_METADATA(b) ) {
-            // Ignore it, but don't try to read data from it
-            continue;
-        }
-        const char* lReqPart = NULL;
-        apr_size_t lLength = 0;
-        apr_status_t lStatus = apr_bucket_read(b, &lReqPart, &lLength, APR_BLOCK_READ);
-        if ((lStatus != APR_SUCCESS) || (lReqPart == NULL)) {
-            continue;
-        }
-        lRI->mBody += std::string(lReqPart, lLength);
-    }
-    apr_brigade_cleanup(pB);*/
 
     lStatus =  deserializeBody(*lRI);
 #ifndef UNIT_TESTING
     apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
-    apr_brigade_write(pB, ap_filter_flush, pF, lRI->mReqBody.c_str(), lRI->mReqBody.length() );
+
+    std::string lBodyToSend = lRI->mReqBody;
+    while (lBodyToSend.size() > CMaxBytes){
+        apr_brigade_write(pB, ap_filter_flush, pF->next, lBodyToSend.substr(0,CMaxBytes).c_str(), CMaxBytes );
+        ap_pass_brigade(pF->next, pB);
+        apr_brigade_cleanup(pB);
+        lBodyToSend = lBodyToSend.substr(CMaxBytes);
+    }
+    apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str(), lBodyToSend.length() );
 #endif
+
     apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
     printRequest(pRequest, lRI->mReqBody);
     return lStatus;
