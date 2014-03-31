@@ -57,8 +57,6 @@ bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
 
 
 boost::interprocess::named_mutex &getGlobalMutex() {
-    Log::error(42, "IN GET GLOBAL MUTEX: %s", c_named_mutex);
-
     static boost::interprocess::named_mutex *gMutex = NULL;
     try {
         if (!gMutex) {
@@ -271,6 +269,10 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 }
 
 const char*
+setLogFacility(cmd_parms* pParams, void* pCfg, const char* pValue) {
+}
+
+const char*
 setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 
@@ -306,6 +308,11 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
                       0,
                       ACCESS_CONF,
                       "Activate mod_compare."),
+        AP_INIT_TAKE1("CompareLogFacility",
+                      reinterpret_cast<const char *(*)()>(&setLogFacility),
+                      0,
+                      ACCESS_CONF,
+                      "Log to a facility instead of a file."),
         AP_INIT_TAKE1("DisableLibwsdiff",
                       reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
                       0,

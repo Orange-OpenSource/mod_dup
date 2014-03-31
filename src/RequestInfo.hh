@@ -113,7 +113,7 @@ namespace DupModule {
         tHeaders mHeadersOut;
 
         bool eos_seen;
-
+        unsigned int offset;
 
         /**
          * @brief Constructs the object using the three strings.

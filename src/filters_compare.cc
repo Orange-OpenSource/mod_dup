@@ -317,19 +317,14 @@ extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &cont
 
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    apr_status_t lStatus;// = ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-   /* if (lStatus != APR_SUCCESS) {
-        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-    }*/
+    apr_status_t lStatus;
     request_rec *pRequest = pF->r;
-    if (!pRequest)
-    {
+    if (!pRequest) {
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
-    if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) )
-    {
+    if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) ) {
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
@@ -338,7 +333,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     }
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if (!tConf) {
-            return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);; // SHOULD NOT HAPPEN
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes); // SHOULD NOT HAPPEN
     }
     // No context? new request
     if (!pF->ctx) {
@@ -368,41 +363,41 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         // Backup in request context
         ap_set_module_config(pRequest->request_config, &compare_module, (void *)space);
 
-        //ap_set_module_config(pRequest->request_config, &compare_module, (void *)info);
-
         // Backup of info struct in the request context
         pF->ctx = info;
-    } else if (pF->ctx == (void *)1) {
-        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-    }
 
-    DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
-    while (!extractBrigadeContent(pB, pF, lRI->mBody)){
+        DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
+        while (!extractBrigadeContent(pB, pF, lRI->mBody)){
             apr_brigade_cleanup(pB);
         }
-    pF->ctx = (void *)1;
-    apr_brigade_cleanup(pB);
-
-    lStatus =  deserializeBody(*lRI);
-#ifndef UNIT_TESTING
-    apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
-
-    std::string lBodyToSend = lRI->mReqBody;
-    const unsigned int lBytesToRead = 3000;
-    while (lBodyToSend.size() > lBytesToRead){
-        apr_brigade_write(pB, NULL, NULL, lBodyToSend.substr(0,lBytesToRead).c_str(), lBytesToRead );
-        ap_pass_brigade(pF->next, pB);
+        pF->ctx = (void *)1;
         apr_brigade_cleanup(pB);
-        lBodyToSend = lBodyToSend.substr(lBytesToRead);
-    }
-    apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str(), lBodyToSend.length() );
-    apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
-    APR_BRIGADE_INSERT_TAIL(pB, e);
+        lRI->offset = 0;
+        lStatus =  deserializeBody(*lRI);
+#ifndef UNIT_TESTING
+        apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
+        apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
 #endif
-
-    apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
-    printRequest(pRequest, lRI->mReqBody);
-    return lStatus;
+        printRequest(pRequest, lRI->mReqBody);
+        return lStatus;
+    } else if (pF->ctx == (void *)1) {
+        // Request is already read and deserialized, sending it to the client
+        boost::shared_ptr<DupModule::RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pF->r->request_config,
+                                                                                                                         &compare_module)));
+        DupModule::RequestInfo *lRI = reqInfo->get();
+        std::string &lBodyToSend = lRI->mReqBody;
+        int toSend = std::min((apr_off_t)(lBodyToSend.size() - lRI->offset), pReadbytes);
+        if (toSend > 0){
+            apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, pReadbytes);
+            lRI->offset += toSend;
+            return APR_SUCCESS;
+        } else {
+            pF->ctx = (void *)-1;
+            return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+        }
+    }
+    // Everything is read and rewritten, simply returning a get brigade call
+    return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
 }
 
 
