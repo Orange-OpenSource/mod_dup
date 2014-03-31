@@ -390,12 +390,12 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     std::string lBodyToSend = lRI->mReqBody;
     const unsigned int lBytesToRead = 3000;
     while (lBodyToSend.size() > lBytesToRead){
-        apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.substr(0,lBytesToRead).c_str(), lBytesToRead );
+        apr_brigade_write(pB, NULL, NULL, lBodyToSend.substr(0,lBytesToRead).c_str(), lBytesToRead );
         ap_pass_brigade(pF->next, pB);
         apr_brigade_cleanup(pB);
         lBodyToSend = lBodyToSend.substr(lBytesToRead);
     }
-    apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.c_str(), lBodyToSend.length() );
+    apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str(), lBodyToSend.length() );
     apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
     APR_BRIGADE_INSERT_TAIL(pB, e);
 #endif
