@@ -388,11 +388,17 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         std::string &lBodyToSend = lRI->mReqBody;
         int toSend = std::min((apr_off_t)(lBodyToSend.size() - lRI->offset), pReadbytes);
         if (toSend > 0){
-            apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend);
+            apr_status_t st;
+            if ((st = apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend)) != APR_SUCCESS ) {
+                Log::warn(1, "Failed to write request body in a brigade");
+                return st;
+            }
             lRI->offset += toSend;
             return APR_SUCCESS;
         } else {
             pF->ctx = (void *)-1;
+            apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
+            APR_BRIGADE_INSERT_TAIL(pB, e);
             return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
         }
     }
