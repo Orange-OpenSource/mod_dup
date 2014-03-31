@@ -389,12 +389,12 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 
     std::string lBodyToSend = lRI->mReqBody;
     while (lBodyToSend.size() > CMaxBytes){
-        apr_brigade_write(pB, ap_filter_flush, pF->next, lBodyToSend.substr(0,CMaxBytes).c_str(), CMaxBytes );
+        apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.substr(0,CMaxBytes).c_str(), CMaxBytes );
         ap_pass_brigade(pF->next, pB);
         apr_brigade_cleanup(pB);
         lBodyToSend = lBodyToSend.substr(CMaxBytes);
     }
-    apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str(), lBodyToSend.length() );
+    apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.c_str(), lBodyToSend.length() );
 #endif
 
     apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
