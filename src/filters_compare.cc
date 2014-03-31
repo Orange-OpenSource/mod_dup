@@ -388,7 +388,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
 
     std::string lBodyToSend = lRI->mReqBody;
-    const unsigned int lBytesToRead = 8000;
+    const unsigned int lBytesToRead = 4000;
     while (lBodyToSend.size() > lBytesToRead){
         apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.substr(0,lBytesToRead).c_str(), lBytesToRead );
         ap_pass_brigade(pF->next, pB);
