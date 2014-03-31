@@ -379,8 +379,9 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
 #endif
         printRequest(pRequest, lRI->mReqBody);
-        return DECLINED;
-    } else if (pF->ctx == (void *)1) {
+        //return lStatus;
+    }
+    if (pF->ctx == (void *)1) {
         // Request is already read and deserialized, sending it to the client
         boost::shared_ptr<DupModule::RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pF->r->request_config,
                                                                                                                          &compare_module)));
