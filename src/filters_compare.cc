@@ -396,6 +396,8 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         lBodyToSend = lBodyToSend.substr(lBytesToRead);
     }
     apr_brigade_write(pB, ap_filter_flush, pF, lBodyToSend.c_str(), lBodyToSend.length() );
+    apr_bucket *e = apr_bucket_eos_create(pF->c->bucket_alloc);
+    APR_BRIGADE_INSERT_TAIL(pB, e);
 #endif
 
     apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
