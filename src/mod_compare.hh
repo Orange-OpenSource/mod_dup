@@ -163,5 +163,19 @@ const char* setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pVal
 
 bool checkCassandraDiff(const std::string &pUniqueID);
 
+/*
+ * Method that calls the destructor of an object which type is templated
+ */
+template <class T>
+apr_status_t
+cleaner(void *self) {
+    if (self) {
+        T *elt = reinterpret_cast<T *>(self);
+        assert(elt);
+        elt->~T();
+    }
+    return 0;
+}
+
 }
 

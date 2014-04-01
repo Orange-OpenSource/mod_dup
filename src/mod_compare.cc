@@ -270,6 +270,7 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 
 const char*
 setLogFacility(cmd_parms* pParams, void* pCfg, const char* pValue) {
+    return NULL;
 }
 
 const char*
