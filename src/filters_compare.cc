@@ -379,14 +379,14 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
 #endif
         printRequest(pRequest, lRI->mReqBody);
-        //return lStatus;
+        return lStatus;
     } else if (pF->ctx == (void *)1) {
         // Request is already read and deserialized, sending it to the client
         boost::shared_ptr<DupModule::RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pF->r->request_config,
                                                                                                                          &compare_module)));
         DupModule::RequestInfo *lRI = reqInfo->get();
         std::string &lBodyToSend = lRI->mReqBody;
-        int toSend = std::min((apr_off_t)(lBodyToSend.size() - lRI->offset), pReadbytes);
+        int toSend = std::min((apr_off_t)(lBodyToSend.size() - lRI->offset), 8000);
         if (toSend > 0){
             apr_status_t st;
             if ((st = apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend)) != APR_SUCCESS ) {
