@@ -387,7 +387,13 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
                                                                                                                          &compare_module)));
         DupModule::RequestInfo *lRI = reqInfo->get();
         std::string &lBodyToSend = lRI->mReqBody;
-        int toSend = std::min((lBodyToSend.size() - lRI->offset), (size_t)8000);
+
+        char *buf = (char *)apr_bucket_alloc(lBodyToSend.size(), pB->bucket_alloc);
+        apr_bucket *e = apr_bucket_heap_create(buf, lBodyToSend.size(), apr_bucket_free, pB->bucket_alloc);
+        APR_BRIGADE_INSERT_TAIL(pB, e);
+        memcpy(buf, lBodyToSend.c_str(), lBodyToSend.size());
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+        /*int toSend = std::min((lBodyToSend.size() - lRI->offset), (size_t)8000);
         if (toSend > 0){
             apr_status_t st;
             if ((st = apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend)) != APR_SUCCESS ) {
@@ -399,7 +405,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         } else {
             //pF->ctx = (void *)-1;
             return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-        }
+        }*/
     }
     // Everything is read and rewritten, simply returning a get brigade call
     return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
