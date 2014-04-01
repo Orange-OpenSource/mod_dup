@@ -97,6 +97,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     {
         Log::error(12, "File not correctly opened");
     }
+    delete facet;
 }
 
 /**
