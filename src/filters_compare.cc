@@ -386,7 +386,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
                                                                                                                          &compare_module)));
         DupModule::RequestInfo *lRI = reqInfo->get();
         std::string &lBodyToSend = lRI->mReqBody;
-        int toSend = std::min((apr_off_t)(lBodyToSend.size() - lRI->offset), (apr_off_t)8000);
+        int toSend = std::min((lBodyToSend.size() - lRI->offset), (size_t)8000);
         if (toSend > 0){
             apr_status_t st;
             if ((st = apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend)) != APR_SUCCESS ) {
