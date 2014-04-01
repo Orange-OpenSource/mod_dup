@@ -358,7 +358,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
         new (space) boost::shared_ptr<DupModule::RequestInfo>(info);
         // Registering of the shared pointer destructor on the pool
-        apr_pool_cleanup_register(pRequest->pool, space, cleaner<DupModule::RequestInfo>,
+        apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<DupModule::RequestInfo>>,
                                   apr_pool_cleanup_null);
         // Backup in request context
         ap_set_module_config(pRequest->request_config, &compare_module, (void *)space);
