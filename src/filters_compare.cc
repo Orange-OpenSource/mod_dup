@@ -380,29 +380,28 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 #endif
         printRequest(pRequest, lRI->mReqBody);
         //return lStatus;
-    }
-    if (pF->ctx == (void *)1) {
-    // Request is already read and deserialized, sending it to the client
-    boost::shared_ptr<DupModule::RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pF->r->request_config,
-                                                                                                                     &compare_module)));
-    DupModule::RequestInfo *lRI = reqInfo->get();
-    std::string &lBodyToSend = lRI->mReqBody;
-    int toSend = std::min((apr_off_t)(lBodyToSend.size() - lRI->offset), pReadbytes);
-    if (toSend > 0){
-        apr_status_t st;
-        if ((st = apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend)) != APR_SUCCESS ) {
-            Log::warn(1, "Failed to write request body in a brigade");
-            return st;
+    } else if (pF->ctx == (void *)1) {
+        // Request is already read and deserialized, sending it to the client
+        boost::shared_ptr<DupModule::RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pF->r->request_config,
+                                                                                                                         &compare_module)));
+        DupModule::RequestInfo *lRI = reqInfo->get();
+        std::string &lBodyToSend = lRI->mReqBody;
+        int toSend = std::min((apr_off_t)(lBodyToSend.size() - lRI->offset), pReadbytes);
+        if (toSend > 0){
+            apr_status_t st;
+            if ((st = apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend)) != APR_SUCCESS ) {
+                Log::warn(1, "Failed to write request body in a brigade");
+                return st;
+            }
+            lRI->offset += toSend;
+            return APR_SUCCESS;
+        } else {
+            //pF->ctx = (void *)-1;
+            return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
         }
-        lRI->offset += toSend;
-        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
-    } else {
-        //pF->ctx = (void *)-1;
-        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
-}
-// Everything is read and rewritten, simply returning a get brigade call
-return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    // Everything is read and rewritten, simply returning a get brigade call
+    return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
 }
 
 
