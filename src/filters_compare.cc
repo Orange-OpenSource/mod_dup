@@ -379,7 +379,6 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
 #endif
         printRequest(pRequest, lRI->mReqBody);
-        //return lStatus;
     }
     if (pF->ctx == (void *)1) {
         // Request is already read and deserialized, sending it to the client
@@ -388,12 +387,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         DupModule::RequestInfo *lRI = reqInfo->get();
         std::string &lBodyToSend = lRI->mReqBody;
 
-        /*//char *buf = (char *)apr_bucket_alloc(lBodyToSend.size(), pB->bucket_alloc);
-        apr_bucket *e = apr_bucket_heap_create(lBodyToSend.c_str(), lBodyToSend.size(), NULL, pB->bucket_alloc);
-        APR_BRIGADE_INSERT_TAIL(pB, e);
-        //memcpy(buf, lBodyToSend.c_str(), lBodyToSend.size());
-        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);*/
-        int toSend = std::min((lBodyToSend.size() - lRI->offset), (size_t)pReadbytes);
+        int toSend = std::min((lBodyToSend.size() - lRI->offset), (size_t)8000);
         if (toSend > 0){
             apr_status_t st;
             if ((st = apr_brigade_write(pB, NULL, NULL, lBodyToSend.c_str() + lRI->offset, toSend)) != APR_SUCCESS ) {
@@ -403,7 +397,6 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
             lRI->offset += toSend;
             return APR_SUCCESS;
         } else {
-            //pF->ctx = (void *)-1;
             return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
         }
     }
