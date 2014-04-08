@@ -13,7 +13,7 @@ In other words, mod_dup is built to guarantee a low system impact by sacrifizing
 However, by using a high number of maximum threads, request dropping can be avoided and system impact raised.
 mod_dup periodically emits log messages containing metrics such as the number of dropped requests.
 
-mod_comapre
+mod_compare
 ===========
 mod_compare allows to compare the response header and body of HTTP Requests between two web services.
 mod_compare receives an http request which contains the response header and body of the a Web Service that will be compared to the response of the web service installed in the same server of mod_compare.
