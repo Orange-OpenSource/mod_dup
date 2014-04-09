@@ -31,6 +31,10 @@ Basic Request Duplication
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/dup_comp.png)
 
+Duplication with Response
+=========================
+![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/dup_comp.png)
+
 Documentation
 =============
 
