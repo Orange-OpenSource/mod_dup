@@ -29,7 +29,7 @@ Two operating modes are possible:
 
 Basic Request Duplication
 =========================
-![](https://raw2.github.com/Orange-OpenSource/mod_dup/master/docs/mod_dup_overview.png)
+![](https://github.com/Orange-OpenSource/mod_dup/blob/master/docs/dup_comp.png)
 
 Documentation
 =============
