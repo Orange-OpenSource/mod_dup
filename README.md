@@ -1,6 +1,6 @@
 Description
 ===========
-This repository contain two modules apache, mod_dup and mod_compare.
+This repository contain two modules apache, mod_dup and mod_compare which duplicate and compare HTTP requests  respectively.
 
 mod_dup
 =======
