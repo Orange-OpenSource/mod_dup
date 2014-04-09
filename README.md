@@ -1,9 +1,31 @@
 Description
 ===========
+This repository contain two modules apache, mod_dup and mod_compare.
 
-Apache module (mod_dup) duplicating requests before they are handled by their usual module in Apache.
-Useful for testing new servers/modules with a real production load but no user impact.
-Request parameters (GET & POST) can be rewritten before duplication.
+mod_dup
+=======
+mod_dup duplicates Apache requests (POST, GET or both).
+Only requests which match specified filters are duplicated.
+Before duplication, all defined substitutions are applied to the incoming request.
+To minimize resource usage, mod_dup adapts to the amount of incoming by adjusting its number of threads.
+If maximum thresholds are reached, requests are dropped.
+In other words, mod_dup is built to guarantee a low system impact by sacrifizing the reliability of duplications.
+However, by using a high number of maximum threads, request dropping can be avoided and system impact raised.
+mod_dup periodically emits log messages containing metrics such as the number of dropped requests.
+
+mod_compare
+===========
+mod_compare allows to compare the response header and body of HTTP Requests between two web services.
+mod_compare receives an http request which contains the response header and body of a Web Service that will be compared to the response of the web service installed in the same server of mod_compare.
+In order to work fine, the input request must contain the following header:
+ * Duplication Type: Response
+and must respect the "dup format":
+ * URL --> the URL of orifinal request 
+ * BODY --> XXXXXXXX{request_body}XXXXXXXX{response_header}XXXXXXXX{response_body} 
+The first 8 characters indicate the size of the request body. Then the request body, 8 characters for the size of the response header, the response header, 8 characters for the size of the response body and the response body.
+Two operating modes are possible: 
+ * Response Comparison
+ * No Comparison
 
 Basic Request Duplication
 =========================
