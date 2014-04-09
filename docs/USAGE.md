@@ -16,7 +16,7 @@ mod_dup periodically emits log messages containing metrics such as the number of
 mod_compare
 ===========
 mod_compare allows to compare the response header and body of HTTP Requests between two web services.
-mod_compare receives an http request which contains the response header and body of the a Web Service that will be compared to the response of the web service installed in the same server of mod_compare.
+mod_compare receives an http request which contains the response header and body of a Web Service that will be compared to the response of the web service installed in the same server of mod_compare.
 In order to work fine, the input request must contain the following header:
  * Duplication Type: Response
 and must respect the "dup format":
