@@ -37,8 +37,8 @@
 #include "Log.hh"
 #include "RequestInfo.hh"
 
-#include <libws-diff/stringCompare.hh>
-#include <libws-diff/mapCompare.hh>
+#include <libws_diff/stringCompare.hh>
+#include <libws_diff/mapCompare.hh>
 
 extern module AP_DECLARE_DATA compare_module;
 

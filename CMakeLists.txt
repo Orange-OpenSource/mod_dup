@@ -31,6 +31,7 @@ set(PROJECT_VERSION ${${CMAKE_PROJECT_NAME}_VERSION})
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build unit tests")
 set(BUILD_COVERAGE OFF CACHE BOOL "Build with coverage testing")
+set(BUILD_TOOLS OFF CACHE BOOL "Build mod_dup tools")
 set(INPUT_CMAKE_DIR ${CMAKE_SOURCE_DIR}/cmake)
 set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
@@ -120,7 +121,6 @@ if(BUILD_COVERAGE)
 
 endif()
 
-
 if(DEBUG)
   add_definitions(-DDEBUG)
 endif()
@@ -130,11 +130,13 @@ include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}")
 
 add_subdirectory(src)
+add_subdirectory(src/libws_diff)
 
 # Unit tests
 if(BUILD_UNIT_TESTS)
   ENABLE_TESTING()
   add_subdirectory(testing/unit)
+  add_subdirectory(testing/libws_diff)
 endif()
 
 if(BUILD_COVERAGE)
@@ -142,6 +144,11 @@ if(BUILD_COVERAGE)
 endif()
 
 add_subdirectory(docs)
+
+##mod_dup tools building
+if(BUILD_TOOLS)
+	add_subdirectory(tools/libws_diff)
+endif()
 
 file(GLOB mod_keyring_metrics src/*.cc src/*.hh)
 

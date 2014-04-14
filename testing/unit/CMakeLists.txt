@@ -51,23 +51,23 @@ target_link_libraries(mod_dup_lib ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ${Boost_
 # )
 
 add_executable(testThread testThreadPool.cc testMultiThreadQueue.cc testBodies.cc)
-target_link_libraries(testThread mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff boost_serialization boost_regex boost_thread)
+target_link_libraries(testThread mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} libws_diff boost_serialization boost_regex boost_thread)
 add_test(testThread testThread)
 
 add_executable(testRequestProcessor testContextEnrichment.cc testRequestProcessor.cc testBodies.cc)
-target_link_libraries(testRequestProcessor mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ws_diff boost_thread)
+target_link_libraries(testRequestProcessor mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} libws_diff boost_thread)
 add_test(testRequestProcessor testRequestProcessor)
 
 add_executable(testDup testLog.cc testUrlCodec.cc testModDup.cc testBodies.cc)
-target_link_libraries(testDup mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff  boost_serialization boost_regex boost_thread)
+target_link_libraries(testDup mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} libws_diff  boost_serialization boost_regex boost_thread)
 add_test(testDup testDup)
 
 add_executable(testFilters testFilters.cc testBodies.cc)
-target_link_libraries(testFilters mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff  boost_serialization boost_regex boost_thread)
+target_link_libraries(testFilters mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} libws_diff  boost_serialization boost_regex boost_thread)
 add_test(testFilters testFilters)
 
  add_executable(testCompare testModCompare.cc testBodies.cc)
- target_link_libraries(testCompare mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} ws_diff  boost_serialization boost_regex boost_thread)
+ target_link_libraries(testCompare mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} libws_diff  boost_serialization boost_regex boost_thread)
  add_test(testCompare testCompare)
 
 

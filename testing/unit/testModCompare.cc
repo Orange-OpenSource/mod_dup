@@ -28,8 +28,8 @@
 #include <iterator>
 #include <iostream>
 
-#include <libws-diff/stringCompare.hh>
-#include <libws-diff/mapCompare.hh>
+#include <libws_diff/stringCompare.hh>
+#include <libws_diff/mapCompare.hh>
 
 #include <apr_pools.h>
 #include <apr_hooks.h>
