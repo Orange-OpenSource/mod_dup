@@ -31,7 +31,7 @@ set(PROJECT_VERSION ${${CMAKE_PROJECT_NAME}_VERSION})
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build unit tests")
 set(BUILD_COVERAGE OFF CACHE BOOL "Build with coverage testing")
-set(BUILD_TOOLS OFF CACHE BOOL "Build mod_dup tools")
+set(BUILD_TOOLS ON CACHE BOOL "Build mod_dup tools")
 set(INPUT_CMAKE_DIR ${CMAKE_SOURCE_DIR}/cmake)
 set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
