@@ -29,3 +29,11 @@ include_directories(${PROJECT_SOURCE_DIR}/extern/dtl-cpp/dtl)
 add_library(libws_diff SHARED ${libws_diff_SOURCE_FILES})
 set_target_properties(libws_diff PROPERTIES PREFIX "")
 target_link_libraries(libws_diff ${Boost_LIBRARIES})
+
+file(GLOB libws_diff_HEADER_FILES
+	stringCompare.hh
+	mapCompare.hh
+  )
+
+install(TARGETS libws_diff LIBRARY DESTINATION lib)
+install(FILES ${libws_diff_HEADER_FILES} DESTINATION include/libws_diff)
