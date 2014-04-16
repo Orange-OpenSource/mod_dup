@@ -35,5 +35,5 @@ file(GLOB libws_diff_HEADER_FILES
 	mapCompare.hh
   )
 
-install(TARGETS libws_diff LIBRARY DESTINATION lib)
-install(FILES ${libws_diff_HEADER_FILES} DESTINATION include/libws_diff)
+install(TARGETS libws_diff LIBRARY DESTINATION lib COMPONENT libws_diff)
+install(FILES ${libws_diff_HEADER_FILES} DESTINATION include/libws_diff COMPONENT libws_diff)

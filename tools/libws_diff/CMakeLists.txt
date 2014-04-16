@@ -31,4 +31,4 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 add_executable(libws_diff_main ${libws_diff_main_SOURCE_FILES})
 target_link_libraries(libws_diff_main libws_diff ${cppunit_LIBRARY})
 
-install(TARGETS libws_diff_main DESTINATION bin)
+install(TARGETS libws_diff_main DESTINATION bin COMPONENT libws_diff)

@@ -51,5 +51,5 @@ add_library(mod_compare MODULE ${mod_compare_SOURCE_FILES})
 set_target_properties(mod_compare PROPERTIES PREFIX "")
 target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} boost_serialization libws_diff rt)
 
-install(TARGETS mod_dup LIBRARY DESTINATION lib)
-install(TARGETS mod_compare LIBRARY DESTINATION lib)
+install(TARGETS mod_dup LIBRARY DESTINATION lib COMPONENT mod_dup)
+install(TARGETS mod_compare LIBRARY DESTINATION lib COMPONENT mod_compare)

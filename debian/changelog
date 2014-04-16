@@ -1,0 +1,38 @@
+pns-mod-dup (1.4-1) precise; urgency=low
+
+  * Adding libws_diff into mod_dup for github
+  * Adding install target and debian configuration
+
+ -- Cedric Vallee <cvallee.ext@orange.com>  Wed, 16 Apr 2014 14:55:46 +0200
+
+pns-mod-dup (1.3-1) precise; urgency=low
+
+  * Added mod-compare module which compares two responses after duplication
+
+ -- Dario Giampaglia <dgiampaglia.ext@orange.com>  Wed, 12 Feb 2014 16:50:46 +0100
+
+pns-mod-dup (1.2-2) precise; urgency=low
+
+  * Build with code from git submodule: upstream on github
+
+ -- Emmanuel Courreges <ecourreges.ext@orange.com>  Wed, 29 Jan 2014 17:12:46 +0100
+
+pns-mod-dup (1.2-0) lucid-dev; urgency=low
+
+  * Changed Added POST support, raw filters and substitutions, configuration for webxms
+  * Configuration Retrocompatibilty broken
+
+ -- Mathieu Lornac <pns-devteam@lists.sourceforge.x-echo.com>  Fri, 03 May 2013 18:13:39 +0200
+
+pns-mod-dup (1.1-0) lucid-dev; urgency=low
+
+  * Changed mod-dup into a filter so that it runs before ise-filter and ProxyPass.
+  * Fixed configuration for /spp/main200, SID T2LBAR and other small issues.
+
+ -- Jonas Wustrack <pns-devteam@lists.sourceforge.x-echo.com>  Mon, 25 Mar 2013 12:54:52 +0100
+
+pns-mod-dup (1.0-0) lucid-dev; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+
+ -- Jonas Wustrack <pns-devteam@lists.sourceforge.x-echo.com>  Mon, 04 Mar 2013 17:53:42 +0100

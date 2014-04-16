@@ -1,0 +1,2 @@
+usr/local/lib/mod_compare.so
+usr/local/etc/compare.* /etc/apache2/mods-available
