@@ -65,7 +65,7 @@ or with unit tests:
 or with coverage:
 
 	cmake -DBUILD_COVERAGE=ON ..
-	make coverage
+	make coverage-unit (or make coverage-functional, make coverage-functional-compare, make coverage-compaign)
 	CTEST_OUTPUT_ON_FAILURE=1 make test
 
 	<browser> measures/coverage/html/index.html

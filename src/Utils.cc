@@ -23,9 +23,13 @@
 #include "Utils.hh"
 #include "Log.hh"
 
+#include <http_request.h>
+
 namespace DupModule {
 
 extern unsigned int getNextReqId();
+const char* c_UNIQUE_ID = "UNIQUE_ID";
+const unsigned int CMaxBytes = 8192;
 
 /*
  * Returns the next random request ID
@@ -57,6 +61,37 @@ unsigned int getNextReqId() {
     if (lRet)
         Log::error(5, "Error on number randomisation");
     return lRandNum;
+}
+
+bool
+extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content) {
+    if (ap_get_brigade(pF,
+                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) != APR_SUCCESS) {
+      Log::error(42, "Get brigade failed, skipping the rest of the body");
+      return true;
+    }
+    // Read brigade content
+    for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
+     b != APR_BRIGADE_SENTINEL(bb);
+     b = APR_BUCKET_NEXT(b) ) {
+      // Metadata end of stream
+      if (APR_BUCKET_IS_EOS(b)) {
+          return true;
+      }
+      if (APR_BUCKET_IS_METADATA(b))
+          continue;
+      const char *data = 0;
+      apr_size_t len = 0;
+      apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+      if (rv != APR_SUCCESS) {
+    Log::error(42, "Bucket read failed, skipping the rest of the body");
+    return true;
+      }
+      if (len) {
+          content.append(data, len);
+      }
+    }
+    return false;
 }
 
 }

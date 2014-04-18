@@ -22,40 +22,8 @@
 #include <boost/shared_ptr.hpp>
 #include <http_config.h>
 
+
 namespace DupModule {
-
-const unsigned int CMaxBytes = 8192;
-
-bool
-extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content) {
-    if (ap_get_brigade(pRequest->input_filters,
-                       bb, AP_MODE_READBYTES, APR_BLOCK_READ, CMaxBytes) != APR_SUCCESS) {
-      Log::error(42, "Get brigade failed, skipping the rest of the body");
-      return true;
-    }
-    // Read brigade content
-    for (apr_bucket *b = APR_BRIGADE_FIRST(bb);
-	 b != APR_BRIGADE_SENTINEL(bb);
-	 b = APR_BUCKET_NEXT(b) ) {
-      // Metadata end of stream
-      if (APR_BUCKET_IS_EOS(b)) {
-          return true;
-      }
-      if (APR_BUCKET_IS_METADATA(b))
-          continue;
-      const char *data = 0;
-      apr_size_t len = 0;
-      apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
-      if (rv != APR_SUCCESS) {
-	Log::error(42, "Bucket read failed, skipping the rest of the body");
-	return true;
-      }
-      if (len) {
-          content.append(data, len);
-      }
-    }
-    return false;
-}
 
 /*
  * Translate_name level HOOK
@@ -106,20 +74,20 @@ translateHook(request_rec *pRequest) {
         Log::error(42, "Bucket brigade allocation failed");
         return DECLINED;
     }
-    while (!extractBrigadeContent(bb, pRequest, info->mBody)){
+    while (!DupModule::extractBrigadeContent(bb, pRequest->input_filters, info->mBody)){
         apr_brigade_cleanup(bb);
     }
     apr_brigade_cleanup(bb);
     // Body read :)
 
-    const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
+    const char* lID = apr_table_get(pRequest->headers_in, DupModule::c_UNIQUE_ID);
     // Copy Request ID in both headers
     if(lID == NULL) {
-        apr_table_set(pRequest->headers_in, c_UNIQUE_ID, info->mId.c_str());
-        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, info->mId.c_str());
+        apr_table_set(pRequest->headers_in, DupModule::c_UNIQUE_ID, info->mId.c_str());
+        apr_table_set(pRequest->headers_out, DupModule::c_UNIQUE_ID, info->mId.c_str());
     }
     else {
-        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
+        apr_table_set(pRequest->headers_out, DupModule::c_UNIQUE_ID, lID);
     }
 
     // Synchronous context enrichment
@@ -206,7 +174,7 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
 
 static void
 printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
-    const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
+    const char *reqId = apr_table_get(pRequest->headers_in, DupModule::c_UNIQUE_ID);
     Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("### Request args: %s", pRequest->args);

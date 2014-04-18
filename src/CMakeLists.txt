@@ -32,6 +32,8 @@ file(GLOB mod_compare_SOURCE_FILES
   CassandraDiff.cc
   filters_compare.cc
   mod_compare.cc
+  response_diff.cc
+  deserialize.cc
   Log.cc
   Utils.cc
   RequestInfo.cc)

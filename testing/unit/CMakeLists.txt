@@ -35,6 +35,8 @@ file(GLOB lib_SOURCE_FILES
   ../../src/filters.cc
   ../../src/mod_compare.cc
   ../../src/filters_compare.cc
+  ../../src/response_diff.cc
+  ../../src/deserialize.cc
   ../../src/CassandraDiff.cc
   ../../src/Utils.cc
 )

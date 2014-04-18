@@ -100,7 +100,7 @@
             <url>true</url>
           </value>
         </objProp>
-        <stringProp name="filename">conf_2.0/functionnal/compare/compare_results.jmx</stringProp>
+        <stringProp name="filename"></stringProp>
       </ResultCollector>
       <hashTree/>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Test Compare" enabled="true">
@@ -139,7 +139,7 @@
           <stringProp name="TestPlan.comments">All cases have status OK</stringProp>
         </GenericController>
         <hashTree>
-          <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="Status Error" enabled="false"/>
+          <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="Status Error" enabled="true"/>
           <hashTree>
             <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
               <collectionProp name="HeaderManager.headers">
@@ -553,7 +553,7 @@ Titi: petit&#xd;
               <stringProp name="HTTPSampler.implementation">Java</stringProp>
               <boolProp name="HTTPSampler.monitor">false</boolProp>
               <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
-              <stringProp name="TestPlan.comments">The module compare the default value with the body sent in the request -&gt; there are always differences</stringProp>
+              <stringProp name="TestPlan.comments">The module compare the default value(COMPARE) with the body sent in the request -&gt; there are always differences</stringProp>
             </HTTPSamplerProxy>
             <hashTree>
               <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
@@ -575,12 +575,21 @@ Titi: petit&#xd;
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
-              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body null" enabled="true">
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body size" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="561439888">Content-Length: 0</stringProp>
+                  <stringProp name="561439895">Content-Length: 7</stringProp>
                 </collectionProp>
                 <stringProp name="Assertion.test_field">Assertion.response_headers</stringProp>
                 <intProp name="Assertion.test_type">2</intProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+              </ResponseAssertion>
+              <hashTree/>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body value" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="1668466885">COMPARE</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
@@ -616,12 +625,12 @@ Titi: petit&#xd;
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
-              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body null" enabled="true">
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="561439888">Content-Length: 0</stringProp>
+                  <stringProp name="-1737229797">The log has been truncated</stringProp>
                 </collectionProp>
-                <stringProp name="Assertion.test_field">Assertion.response_headers</stringProp>
-                <intProp name="Assertion.test_type">2</intProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
@@ -657,7 +666,7 @@ UNIQUE_ID: 7855441177&#xd;
               <stringProp name="HTTPSampler.implementation">Java</stringProp>
               <boolProp name="HTTPSampler.monitor">false</boolProp>
               <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
-              <stringProp name="TestPlan.comments">The module compare the response value finded in the file comp_test1 with the body sent in the request</stringProp>
+              <stringProp name="TestPlan.comments">The module compares the response value finded in the file comp_test1 with the body sent in the request</stringProp>
             </HTTPSamplerProxy>
             <hashTree>
               <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
@@ -683,12 +692,12 @@ UNIQUE_ID: 7855441177&#xd;
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
-              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body null" enabled="true">
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="561439888">Content-Length: 0</stringProp>
+                  <stringProp name="2044322">BODY</stringProp>
                 </collectionProp>
-                <stringProp name="Assertion.test_field">Assertion.response_headers</stringProp>
-                <intProp name="Assertion.test_type">2</intProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
@@ -768,12 +777,12 @@ UNIQUE_ID: 7855441177&#xd;
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
-              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body null" enabled="true">
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="561439888">Content-Length: 0</stringProp>
+                  <stringProp name="-1737229797">The log has been truncated</stringProp>
                 </collectionProp>
-                <stringProp name="Assertion.test_field">Assertion.response_headers</stringProp>
-                <intProp name="Assertion.test_type">2</intProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
@@ -835,12 +844,12 @@ UNIQUE_ID: 7855441177&#xd;
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
-              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body null" enabled="true">
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="561439888">Content-Length: 0</stringProp>
+                  <stringProp name="63374032">BODY2</stringProp>
                 </collectionProp>
-                <stringProp name="Assertion.test_field">Assertion.response_headers</stringProp>
-                <intProp name="Assertion.test_type">2</intProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>
               </ResponseAssertion>
               <hashTree/>
@@ -881,6 +890,161 @@ UNIQUE_ID: 7855441177&#xd;
                   <stringProp name="-1712046486">UNIQUE_ID 11 7855441177</stringProp>
                   <stringProp name="-976095185">UNIQUE_ID 10 1587963206</stringProp>
                   <stringProp name="211792786">serialization::archive</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">2</intProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+                <stringProp name="TestPlan.comments">check if in the log have been written the UNIQUE_ID of the two responses</stringProp>
+              </ResponseAssertion>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="UC6: OK - Truncate" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain"></stringProp>
+              <stringProp name="HTTPSampler.port"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+              <stringProp name="HTTPSampler.response_timeout"></stringProp>
+              <stringProp name="HTTPSampler.protocol"></stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">${trunc}</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.implementation">Java</stringProp>
+              <boolProp name="HTTPSampler.monitor">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="TestPlan.comments">truncate the log</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check 200" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="49586">200</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+              </ResponseAssertion>
+              <hashTree/>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check body" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="-1737229797">The log has been truncated</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+              </ResponseAssertion>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="UC7: OK - LargeData in Request" enabled="true">
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">0000000000000109UNIQUE_ID: COMP12345678${__unescape(\n)}Content-Length: 411${__unescape(\n)}Content-Type: text/xml; charset=UTF-8${__unescape(\n)}Transfer-Encoding: chunked${__unescape(\n)}00032298&lt;?xml version=&apos;1.0&apos; encoding=&apos;UTF-8&apos;?&gt;${__unescape(\n)}&lt;getPNSReturn&gt;${__unescape(\n)}&lt;Process&gt;&lt;Status&gt;OK&lt;/Status&gt;${__unescape(\n)}&lt;/Process&gt;${__unescape(\n)}&lt;Data&gt;&lt;PreferencesData&gt;&lt;Extension&gt;&lt;OOPSApplications&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.&lt;/OOPSApplications&gt;&lt;/Extension&gt;&lt;/PreferencesData&gt;&lt;NextECareData&gt;&lt;MobileBillList&gt;&lt;Bill&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris et volutpat sapien. Nullam dictum auctor mauris ut laoreet. Vestibulum vulputate dictum quam, et imperdiet metus mattis eu. Donec volutpat malesuada bibendum. Donec in lectus sit amet dui sagittis euismod ultrices quis nulla. Fusce ultricies malesuada adipiscing. Morbi imperdiet elit vitae mi convallis, nec ullamcorper dui semper. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.Aenean convallis vehicula vestibulum. Donec eu neque ligula. Duis posuere a nisi eu semper. Proin urna elit, consequat eu felis in, porttitor lobortis velit. Nullam ac tristique tellus, at eleifend odio. Curabitur at purus tempor, hendrerit quam eget, tempus erat. Sed metus dui, vehicula quis leo nec, facilisis vestibulum nisi. Praesent tincidunt enim quis massa sagittis, ut tempus mi varius. Etiam at orci nec quam aliquet venenatis a nec dolor. Fusce nibh purus, dapibus ac lectus sed, tempus tempus nunc. Curabitur aliquet, massa faucibus ultricies consequat, purus urna pretium est, suscipit ultrices felis mi vel libero. Etiam vehicula odio vel erat consequat, a ullamcorper purus gravida. Nullam nec tincidunt justo, in semper magna. Pellentesque enim lorem, pharetra ut congue id, consequat quis tortor.Phasellus imperdiet purus eget consectetur pulvinar. Cras molestie turpis mauris, id molestie quam tempus et. Fusce sed nulla vehicula, semper ipsum vitae, volutpat tellus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam ornare hendrerit tortor, sit amet volutpat ligula dignissim sed. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae, Pellentesque ultrices turpis dui, ac rhoncus nunc tincidunt placerat. Proin id facilisis leo, a ullamcorper dui. Sed a velit sem. In id diam rutrum, ullamcorper enim sit amet, molestie nibh. Pellentesque dignissim ipsum sed enim aliquet, tristique vehicula lectus tempus. Morbi id euismod erat, quis eleifend sed.&lt;/Bill&gt;&lt;/MobileBillList&gt;&lt;/NextECareData&gt;&lt;/Data&gt;&lt;/getPNSReturn&gt;${__unescape(\n)}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain"></stringProp>
+              <stringProp name="HTTPSampler.port"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+              <stringProp name="HTTPSampler.response_timeout"></stringProp>
+              <stringProp name="HTTPSampler.protocol"></stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">${comp}</stringProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.implementation">Java</stringProp>
+              <boolProp name="HTTPSampler.monitor">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="TestPlan.comments">mod_comapre receive a requeste containing a big body to comapre</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Duplication-Type</stringProp>
+                    <stringProp name="Header.value">Response</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">UNIQUE_ID</stringProp>
+                    <stringProp name="Header.value">1587963206</stringProp>
+                  </elementProp>
+                </collectionProp>
+                <stringProp name="TestPlan.comments">&quot;Duplication-Type: Response&quot; in the header</stringProp>
+              </HeaderManager>
+              <hashTree/>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check 200" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="49586">200</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+              </ResponseAssertion>
+              <hashTree/>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check Default Value" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="1668466885">COMPARE</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+              </ResponseAssertion>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="UC8: OK - get the log file" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain"></stringProp>
+              <stringProp name="HTTPSampler.port"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+              <stringProp name="HTTPSampler.response_timeout"></stringProp>
+              <stringProp name="HTTPSampler.protocol"></stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">${getlog}</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.implementation">Java</stringProp>
+              <boolProp name="HTTPSampler.monitor">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="TestPlan.comments">get the log file to check if the differents responses have been written</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check 200" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="49586">200</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+                <intProp name="Assertion.test_type">8</intProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+              </ResponseAssertion>
+              <hashTree/>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check log content" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="-1967659388">Key with value differences :
+&apos;Content-Length&apos; ==&gt; &apos;411&apos;/&apos;7&apos;
+&apos;Content-Type&apos; ==&gt; &apos;text/xml; charset=UTF-8&apos;/&apos;text/plain&apos;
+&apos;UNIQUE_ID&apos; ==&gt; &apos;COMP12345678&apos;/&apos;1587963206&apos;</stringProp>
+                  <stringProp name="-2094427141">Key missing in the destination map :
+&apos;Transfer-Encoding&apos; ==&gt; &apos;chunked&apos;
+Key missing in src map :
+&apos;Accept-Ranges&apos; ==&gt; &apos;bytes&apos;
+&apos;Connection&apos; ==&gt; &apos;Keep-Alive&apos;</stringProp>
+                  <stringProp name="517813910">\+COMPARE</stringProp>
+                  <stringProp name="2016365415">-&lt;OOPSApplications&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris e</stringProp>
                 </collectionProp>
                 <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
                 <intProp name="Assertion.test_type">2</intProp>

@@ -51,7 +51,6 @@ const char* gName = "Compare";
 const char* gNameOut = "CompareOut";
 const char* gNameOut2 = "CompareOut2";
 const char* c_COMPONENT_VERSION = "Compare/1.0";
-const char* c_UNIQUE_ID = "UNIQUE_ID";
 const char* c_named_mutex = "mod_compare_log_mutex";
 bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
 

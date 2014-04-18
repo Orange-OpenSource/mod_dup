@@ -165,7 +165,7 @@ T *memSet(T *addr, char c = 0) {
 }
 
 namespace DupModule {
-bool extractBrigadeContent(apr_bucket_brigade *bb, request_rec *pRequest, std::string &content);
+bool extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content);
 };
 
 
@@ -227,7 +227,7 @@ void TestFilters::inputFilterBody2BrigadeTest() {
 
      // Compare the brigade content to what should have been sent
      std::string result;
-     extractBrigadeContent(bb, req, result);
+     extractBrigadeContent(bb, req->input_filters, result);
      CPPUNIT_ASSERT_EQUAL(result, std::string(testBody42));
  }
 

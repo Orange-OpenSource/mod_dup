@@ -80,7 +80,7 @@ ProxyTimeout 5
 ServerAdmin tee@localhost
 DocumentRoot "{{ROOT}}/apache2/htdocs"
 
-LoadModule dup_module {{BIN}}/mod_dup.so
+LoadModule compare_module {{BIN}}/mod_compare.so
 
 ErrorLog "logs/error_log"
 LogLevel debug
@@ -119,4 +119,4 @@ Options +ExecCGI
 ScriptAlias /get_body_size {{ROOT}}/apache2/htdocs/cgi_bin/get_body_size.cgi
 ScriptAlias /get_body_size_direct {{ROOT}}/apache2/htdocs/cgi_bin/get_body_size.cgi
 
-Include "{{CONF}}/dup.conf"
+Include "{{CONF}}/compare.conf"

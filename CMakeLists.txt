@@ -90,6 +90,12 @@ if(BUILD_COVERAGE)
       COMMAND make coverage-functionalP
       )
 
+    add_custom_target(coverage-functional-compare
+      COMMAND make coverage-functional-compare-clean
+      COMMAND make -j2 all
+      COMMAND make check-functional-compare
+      )
+
     add_custom_target(coverage-campaign
       COMMAND make coverage
       COMMAND make coverage-functional
@@ -118,6 +124,12 @@ if(BUILD_COVERAGE)
     configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional-clean.cmake IMMEDIATE @ONLY)
     add_custom_target(coverage-functional-clean
         COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-functional-clean.cmake)
+
+    # Clean target on functional compare
+    configure_file(${INPUT_CMAKE_DIR}/coverage-clean.cmake.in ${OUTPUT_CMAKE_DIR}/coverage-functional-compare-clean.cmake IMMEDIATE @ONLY)
+    add_custom_target(coverage-functional-compare-clean
+        COMMAND "${CMAKE_COMMAND}" -P ${OUTPUT_CMAKE_DIR}/coverage-functional-compare-clean.cmake)
+
 
 endif()
 

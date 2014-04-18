@@ -50,7 +50,6 @@ const char *gNameOutBody = "DupOutBody";
 const char *gNameOutHeaders = "DupOutHeaders";
 
 const char *c_COMPONENT_VERSION = "Dup/1.0";
-const char* c_UNIQUE_ID = "UNIQUE_ID";
 
 namespace DuplicationType {
     extern const char* c_ERROR_ON_STRING_VALUE;

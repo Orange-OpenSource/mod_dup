@@ -48,9 +48,6 @@ namespace DupModule {
     extern RequestProcessor                             *gProcessor;
     extern ThreadPool<boost::shared_ptr<RequestInfo> >  *gThreadPool;
 
-    /** The unique id HEADER attribute name */
-    extern const char* c_UNIQUE_ID;
-
 /**
  * A structure that holds the configuration specific to the location
  */
