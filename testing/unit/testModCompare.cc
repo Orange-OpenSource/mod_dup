@@ -101,6 +101,7 @@ void TestModCompare::testInit()
 
     std::string lPath( getenv("PWD") );
     lPath.append("/log_differences_Cass.txt");
+    gFilePath = lPath.c_str();
 
     CPPUNIT_ASSERT(postConfig(lParms->pool, lParms->pool, lParms->pool, lParms->server)==OK);
 
@@ -248,8 +249,13 @@ void TestModCompare::testWriteSerializedRequests(){
 
     //check that the file content is empty
     gFile.close();
-    std::ifstream infile(gFilePath,std::ifstream::binary | std::ifstream::ate);
-    CPPUNIT_ASSERT(infile.tellg() == 0);
+    // truncate the log
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    gFile.close();
+    std::ifstream infile(lPath.c_str(),std::ifstream::binary | std::ifstream::ate);
+    infile.seekg (0, infile.end);
+    int length = infile.tellg();
+    CPPUNIT_ASSERT_EQUAL(0, length);
 
 }
 
@@ -294,13 +300,18 @@ void TestModCompare::testWriteDifferences()
     //write diff in syslog
     gWriteInFile = false;
     //open the file and truncate it
-    gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
 
     //check that the file content is empty
     gFile.close();
-    std::ifstream infile(gFilePath,std::ifstream::binary | std::ifstream::ate);
-    CPPUNIT_ASSERT(infile.tellg() == 0);
+    // truncate the log
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    gFile.close();
+    std::ifstream infile(lPath.c_str(),std::ifstream::binary | std::ifstream::ate);
+    infile.seekg (0, infile.end);
+    int length = infile.tellg();
+    CPPUNIT_ASSERT_EQUAL(0, length);
 }
 
 void TestModCompare::testGetLength()
