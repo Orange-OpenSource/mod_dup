@@ -29,8 +29,6 @@
 #include <boost/tokenizer.hpp>
 #include <iomanip>
 #include <apache2/httpd.h>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/date_time/time_facet.hpp>
 
 const size_t SECTION_SIZE_CHARS = 8 ;

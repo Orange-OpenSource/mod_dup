@@ -35,6 +35,10 @@ public:
     /// @brief Init the Log
     static void init();
 
+    /// @brief Init the Log
+    /// @param pFacility the "device" which handles application messages
+    static void init(const std::string& pFacility);
+
     // Close Log
     static void close();
 

@@ -48,7 +48,7 @@ void map2string(const std::map< std::string, std::string> &pMap, std::string &pS
 }
 
 /**
- * @brief write response differences in a file
+ * @brief write response differences in a file or in syslog
  * @param pReqInfo info of the original request
  */
 void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& headerDiff,const std::string& bodyDiff, const double time )
@@ -56,9 +56,9 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     std::string lReqHeader;
     map2string( pReqInfo.mReqHeader, lReqHeader );
     std::stringstream diffLog;
-    boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S.%f");
-    std::stringstream date_stream;
-    diffLog.imbue(std::locale(std::cout.getloc(), facet));
+    //boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S.%f");
+    std::locale lLocale = diffLog.getloc();
+    diffLog.imbue(lLocale);
 
     diffLog << "BEGIN NEW REQUEST DIFFERENCE n°: " << pReqInfo.mId ;
     if (time > 0){
@@ -76,34 +76,70 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog << "END DIFFERENCE n°:" << pReqInfo.mId << std::endl;
     diffLog.flush();
 
-    if (gFile.is_open()){
+    if(!gWriteInFile){
+        std::string lLine;
         boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
-        gFile << diffLog.str();
-        gFile.flush();
+        while (std::getline(diffLog, lLine) )
+        {
+            writeInFacility(lLine);
+        }
     }
-    else
-    {
-        Log::error(12, "File not correctly opened");
+    else {
+        if (gFile.is_open()){
+            boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
+            gFile << diffLog.str();
+            gFile.flush();
+        }
+        else
+        {
+            Log::error(12, "File not correctly opened");
+        }
     }
 }
 
 /**
- * @brief write request body and header in file with serialized boost method
- * @param type specify custom information about the request (Request,Response,DupResponse,...)
- * @param header the header
- * @param body the body
+ * @brief split the input string every 1024 characters and writes it in the syslog
+ * @param pDiffLog string to split and to write in syslog
+ */
+void writeInFacility(std::string pDiffLog){
+    int lSplitSize = 1024;
+    int stringLength = pDiffLog.size();
+    for (int i = 0; i < stringLength ; i += lSplitSize)
+    {
+        if (i + lSplitSize > stringLength){
+            lSplitSize = stringLength  - i;
+        }
+        Log::error(12, "%s", pDiffLog.substr(i, lSplitSize).c_str());
+
+    }
+}
+
+
+/**
+ * @brief write request body and header in the syslog or in file with serialized boost method
+ * @param req object containing the infos about the request
  */
 void writeSerializedRequest(const DupModule::RequestInfo& req)
 {
-    if (gFile.is_open()){
-        boost::lock_guard<boost::interprocess::named_mutex> fileLock(getGlobalMutex());
-        boost::archive::text_oarchive oa(gFile);
+    if(!gWriteInFile){
+        std::stringstream lSerialRequest;
+        boost::archive::text_oarchive oa(lSerialRequest);
         oa << req;
+        //no need to split on '\n'
+        writeInFacility(lSerialRequest.str());
     }
-    else
-    {
-        Log::error(12, "File not correctly opened");
+    else {
+        if (gFile.is_open()){
+            boost::lock_guard<boost::interprocess::named_mutex> fileLock(getGlobalMutex());
+            boost::archive::text_oarchive oa(gFile);
+            oa << req;
+        }
+        else
+        {
+            Log::error(12, "File not correctly opened");
+        }
     }
+
 }
 
 /**

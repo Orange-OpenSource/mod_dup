@@ -53,6 +53,9 @@ const char* gNameOut2 = "CompareOut2";
 const char* c_COMPONENT_VERSION = "Compare/1.0";
 const char* c_named_mutex = "mod_compare_log_mutex";
 bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
+std::ofstream gFile;
+const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
+bool gWriteInFile = true;
 
 
 boost::interprocess::named_mutex &getGlobalMutex() {
@@ -70,10 +73,6 @@ boost::interprocess::named_mutex &getGlobalMutex() {
     }
 }
 
-
-
-std::ofstream gFile;
-const char * gFilePath;
 
 CompareConf::CompareConf(): mCompareDisabled(false), mIsActive(false) {
 }
@@ -115,9 +114,13 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
 
     ap_add_version_component(pPool, c_COMPONENT_VERSION) ;
 
-    apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeLogFile);
+    if( !gWriteInFile ){
+        return APR_SUCCESS;
+    }
 
+    apr_pool_cleanup_register(pPool, NULL, apr_pool_cleanup_null, closeLogFile);
     return openLogFile(gFilePath, std::ofstream::out | std::ofstream::app);
+
 }
 
 apr_status_t
@@ -144,9 +147,11 @@ apr_status_t openLogFile(const char * filepath,std::ios_base::openmode mode) {
 void
 childInit(apr_pool_t *pPool, server_rec *pServer)
 {
-    gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
-    if (!gFile.is_open()){
-        Log::error(43,"Couldn't open correctly the file");
+    if( gWriteInFile ){
+        gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
+        if (!gFile.is_open()){
+            Log::error(43,"Couldn't open correctly the file");
+        }
     }
 }
 
@@ -230,25 +235,6 @@ const char* setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType,
     return NULL;
 }
 
-/**
- * @brief Set the list of errors to ignore in the comparison
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pListType the type of list (Header or Body)
- * @param pValue the value to insert in the list
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
-const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
-    if (!pPath || strlen(pPath) == 0) {
-        return "Missing path value";
-    }
-    Log::init();
-    gFilePath = pPath;
-    std::string lPath(gFilePath);
-    //Log::error(12, "File path %s", lPath.c_str());
-
-    return NULL;
-}
 
 /**
  * @brief Enable/Disable the utilization of the libws-diff tools
@@ -259,17 +245,49 @@ const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath) {
  */
 const char*
 setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
+    Log::init();
 	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 	lConf->mCompareDisabled= strcmp(pValue, "1")==0 || strcmp(pValue, "true")==0;
     if(lConf->mCompareDisabled){
-    	Log::warn(42,"The use of the diffing library libws-diff has been disabled!");
+    	Log::warn(42,"The use of the diffing library \nlibws-diff has been disabled!");
     }
     return NULL;
 }
 
 const char*
-setLogFacility(cmd_parms* pParams, void* pCfg, const char* pValue) {
+setCompareLog(cmd_parms* pParams, void* pCfg, const char* pType, const char* pValue) {
+
+    if (!pType || strlen(pValue) == 0) {
+            return "Missing log type";
+        }
+
+    if (!pValue || strlen(pValue) == 0) {
+        return "Missing file path or facility";
+    }
+
+    CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
+
+    if (strcmp("FILE", pType) == 0)
+    {
+        gWriteInFile = true;
+        gFilePath = pValue;
+    }
+    else if(strcmp("SYSLOG", pType) == 0)
+    {
+        lConf->mLogFacility = std::string(pValue);
+        gWriteInFile = false;
+        //closes the log if it was initialized
+        Log::close();
+        //initializes the log
+        Log::init(lConf->mLogFacility);
+    }
+    else
+    {
+        return "Invalid value for the log type";
+    }
+
     return NULL;
+
 }
 
 const char*
@@ -298,18 +316,13 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
                       0,
                       ACCESS_CONF,
                       "List of reg_ex to apply to the Header for the comparison."),
-        AP_INIT_TAKE1("FilePath",
-                      reinterpret_cast<const char *(*)()>(&setFilePath),
-                      0,
-                      OR_ALL,
-                      "Path of file where the differences will be logged."),
         AP_INIT_NO_ARGS("Compare",
                       reinterpret_cast<const char *(*)()>(&setCompare),
                       0,
                       ACCESS_CONF,
                       "Activate mod_compare."),
-        AP_INIT_TAKE1("CompareLogFacility",
-                      reinterpret_cast<const char *(*)()>(&setLogFacility),
+        AP_INIT_TAKE2("CompareLog",
+                      reinterpret_cast<const char *(*)()>(&setCompareLog),
                       0,
                       ACCESS_CONF,
                       "Log to a facility instead of a file."),

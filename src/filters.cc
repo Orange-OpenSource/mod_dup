@@ -80,14 +80,14 @@ translateHook(request_rec *pRequest) {
     apr_brigade_cleanup(bb);
     // Body read :)
 
-    const char* lID = apr_table_get(pRequest->headers_in, DupModule::c_UNIQUE_ID);
+    const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     // Copy Request ID in both headers
     if(lID == NULL) {
-        apr_table_set(pRequest->headers_in, DupModule::c_UNIQUE_ID, info->mId.c_str());
-        apr_table_set(pRequest->headers_out, DupModule::c_UNIQUE_ID, info->mId.c_str());
+        apr_table_set(pRequest->headers_in, c_UNIQUE_ID, info->mId.c_str());
+        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, info->mId.c_str());
     }
     else {
-        apr_table_set(pRequest->headers_out, DupModule::c_UNIQUE_ID, lID);
+        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
     }
 
     // Synchronous context enrichment
@@ -174,7 +174,7 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
 
 static void
 printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
-    const char *reqId = apr_table_get(pRequest->headers_in, DupModule::c_UNIQUE_ID);
+    const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("### Request args: %s", pRequest->args);

@@ -25,6 +25,8 @@
 #include <cstdarg>
 #include <strings.h>
 #include <stdio.h>
+#include <map>
+#include <boost/algorithm/string/case_conv.hpp>
 
 /// Pointer to the only instance of this class
 Log* Log::gInstance = 0;
@@ -38,6 +40,38 @@ const char *Log::STRWARN = "warn";
 const char *Log::STRERROR = "error";
 const char *Log::STRCRIT = "crit";
 const char *Log::IDENT = "DRPCTL";
+
+typedef std::map< std::string, int> tStrToFacility;
+
+/// @brief set the mapping of string to facility at startup
+static tStrToFacility setStrToFacility()
+{
+    tStrToFacility strToFacility;
+
+    strToFacility["LOCAL0"] = LOG_LOCAL0;
+    strToFacility["LOCAL1"] = LOG_LOCAL1;
+    strToFacility["LOCAL2"] = LOG_LOCAL2;
+    strToFacility["LOCAL3"] = LOG_LOCAL3;
+    strToFacility["LOCAL4"] = LOG_LOCAL4;
+    strToFacility["LOCAL5"] = LOG_LOCAL5;
+    strToFacility["LOCAL6"] = LOG_LOCAL6;
+    strToFacility["LOCAL7"] = LOG_LOCAL7;
+
+    return strToFacility;
+}
+
+
+/// map between a type name and its uid
+static tStrToFacility gStrToFacility = setStrToFacility();
+
+int strToFacility(const std::string & facility) {
+    tStrToFacility::const_iterator iter = gStrToFacility.find(boost::algorithm::to_upper_copy(facility));
+    if ( iter == gStrToFacility.end() ) {
+        return LOG_LOCAL2;
+    }
+    return iter->second;
+}
+
 
 /// @brief Init the Log. Does not call openlog as this would affect other apache modules.
 /// @param pFacility the "device" which handles application messages
@@ -56,6 +90,13 @@ void Log::init(int pFacility)
 }
 
 /// @brief Init the Log
+/// @param pFacility the "device" which handles application messages
+void Log::init(const std::string& pFacility)
+{
+    init(strToFacility(pFacility));
+}
+
+/// @brief Init the Log
 void Log::init()
 {
     init(LOG_LOCAL2);
@@ -65,9 +106,11 @@ void Log::init()
 void Log::close()
 {
     // is log initialized?
-    delete gInstance;
-    // Set gInstance to zero in order to be able to re-init Log instance
-    gInstance = 0;
+    if(gInstance){
+        delete gInstance;
+        // Set gInstance to zero in order to be able to re-init Log instance
+        gInstance = 0;
+    }
 }
 
 /// @brief default destructor, clear the message map and close log
