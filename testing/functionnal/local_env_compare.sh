@@ -20,7 +20,7 @@ if test ! -f ${APACHE_DIR}/bin/httpd; then
 	cd apache2*
 
 	# configure
-	./configure --prefix=$APACHE_DIR --enable-mods-shared=all --enable-proxy --enable-fcgid --enable-proxy-http --enable-ssl --enable-rewrite --enable-deflate --with-mpm=worker  CFLAGS="-O0 -g -ggdb3 -fno-inline"
+	./configure --prefix=$APACHE_DIR --enable-mods-shared=all --enable-proxy --enable-fcgid --enable-proxy-http --enable-ssl --enable-rewrite --enable-deflate --with-mpm=worker  CFLAGS="-O0 -g -ggdb3 -fno-inline -lcrypt"
 	if [ $? -ne 0 ]
 	then
 	  echo -e "There was an error configuring apache2, check logs\n";

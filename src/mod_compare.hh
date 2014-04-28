@@ -46,6 +46,7 @@ namespace CompareModule {
 
 extern std::ofstream gFile;
 extern const char* gFilePath;
+extern bool gWriteInFile;
 
 boost::interprocess::named_mutex &getGlobalMutex();
 
@@ -65,6 +66,7 @@ public:
     LibWsDiff::MapCompare mCompHeader;
     bool mCompareDisabled;
     bool mIsActive;
+    std::string mLogFacility;
 
 };
 
@@ -147,6 +149,8 @@ apr_status_t deserializeHeader(DupModule::RequestInfo &pReqInfo,const std::strin
 
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 
+void writeInFacility(std::string pDiffLog);
+
 void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& myDiffHeader , const std::string& myDiffBody, double time);
 
 void map2string(const std::map< std::string, std::string> &pMap, std::string &pString);
@@ -160,6 +164,8 @@ apr_status_t openLogFile(const char* filepath,std::ios_base::openmode mode=std::
 const char* setFilePath(cmd_parms* pParams, void* pCfg, const char* pPath);
 
 const char* setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue);
+
+const char* setLogFacility(cmd_parms* pParams, void* pCfg, const char* pValue);
 
 bool checkCassandraDiff(const std::string &pUniqueID);
 

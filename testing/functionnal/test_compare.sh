@@ -1,7 +1,6 @@
 #!/bin/bash
 RESULT_DIR=`cd $1; echo $PWD`
 outjtl=$RESULT_DIR/results.jtl
-echo ecco il file $outjtl
 if [ -e $outjtl ]
 then
    rm $outjtl

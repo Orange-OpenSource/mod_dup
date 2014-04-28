@@ -101,7 +101,7 @@ void TestModCompare::testInit()
 
     std::string lPath( getenv("PWD") );
     lPath.append("/log_differences_Cass.txt");
-    setFilePath(lParms, NULL , lPath.c_str());
+    gFilePath = lPath.c_str();
 
     CPPUNIT_ASSERT(postConfig(lParms->pool, lParms->pool, lParms->pool, lParms->server)==OK);
 
@@ -156,6 +156,7 @@ void TestModCompare::testPrintRequest()
 
 void TestModCompare::testWriteCassandraDiff()
 {
+    gWriteInFile = true;
 	std::string lPath( getenv("PWD") );
 	lPath.append("/log_differences_Cass.txt");
 	gFile.close();
@@ -211,6 +212,7 @@ void TestModCompare::testWriteCassandraDiff()
 }
 
 void TestModCompare::testWriteSerializedRequests(){
+    gWriteInFile = true;
     std::string lPath( getenv("PWD") );
     lPath.append("/log_differences_serialized.txt");
 	gFile.close();
@@ -238,10 +240,28 @@ void TestModCompare::testWriteSerializedRequests(){
 					req.mDupResponseBody == retrievedReq.mDupResponseBody);
 	}
     //TODO prepare conf to check call writeSerializeRequest ok
+
+    //write serialized request in syslog
+    gWriteInFile = false;
+    //open the file and truncate it
+    gFile.open(gFilePath, std::ofstream::out | std::ofstream::trunc );
+    writeSerializedRequest(req);
+
+    //check that the file content is empty
+    gFile.close();
+    // truncate the log
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    gFile.close();
+    std::ifstream infile(lPath.c_str(),std::ifstream::binary | std::ifstream::ate);
+    infile.seekg (0, infile.end);
+    int length = infile.tellg();
+    CPPUNIT_ASSERT_EQUAL(0, length);
+
 }
 
 void TestModCompare::testWriteDifferences()
 {
+    gWriteInFile = true;
     std::string lPath( getenv("PWD") );
     lPath.append("/log_differences.txt");
     gFile.close();
@@ -276,6 +296,22 @@ void TestModCompare::testWriteDifferences()
 		std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
 		CPPUNIT_ASSERT_EQUAL(buffer.str(), assertRes);
     }
+
+    //write diff in syslog
+    gWriteInFile = false;
+    //open the file and truncate it
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
+
+    //check that the file content is empty
+    gFile.close();
+    // truncate the log
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    gFile.close();
+    std::ifstream infile(lPath.c_str(),std::ifstream::binary | std::ifstream::ate);
+    infile.seekg (0, infile.end);
+    int length = infile.tellg();
+    CPPUNIT_ASSERT_EQUAL(0, length);
 }
 
 void TestModCompare::testGetLength()
@@ -469,7 +505,7 @@ void TestModCompare::testInputFilterHandler()
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
-        CPPUNIT_ASSERT_EQUAL( 0, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+        CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
     }
 
@@ -490,7 +526,7 @@ void TestModCompare::testInputFilterHandler()
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
-        CPPUNIT_ASSERT_EQUAL( 0, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+        CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
         // Second call, tests context backup
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
