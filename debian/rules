@@ -1,0 +1,88 @@
+#!/usr/bin/make -f
+# This debian/rules file is provided as a template for normal perl
+# packages. It was created by Marc Brockschmidt <marc@dch-faq.de> for
+# the Debian Perl Group (http://pkg-perl.alioth.debian.org/) but may
+# be used freely wherever it is useful.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+export DH_ALWAYS_EXCLUDE=.git
+
+# If set to a true value then MakeMaker's prompt function will
+# always return the default without waiting for user input.
+
+SRCDIR=$(CURDIR)
+BUILD=$(CURDIR)/build
+BUILD_TEST=$(CURDIR)/build/build_test
+INSTALL=install
+
+# removing default LDFLAGS in dpkg-buildpackage: '-Wl,-Bsymbolic-functions' => causes conflict in boost::split with mod_spp!!!
+export LDFLAGS=
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+
+	mkdir -p $(BUILD) $(INSTALL)
+	cd $(BUILD) && cmake -DBUILD_UNIT_TESTS=OFF -DBUILD_COVERAGE=OFF $(SRCDIR)
+	$(MAKE) -j 4 -C $(BUILD)
+
+	touch build-stamp
+
+build-test-stamp:
+	dh_testdir
+	mkdir -p $(BUILD_TEST)
+	cd $(BUILD_TEST) && cmake -DBUILD_COVERAGE=ON -DBUILD_XML=ON $(SRCDIR)
+	$(MAKE) -j4 -C $(BUILD_TEST) VERBOSE=1
+	$(MAKE) -C $(BUILD_TEST) coverage-unit VERBOSE=1
+	$(MAKE) -C $(BUILD_TEST) coverage-functional VERBOSE=1
+
+	touch build-test-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+
+	# Add commands to clean up after the build process here
+	-$(MAKE) -C $(BUILD) clean
+	-$(MAKE) -C $(BUILD_TEST) clean
+
+	dh_clean build-stamp build-test-stamp install-stamp
+
+install: build install-stamp
+install-stamp:
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+
+	# Add here commands to install the package into debian/tmp
+	cd $(BUILD)
+	$(MAKE) -C $(BUILD) install DESTDIR=$(CURDIR)/debian/tmp
+
+	touch install-stamp
+	
+binary-indep: build install
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_link
+	dh_installdirs
+	dh_install --sourcedir=debian/tmp
+	dh_installchangelogs
+	dh_installdocs
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_makeshlibs
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+source diff:
+	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary

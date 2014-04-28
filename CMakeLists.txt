@@ -156,6 +156,7 @@ if(BUILD_COVERAGE)
 endif()
 
 add_subdirectory(docs)
+add_subdirectory(conf)
 
 ##mod_dup tools building
 if(BUILD_TOOLS)

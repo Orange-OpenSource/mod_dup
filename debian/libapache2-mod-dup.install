@@ -1,0 +1,2 @@
+usr/local/lib/mod_dup.so
+usr/local/etc/dup.* /etc/apache2/mods-available
