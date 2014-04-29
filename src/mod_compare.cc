@@ -56,6 +56,7 @@ bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
 std::ofstream gFile;
 const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
 bool gWriteInFile = true;
+std::string gLogFacility;
 
 
 boost::interprocess::named_mutex &getGlobalMutex() {
@@ -274,12 +275,12 @@ setCompareLog(cmd_parms* pParams, void* pCfg, const char* pType, const char* pVa
     }
     else if(strcmp("SYSLOG", pType) == 0)
     {
-        lConf->mLogFacility = std::string(pValue);
+        gLogFacility = std::string(pValue);
         gWriteInFile = false;
         //closes the log if it was initialized
         Log::close();
         //initializes the log
-        Log::init(lConf->mLogFacility);
+        Log::init(gLogFacility);
     }
     else
     {
@@ -324,7 +325,7 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
         AP_INIT_TAKE2("CompareLog",
                       reinterpret_cast<const char *(*)()>(&setCompareLog),
                       0,
-                      ACCESS_CONF,
+                      OR_ALL,
                       "Log to a facility instead of a file."),
         AP_INIT_TAKE1("DisableLibwsdiff",
                       reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),

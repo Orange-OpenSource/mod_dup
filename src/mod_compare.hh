@@ -47,6 +47,7 @@ namespace CompareModule {
 extern std::ofstream gFile;
 extern const char* gFilePath;
 extern bool gWriteInFile;
+extern std::string gLogFacility;
 
 boost::interprocess::named_mutex &getGlobalMutex();
 
@@ -66,7 +67,6 @@ public:
     LibWsDiff::MapCompare mCompHeader;
     bool mCompareDisabled;
     bool mIsActive;
-    std::string mLogFacility;
 
 };
 
