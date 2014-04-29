@@ -33,8 +33,9 @@
 #include <sstream>
 #include <sys/syscall.h>
 
-
 #include "mod_dup.hh"
+
+#define MOD_REWRITE_NAME "mod_rewrite.c"
 
 namespace alg = boost::algorithm;
 
@@ -277,6 +278,12 @@ setActive(cmd_parms* pParams, void* pCfg) {
         lConf->dirName = (char *) apr_pcalloc(pParams->pool, sizeof(char) * (strlen(pParams->path) + 1));
         strcpy(lConf->dirName, pParams->path);
     }
+
+#ifndef UNIT_TESTING
+        if (!ap_find_linked_module(MOD_REWRITE_NAME)) {
+            return "'mod_rewrite' is not loaded, Enable mod_rewrite to use mod_dup";
+        }
+#endif
     return NULL;
 }
 
@@ -372,7 +379,6 @@ void
 childInit(apr_pool_t *pPool, server_rec *pServer) {
 	curl_global_init(CURL_GLOBAL_ALL);
 	gThreadPool->start();
-
 	apr_pool_cleanup_register(pPool, NULL, cleanUp, cleanUp);
 }
 
@@ -519,7 +525,7 @@ registerHooks(apr_pool_t *pPool) {
     // Here we want to be almost the last filter
     ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
 
-    static const char * const beforeRewrite[] = {"mod_rewrite.c", NULL};
+    static const char * const beforeRewrite[] = {MOD_REWRITE_NAME, NULL};
     ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
 
