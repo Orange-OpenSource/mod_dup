@@ -1,0 +1,9 @@
+==DESC==
+/dup_test/dup RawPrevent filter test
+==HEADER==
+/dup_test/dup?love=hate
+==BODY==
+RawPrevent=donotdup
+==THEADER==
+==TBODY==
+==RBODY==

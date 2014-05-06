@@ -346,9 +346,8 @@ setPreventFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char*
     return _setFilter(pParams, pCfg, pField, pFilter, tFilter::eFilterTypes::PREVENT_DUPLICATION);
 }
 
-
 const char*
-setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
+_setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression, tFilter::eFilterTypes fType) {
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
         return lErrorMsg;
@@ -357,11 +356,21 @@ setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
     assert(conf);
 
     try {
-        gProcessor->addRawFilter(pParams->path, pExpression, *conf);
+        gProcessor->addRawFilter(pParams->path, pExpression, *conf, fType);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in filter definition.";
     }
     return NULL;
+}
+
+const char*
+setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
+    return _setRawFilter(pParams, pCfg, pExpression, tFilter::eFilterTypes::REGULAR);
+}
+
+const char*
+setRawPreventFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
+    return _setRawFilter(pParams, pCfg, pExpression, tFilter::eFilterTypes::PREVENT_DUPLICATION);
 }
 
 apr_status_t
@@ -441,7 +450,6 @@ command_rec gCmds[] = {
                   0,
                   ACCESS_CONF,
                   "Cancels request duplication if matches"),
-
     AP_INIT_TAKE1("DupRawFilter",
                   reinterpret_cast<const char *(*)()>(&setRawFilter),
                   0,
@@ -449,6 +457,11 @@ command_rec gCmds[] = {
                   "Filter incoming request fields before duplicating them."
                   "1st Arg: BODY HEAD ALL, data to match with the regex"
                   "Simply performs a match with the specified REGEX."),
+    AP_INIT_TAKE1("DupRawPreventFilter",
+                  reinterpret_cast<const char *(*)()>(&setRawPreventFilter),
+                  0,
+                  ACCESS_CONF,
+                  "Cancels request duplication if matches"),
     AP_INIT_TAKE2("DupRawSubstitute",
                   reinterpret_cast<const char *(*)()>(&setRawSubstitute),
                   0,

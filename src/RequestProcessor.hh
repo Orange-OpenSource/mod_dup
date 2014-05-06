@@ -253,7 +253,7 @@ namespace DupModule {
          */
         void
         addRawFilter(const std::string &pPath, const std::string &pFilter,
-                     const DupConf &pAssociatedConf);
+                     const DupConf &pAssociatedConf, tFilter::eFilterTypes fType);
 
         /**
          * @brief Schedule a substitution on the value of a given field of all requests on a given path
@@ -357,8 +357,8 @@ namespace DupModule {
                           std::list<tKeyVal> &pHeaderParsedArgs);
 
         const tFilter *
-        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs,
-                       ApplicationScope::eApplicationScope scope);
+        keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
+                       ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes eType);
 
         bool
         keySubstitute(tFieldSubstitutionMap &pSubs,

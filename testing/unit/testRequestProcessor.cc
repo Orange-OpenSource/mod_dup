@@ -64,7 +64,7 @@ void TestRequestProcessor::testFilterAndSubstitution()
     conf.currentApplicationScope = ApplicationScope::ALL;
     // Filter
     proc.addFilter("/toto", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-    proc.addRawFilter("/toto", "[my]+", conf);
+    proc.addRawFilter("/toto", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
     conf.currentApplicationScope = ApplicationScope::HEADER;
     proc.addSubstitution("/toto", "INFO", "[i]", "f", conf);
 
@@ -80,7 +80,7 @@ void TestRequestProcessor::testSubstitution()
     RequestProcessor proc;
     std::string query;
     DupConf conf;
-    proc.addRawFilter("/toto", ".*", conf);
+    proc.addRawFilter("/toto", ".*", conf, tFilter::eFilterTypes::REGULAR);
 
     proc.addSubstitution("/toto", "titi", "[ae]", "-", conf);
 
@@ -397,7 +397,7 @@ void TestRequestProcessor::testRawSubstitution()
         DupConf conf;
         conf.currentApplicationScope = ApplicationScope::HEADER;
 
-        proc.addRawFilter("/toto", ".*", conf);
+        proc.addRawFilter("/toto", ".*", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawSubstitution("/toto", "1", "2", conf);
         CPPUNIT_ASSERT(proc.processRequest( ri));
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
@@ -416,7 +416,7 @@ void TestRequestProcessor::testRawSubstitution()
         DupConf conf;
         conf.currentApplicationScope = ApplicationScope::BODY;
 
-        proc.addRawFilter("/toto", ".*", conf);
+        proc.addRawFilter("/toto", ".*", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawSubstitution("/toto", "1", "2", conf);
         CPPUNIT_ASSERT(proc.processRequest( ri));
         CPPUNIT_ASSERT_EQUAL(query, ri.mArgs);
@@ -434,7 +434,7 @@ void TestRequestProcessor::testRawSubstitution()
         DupConf conf;
         conf.currentApplicationScope = ApplicationScope::ALL;
 
-        proc.addRawFilter("/toto", ".*", conf);
+        proc.addRawFilter("/toto", ".*", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawSubstitution("/toto", "1", "2", conf);
         CPPUNIT_ASSERT(proc.processRequest( ri));
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
@@ -450,7 +450,7 @@ void TestRequestProcessor::testRawSubstitution()
         std::string body = "mybody1test";
         RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/titi/", query, &body);
 
-        proc.addRawFilter("/toto", ".*", conf);
+        proc.addRawFilter("/toto", ".*", conf, tFilter::eFilterTypes::REGULAR);
         conf.currentApplicationScope = ApplicationScope::HEADER;
         proc.addRawSubstitution("/toto", "1", "2", conf);
         conf.currentApplicationScope = ApplicationScope::BODY;
@@ -550,7 +550,7 @@ void TestRequestProcessor::testKeySubstitutionOnBody()
     std::string query;
     DupConf conf;
     conf.currentApplicationScope =  ApplicationScope::BODY;
-    proc.addRawFilter("/toto", ".*", conf);
+    proc.addRawFilter("/toto", ".*", conf, tFilter::eFilterTypes::REGULAR);
     proc.addSubstitution("/toto", "titi", "value", "replacedValue", conf);
 
     query = "titi=value&tutu=tatae";

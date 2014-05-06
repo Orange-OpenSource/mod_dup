@@ -89,11 +89,12 @@ RequestProcessor::addFilter(const std::string &pPath, const std::string &pField,
 
 void
 RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFilter,
-                                const DupConf &pAssociatedConf) {
+                                const DupConf &pAssociatedConf, tFilter::eFilterTypes fType) {
+
     mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, pAssociatedConf.currentApplicationScope,
                                                    pAssociatedConf.currentDupDestination,
                                                    pAssociatedConf.getCurrentDuplicationType(),
-                                                   tFilter::eFilterTypes::REGULAR));
+                                                   fType));
 }
 
 void
@@ -138,11 +139,9 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
 }
 
 const tFilter *
-RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, std::list<tKeyVal> &pParsedArgs,
-                                 ApplicationScope::eApplicationScope scope){
-    const tFilter *matched = NULL;
+RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
+                                 ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes fType){
 
-    // Key filter matching
     BOOST_FOREACH (const tKeyVal &lKeyVal, pParsedArgs) {
         // Key Iteration
         std::pair<std::multimap<std::string, tFilter>::iterator,
@@ -150,15 +149,15 @@ RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, 
         // FilterIteration
         for (std::multimap<std::string, tFilter>::iterator it = lFilterIter.first; it != lFilterIter.second; ++it) {
             if ((it->second.mScope & scope) &&                                  // Scope check
-                boost::regex_search(lKeyVal.second, it->second.mRegex)) {        // Regex match
-                if (it->second.mFilterType == tFilter::PREVENT_DUPLICATION) {
-                    return NULL;
+                it->second.mFilterType == fType) {                              // Filter type check
+                if (boost::regex_search(lKeyVal.second, it->second.mRegex)) {
+                    return &it->second;
                 }
-                matched =  &it->second;
             }
         }
     }
-    return matched;
+    // No matching
+    return NULL;
 }
 
 template <class T>
@@ -195,17 +194,52 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
 
     Log::debug("Filters on body: %d | on header: %d", keyFilterOnBody, keyFilterOnHeader);
 
+    // Prevent Filtering check on HEADER
+    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::PREVENT_DUPLICATION))) {
+        Log::debug("PREVENT Filter on HEADER match: destination:%s", matched->mDestination.c_str());
+        return NULL;
+    }
+
+    std::list<tKeyVal> lParsedArgs;
+
+    // Prevent Filtering check on BODY
+    if (keyFilterOnBody){
+        parseArgs(lParsedArgs, pRequest.mBody);
+        if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY, tFilter::PREVENT_DUPLICATION))) {
+            Log::debug("PREVENT Filter on BODY match: destination:%s", matched->mDestination.c_str());
+            return NULL;
+        }
+    }
+
+    // Raw filters prevent analyse
+    BOOST_FOREACH (tFilter &raw, pCommands.mRawFilters) {
+        if (raw.mFilterType == tFilter::PREVENT_DUPLICATION) {
+            // Header application
+            if (raw.mScope & ApplicationScope::HEADER) {
+                if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
+                    Log::debug("Prevent Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    return NULL;
+                }
+            }
+            // Body application
+            if (raw.mScope & ApplicationScope::BODY) {
+                if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
+                    Log::debug("Prevent Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                    return NULL;
+                }
+            }
+        }
+    }
+
     // Key filters on header
-    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER))){
+    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::REGULAR))){
         Log::debug("Filter on HEADER match: destination:%s", matched->mDestination.c_str());
         return matched;
     }
 
     // Key filters on body
     if (keyFilterOnBody){
-        std::list<tKeyVal> lParsedArgs;
-        parseArgs(lParsedArgs, pRequest.mBody);
-        if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY))) {
+        if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY, tFilter::REGULAR))) {
             Log::debug("Filter on BODY match: destination:%s", matched->mDestination.c_str());
             return matched;
         }
@@ -213,18 +247,20 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
 
     // Raw filters matching
     BOOST_FOREACH (tFilter &raw, pCommands.mRawFilters) {
-        // Header application
-        if (raw.mScope & ApplicationScope::HEADER) {
-            if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-                Log::debug("Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
-                return &raw;
+        if (raw.mFilterType != tFilter::PREVENT_DUPLICATION) {
+            // Header application
+            if (raw.mScope & ApplicationScope::HEADER) {
+                if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
+                    Log::debug("Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    return &raw;
+                }
             }
-        }
-        // Body application
-        if (raw.mScope & ApplicationScope::BODY) {
-            if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-                Log::debug("Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
-                return &raw;
+            // Body application
+            if (raw.mScope & ApplicationScope::BODY) {
+                if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
+                    Log::debug("Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                    return &raw;
+                }
             }
         }
     }
