@@ -58,7 +58,6 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
 
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    apr_status_t lStatus;
     request_rec *pRequest = pF->r;
     if (!pRequest) {
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
@@ -112,12 +111,50 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
             apr_brigade_cleanup(pB);
         }
         pF->ctx = (void *)1;
-        apr_brigade_cleanup(pB);
-        lRI->offset = 0;
+    }
+
+    // Everything is read, returning DECLINED to call the subrequest
+    return DECLINED;
+}
+
+apr_status_t inputFilterSubReq(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
+{
+    apr_status_t lStatus;
+    request_rec *pRequest = pF->r->main;
+    if (!pRequest) {
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    }
+
+    const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
+    if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) ) {
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    }
+
+    if(pRequest->per_dir_config == NULL){
+        return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
+    }
+
+    // No context? new request
+    if (!pF->ctx) {
+        boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
+
+        if (!shPtr || !shPtr->get()) {
+            pF->ctx = (void *) -1;
+            lStatus =  ap_pass_brigade(pF->next, pB);
+            apr_brigade_cleanup(pB);
+            return lStatus;
+        }
+        DupModule::RequestInfo *lRI = shPtr->get();
+
         lStatus =  deserializeBody(*lRI);
         if(lStatus != APR_SUCCESS){
             return lStatus;
         }
+
+        pF->ctx = (void *)1;
+        apr_brigade_cleanup(pB);
+        lRI->offset = 0;
+
 #ifndef UNIT_TESTING
         apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
         apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
@@ -151,7 +188,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    request_rec *pRequest = pFilter->r;
+    request_rec *pRequest = pFilter->r->main;
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
@@ -239,7 +276,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return lStatus;
     }
 
-    request_rec *pRequest = pFilter->r;
+    request_rec *pRequest = pFilter->r->main;
 
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if( tConf == NULL ){

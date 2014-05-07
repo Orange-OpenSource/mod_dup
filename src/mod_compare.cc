@@ -39,6 +39,7 @@
 
 
 #include "mod_compare.hh"
+#include "subReqMgr.hh"
 
 
 namespace alg = boost::algorithm;
@@ -48,6 +49,7 @@ namespace CompareModule {
 
 
 const char* gName = "Compare";
+const char* gName2 = "Compare2";
 const char* gNameOut = "CompareOut";
 const char* gNameOut2 = "CompareOut2";
 const char* c_COMPONENT_VERSION = "Compare/1.0";
@@ -266,8 +268,6 @@ setCompareLog(cmd_parms* pParams, void* pCfg, const char* pType, const char* pVa
         return "Missing file path or facility";
     }
 
-    CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-
     if (strcmp("FILE", pType) == 0)
     {
         gWriteInFile = true;
@@ -345,7 +345,7 @@ static void insertInputFilter(request_rec *pRequest) {
     }
 }
 
-static void insertOutputFilter(request_rec *pRequest) {
+/*static void insertOutputFilter(request_rec *pRequest) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     assert(lConf);
     if (lConf->mIsActive){
@@ -359,8 +359,44 @@ static void insertOutputFilter2(request_rec *pRequest) {
     if (lConf->mIsActive){
         ap_add_output_filter(gNameOut2, NULL, pRequest, pRequest->connection);
     }
-}
+}*/
 #endif
+
+int
+run_sub_request(const CompareConf *pConf, request_rec *r) {
+
+    subReqMgr mgr(pConf);
+    request_rec *new_req = mgr.subreq(r->method, r->uri, r);
+    if (0 == new_req){
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    mgr.set_in_flt(gName2, new_req);
+    mgr.set_out_flt(gNameOut, new_req);
+    mgr.set_out_flt(gNameOut2, new_req);
+
+    int prxy_ret_code = mgr.run_subreq(new_req);
+
+    new_req->main = r;
+
+    if (ap_is_HTTP_ERROR(prxy_ret_code) || ap_is_HTTP_ERROR(new_req->status)) {
+        mgr.destroy_subreq(new_req);
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    mgr.destroy_subreq(new_req);
+
+    return OK;
+}
+
+static int
+sub_request(request_rec *pRequest) {
+    if (!ap_is_initial_req(pRequest))
+        return DECLINED;
+    CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    assert(lConf);
+    return run_sub_request(lConf, pRequest);
+}
 
 /**
  * @brief register hooks in apache
@@ -372,13 +408,15 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
     ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_RESOURCE);
+    ap_register_input_filter(gName2, inputFilterSubReq, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_RESOURCE => only the body will be read ( the headers_out not set yet)
     ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_CONNECTION => only the response header will be read
     ap_register_output_filter(gNameOut2, outputFilterHandler2, NULL, AP_FTYPE_TRANSCODE);
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
-    ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
-    ap_hook_insert_filter(&insertOutputFilter2, NULL, NULL, APR_HOOK_LAST);
+    //ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
+    //ap_hook_insert_filter(&insertOutputFilter2, NULL, NULL, APR_HOOK_LAST);
+    ap_hook_log_transaction(&sub_request, 0, 0, APR_HOOK_LAST);
 #endif
 }
 

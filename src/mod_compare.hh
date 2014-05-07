@@ -106,6 +106,12 @@ void registerHooks(apr_pool_t *pPool);
 apr_status_t
 inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
 
+/**
+ * @brief the input filter callback
+ */
+apr_status_t
+inputFilterSubReq(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
+
 /** @brief the output filter callback
  * Plugged only in REQUEST_WITH_ANSWER mode
  */
