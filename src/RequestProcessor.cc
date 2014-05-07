@@ -509,15 +509,15 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
 
         switch(rc) {
         case -1:
-            Log::error(403, "Sending request failed with curl request:%s", uri.c_str());
-        case 0:
+            //            Log::error(403, "Sending request failed with curl request:%s", uri.c_str());
             still_running = 0;
 
-            if ((!timeout.tv_sec) && (!timeout.tv_usec)) {
-		Log::debug("Curl Request timedout");
-                __sync_fetch_and_add(&mTimeoutCount, 1);
-            }
+            // if ((!timeout.tv_sec) && (!timeout.tv_usec)) {
+	    //     Log::debug("Curl Request timedout");
+            //     __sync_fetch_and_add(&mTimeoutCount, 1);
+            // }
             break;
+        case 0:
         default:
             /* timeout or readable/writable sockets */
             curl_multi_perform(multi_handle, &still_running);
