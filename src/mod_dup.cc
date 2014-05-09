@@ -386,9 +386,9 @@ cleanUp(void *) {
 
 void
 childInit(apr_pool_t *pPool, server_rec *pServer) {
-	curl_global_init(CURL_GLOBAL_ALL);
-	gThreadPool->start();
-	apr_pool_cleanup_register(pPool, NULL, cleanUp, cleanUp);
+    curl_global_init(CURL_GLOBAL_ALL);
+    gThreadPool->start();
+    apr_pool_cleanup_register(pPool, NULL, cleanUp, cleanUp);
 }
 
 
