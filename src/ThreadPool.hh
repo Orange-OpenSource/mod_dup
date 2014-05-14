@@ -1,8 +1,8 @@
 /*
 * mod_dup - duplicates apache requests
-* 
+*
 * Copyright (C) 2013 Orange
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -97,7 +97,7 @@ private:
 	 */
 	void collectKilled() {
 		time_duration nowait(0, 0, 0, 0);
-		
+
 		std::list<boost::thread *>::iterator it = mThreads.begin();
 		while (it != mThreads.end()) {
 			if ((*it)->timed_join(nowait)) {
@@ -141,7 +141,7 @@ private:
 				const std::string lTimeoutCount = lStatsIter == mAdditionalStats.end() ? "??" : lStatsIter->second();
 				lStatsIter = mAdditionalStats.find("#DupReq");
                 const std::string lDuplicateCount = lStatsIter == mAdditionalStats.end() ? "??" : lStatsIter->second();
-				
+
 				Log::notice(201, "%s - %u - %zu - %zu - %u - %u - %u - %s - %s",
 				        mProgramName.c_str(), pid, lQueued, mThreads.size(), lInCount, lOutCount,
                         lDropCount, lTimeoutCount.c_str(), lDuplicateCount.c_str());
@@ -154,7 +154,7 @@ private:
 		}
 
 		unsigned lToBeKilled = mThreads.size() - mBeingKilled;
-		// Poison all remaining threads ... 
+		// Poison all remaining threads ...
 		for (unsigned i=0; i<lToBeKilled; ++i) {
 			poisonThread();
 		}
@@ -171,7 +171,7 @@ public:
 	 * @param pWorker a function object which will be executed by each worker thread
 	 * @param pPoisonItem an item which, if received, should cause a worker to exit
 	 */
-	ThreadPool(tQueueWorker pWorker, const QueueT &pPoisonItem) : 
+	ThreadPool(tQueueWorker pWorker, const QueueT &pPoisonItem) :
 									   mManagerThread(NULL),
 									   mMinThreads(1), mMaxThreads(10),
 									   mMinQueued(1), mMaxQueued(10),
@@ -261,12 +261,14 @@ public:
 	 */
 	void
 	stop() {
-		mRunning = false;
-		if (mManagerThread) {
-			mManagerThread->join();
-			delete mManagerThread;
-			mManagerThread = NULL;
-		}
+            mRunning = false;
+            if (mManagerThread) {
+                // TODO improve this part.
+                // The process can be stuck here if curl calls do not terminate
+                mManagerThread->join();
+                delete mManagerThread;
+                mManagerThread = NULL;
+            }
 	}
 
 	/**
