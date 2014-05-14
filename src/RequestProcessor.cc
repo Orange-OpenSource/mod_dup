@@ -475,61 +475,15 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
 
     Log::debug(">> Duplicating: %s", uri.c_str());
 
-    CURLM *multi_handle;
-
-    multi_handle = curl_multi_init();
-    int still_running;
-    curl_multi_add_handle(multi_handle, curl);
-
-    curl_multi_perform(multi_handle, &still_running);
-
-    struct timeval timeout;
-
-    // Timeout values initialisation
-    timeout.tv_sec = mTimeout / 1000;
-    timeout.tv_usec = (mTimeout % 1000) * 1000;
-
-    while(still_running) {
-
-        int rc; /* select() return code */
-
-        fd_set fdread;
-        fd_set fdwrite;
-        fd_set fdexcep;
-        int maxfd = -1;
-
-        FD_ZERO(&fdread);
-        FD_ZERO(&fdwrite);
-        FD_ZERO(&fdexcep);
-
-        /* get file descriptors from the transfers */
-        curl_multi_fdset(multi_handle, &fdread, &fdwrite, &fdexcep, &maxfd);
-
-        rc = select(maxfd+1, &fdread, &fdwrite, &fdexcep, &timeout);
-
-        switch(rc) {
-        case -1:
-            //            Log::error(403, "Sending request failed with curl request:%s", uri.c_str());
-            still_running = 0;
-
-            // if ((!timeout.tv_sec) && (!timeout.tv_usec)) {
-	    //     Log::debug("Curl Request timedout");
-            //     __sync_fetch_and_add(&mTimeoutCount, 1);
-            // }
-            break;
-        case 0:
-        default:
-            /* timeout or readable/writable sockets */
-            curl_multi_perform(multi_handle, &still_running);
-            break;
-        }
-    }
-
-    curl_multi_cleanup(multi_handle);
-
+    int err = curl_easy_perform(curl);
     if (slist)
         curl_slist_free_all(slist);
 
+    if (err == CURLE_OPERATION_TIMEDOUT) {
+        __sync_fetch_and_add(&mTimeoutCount, 1);
+    } else if (err) {
+        Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, uri.c_str());
+    }
     delete content;
 }
 
