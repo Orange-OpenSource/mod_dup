@@ -9,3 +9,4 @@ Validation mode =>> nominal case, SID to dup present in arguments
 .*
 ==RBODY==
 DUP
+==DEST==

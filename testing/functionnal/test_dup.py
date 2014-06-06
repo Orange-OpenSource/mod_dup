@@ -19,15 +19,16 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def do_GET(self):
         post_body = ''.join(iter(self.rfile.read, ''))
-        self.server.queue.put(('POST', self.path, post_body))
+        self.server.queue.put(('POST', self.path, post_body, self.server.server_port))
         # FIXME: why is the pipe broken at this point?
         #self.send_response(200)
 
     def do_POST(self):
         post_body = ''.join(iter(self.rfile.read, ''))
-        self.server.queue.put(('GET', self.path, post_body))
+        self.server.queue.put(('GET', self.path, post_body, self.server.server_port))
         # FIXME: why is the pipe broken at this point?
         #self.send_response(200)
+
 
 def http_server(q, host, port):
     server = BaseHTTPServer.HTTPServer((host, port), RequestHandler)
@@ -51,7 +52,8 @@ class TeeRequest:
         self.body = self.consume(f, "==THEADER==")
         self.t_path = self.consume(f, "==TBODY==")
         self.t_body = self.consume(f, "==RBODY==")
-        self.r_body = self.consume(f, "==EOF==")
+        self.r_body = self.consume(f, "==DEST==")
+        self.t_dest = self.consume(f, "==EOF==")
         f.close()
 
     def __str__(self):
@@ -96,7 +98,11 @@ class TeeRequest:
         assert not curl.perform()
         return buf
 
-    def assert_received(self, path, body):
+    def assert_received(self, path, body, server_port):
+        if (len(self.t_dest)):
+            assert  server_port == 16555 ,  "########### SHOULD BE ON SECOND LOCATION  ###############"
+        else:
+            assert  server_port != 16555 ,  "########### SHOULD BE ON FIRST LOCATION  ###############"
         assert self.t_path and path == self.t_path and re.search(self.t_body, body, re.MULTILINE|re.DOTALL) ,\
                 '''Received unexpected request:
   path: %s
@@ -120,11 +126,11 @@ def run_tests(request_files, queue, options):
         if not options.curl_only:
             try:
                 try:
-                    method, path, body = queue.get(timeout=3)
+                    method, path, body, server_port = queue.get(timeout=3)
                 except Queue.Empty:
                     request.assert_not_received()
                 else:
-                    request.assert_received(path, body)
+                    request.assert_received(path, body, server_port)
             except AssertionError, err:
                 print "########### RECEIVED ###############"
                 print "Error:", err
@@ -154,8 +160,12 @@ def main(options, args):
         try:
             if not options.curl_only:
                 queue = multiprocessing.Queue()
+                ## First process
                 process = multiprocessing.Process(target=http_server, args=(queue, options.dest_host, options.dest_port))
                 process.start()
+                ## Second process on port + 1
+                process2 = multiprocessing.Process(target=http_server, args=(queue, options.dest_host, 16555))
+                process2.start()
                 # We need to wait for the server to start up...
                 time.sleep(2)
             run_tests(request_files, queue, options)
@@ -165,7 +175,9 @@ def main(options, args):
         finally:
             if not options.curl_only:
                 process.terminate()
+                process2.terminate()
                 process.join()
+                process2.join()
 
 
 if __name__ == '__main__':

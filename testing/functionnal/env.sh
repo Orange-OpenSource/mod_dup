@@ -25,6 +25,7 @@ echo -n "HEADER_ONLY" > $APACHE_DIR/htdocs/dup_test/header_only
 echo -n "HEADER_AND_BODY" > $APACHE_DIR/htdocs/dup_test/header_and_body
 echo -n "NP1" > $APACHE_DIR/htdocs/service_np1
 cat $DATA/largeresponse > $APACHE_DIR/htdocs/dup_test/largeresponse
+echo -n "MULTI" > $APACHE_DIR/htdocs/multi
 
 echo "#!/usr/bin/env python
 

@@ -7,3 +7,4 @@ Migration mode =>> nominal case, SID present
 /service_np1?method=getBES&country=FR&SID=IDMIG1
 ==TBODY==
 ==RBODY==
+==DEST==
