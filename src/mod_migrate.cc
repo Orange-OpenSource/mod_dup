@@ -68,7 +68,7 @@ setActive(cmd_parms* pParams, void* pCfg) {
 
 #ifndef UNIT_TESTING
         if (!ap_find_linked_module(MOD_REWRITE_NAME)) {
-            return "'mod_rewrite' is not loaded, Enable mod_rewrite to use mod_dup";
+            return "'mod_rewrite' is not loaded, Enable mod_rewrite to use mod_migrate";
         }
 #endif
     return NULL;
@@ -166,6 +166,12 @@ command_rec gCmds[] = {
                 "VarName: The name of the variable to define"
                 "MatchRegex: The regex that must match to define the variable"
                 "SetRegex: The value to set if MatchRegex matches"),
+        AP_INIT_NO_ARGS("Migrate",
+                reinterpret_cast<const char *(*)()>(&setActive),
+                0,
+                ACCESS_CONF,
+                "Duplicating requests on this location using the dup module. "
+                "This is only needed if no filter or substitution is defined."),
         {0}
 };
 
@@ -206,6 +212,9 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
 
+    // Here we want to be almost the last filter
+//    ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
+
     static const char * const beforeRewrite[] = {MOD_REWRITE_NAME, NULL};
     ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
 //    ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_RESOURCE);
@@ -213,7 +222,7 @@ registerHooks(apr_pool_t *pPool) {
     //ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_CONNECTION => only the response header will be read
     //ap_register_output_filter(gNameOut2, outputFilterHandler2, NULL, AP_FTYPE_TRANSCODE);
-//    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
+    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
 #endif
 }
 

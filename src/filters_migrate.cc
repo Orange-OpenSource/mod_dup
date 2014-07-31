@@ -33,14 +33,14 @@
 
 namespace MigrateModule {
 
-void
-printRequest(request_rec *pRequest, std::string pBody)
-{
-    const char *reqId = apr_table_get(pRequest->headers_in, DupModule::c_UNIQUE_ID);
-    Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
-    Log::debug("### Uri:%s", pRequest->uri);
-    Log::debug("### Request args: %s", pRequest->args);
-}
+//void
+//printRequest(request_rec *pRequest, std::string pBody)
+//{
+//    const char *reqId = apr_table_get(pRequest->headers_in, DupModule::c_UNIQUE_ID);
+//    Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
+//    Log::debug("### Uri:%s", pRequest->uri);
+//    Log::debug("### Request args: %s", pRequest->args);
+//}
 
 /*
  * Translate_name level HOOK
@@ -54,6 +54,7 @@ printRequest(request_rec *pRequest, std::string pBody)
  */
 int
 translateHook(request_rec *pRequest) {
+    Log::debug("In translateHook");
 //    if (!pRequest->per_dir_config)
 //        return DECLINED;
 //    Log::debug("test");
