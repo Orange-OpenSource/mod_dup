@@ -1,20 +1,20 @@
 /*
-* mod_dup - duplicates apache requests
-*
-* Copyright (C) 2013 Orange
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * mod_dup - duplicates apache requests
+ *
+ * Copyright (C) 2013 Orange
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
@@ -30,27 +30,10 @@ using namespace std;
 #include "RequestProcessor.hh"
 #include "mod_dup.hh"
 
+
 namespace DupModule {
 
 const char * gUserAgent = "mod-dup";
-
-namespace ApplicationScope {
-
-      const char* c_ALL = "ALL";
-      const char* c_BODY = "BODY";
-      const char* c_HEADER = "HEADER";
-      const char* c_ERROR_ON_STRING_VALUE = "Invalid ApplicationScope Value. Supported Values: ALL | HEADER | BODY" ;
-
-    eApplicationScope stringToEnum(const char *str) throw (std::exception) {
-        if (!strcmp(str, c_ALL))
-            return ApplicationScope::ALL;
-        if (!strcmp(str, c_HEADER))
-            return ApplicationScope::HEADER;
-        if (!strcmp(str, c_BODY))
-            return ApplicationScope::BODY;
-        throw std::exception();
-    }
-}
 
 void
 RequestProcessor::setTimeout(const unsigned int &pTimeout) {
@@ -59,13 +42,13 @@ RequestProcessor::setTimeout(const unsigned int &pTimeout) {
 
 const unsigned int
 RequestProcessor::getTimeoutCount() {
-	// Atomic read + reset
-	// Works because mTimeoutCount & 0 == 0
-	unsigned int lTimeoutCount = __sync_fetch_and_and(&mTimeoutCount, 0);
-	if (lTimeoutCount > 0) {
-		Log::warn(303, "%u requests timed out during last cycle!", lTimeoutCount);
-	}
-	return lTimeoutCount;
+    // Atomic read + reset
+    // Works because mTimeoutCount & 0 == 0
+    unsigned int lTimeoutCount = __sync_fetch_and_and(&mTimeoutCount, 0);
+    if (lTimeoutCount > 0) {
+        Log::warn(303, "%u requests timed out during last cycle!", lTimeoutCount);
+    }
+    return lTimeoutCount;
 }
 
 const unsigned int
@@ -78,45 +61,45 @@ RequestProcessor::getDuplicatedCount() {
 
 void
 RequestProcessor::addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
-                            const DupConf &pAssociatedConf, tFilter::eFilterTypes fType) {
+        const DupConf &pAssociatedConf, tFilter::eFilterTypes fType) {
 
     mCommands[pPath].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
-                                                                     tFilter(pFilter, pAssociatedConf.currentApplicationScope,
-                                                                             pAssociatedConf.currentDupDestination,
-                                                                             pAssociatedConf.getCurrentDuplicationType(),
-                                                                             fType)));
+            tFilter(pFilter, pAssociatedConf.currentApplicationScope,
+                    pAssociatedConf.currentDupDestination,
+                    pAssociatedConf.getCurrentDuplicationType(),
+                    fType)));
 }
 
 void
 RequestProcessor::addRawFilter(const std::string &pPath, const std::string &pFilter,
-                                const DupConf &pAssociatedConf, tFilter::eFilterTypes fType) {
+        const DupConf &pAssociatedConf, tFilter::eFilterTypes fType) {
 
     mCommands[pPath].mRawFilters.push_back(tFilter(pFilter, pAssociatedConf.currentApplicationScope,
-                                                   pAssociatedConf.currentDupDestination,
-                                                   pAssociatedConf.getCurrentDuplicationType(),
-                                                   fType));
+            pAssociatedConf.currentDupDestination,
+            pAssociatedConf.getCurrentDuplicationType(),
+            fType));
 }
 
 void
 RequestProcessor::addSubstitution(const std::string &pPath, const std::string &pField, const std::string &pMatch,
-                                  const std::string &pReplace,  const DupConf &pAssociatedConf) {
+        const std::string &pReplace,  const DupConf &pAssociatedConf) {
     mCommands[pPath].mSubstitutions[boost::to_upper_copy(pField)].push_back(tSubstitute(pMatch, pReplace,
-                                                                                        pAssociatedConf.currentApplicationScope));
+            pAssociatedConf.currentApplicationScope));
 }
 
 void
 RequestProcessor::addRawSubstitution(const std::string &pPath, const std::string &pRegex, const std::string &pReplace,
-                                      const DupConf &pAssociatedConf){
+        const DupConf &pAssociatedConf){
     mCommands[pPath].mRawSubstitutions.push_back(tSubstitute(pRegex, pReplace,
-                                                             pAssociatedConf.currentApplicationScope));
+            pAssociatedConf.currentApplicationScope));
 }
 
 void
 RequestProcessor::addEnrichContext(const std::string &pPath, const std::string &pVarName,
-                                   const std::string &pMatch, const std::string &pSetValue,
-                                   const DupConf &pAssociatedConf) {
+        const std::string &pMatch, const std::string &pSetValue,
+        const DupConf &pAssociatedConf) {
     mCommands[pPath].mEnrichContext.push_back(tContextEnrichment(pVarName, pMatch, pSetValue,
-                                                                 pAssociatedConf.currentApplicationScope));
+            pAssociatedConf.currentApplicationScope));
 }
 
 void
@@ -140,16 +123,16 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
 
 const tFilter *
 RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
-                                 ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes fType){
+        ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes fType){
 
     BOOST_FOREACH (const tKeyVal &lKeyVal, pParsedArgs) {
         // Key Iteration
         std::pair<std::multimap<std::string, tFilter>::iterator,
-                  std::multimap<std::string, tFilter>::iterator> lFilterIter = pFilters.equal_range(lKeyVal.first);
+        std::multimap<std::string, tFilter>::iterator> lFilterIter = pFilters.equal_range(lKeyVal.first);
         // FilterIteration
         for (std::multimap<std::string, tFilter>::iterator it = lFilterIter.first; it != lFilterIter.second; ++it) {
             if ((it->second.mScope & scope) &&                                  // Scope check
-                it->second.mFilterType == fType) {                              // Filter type check
+                    it->second.mFilterType == fType) {                              // Filter type check
                 if (boost::regex_search(lKeyVal.second, it->second.mRegex)) {
                     return &it->second;
                 }
@@ -168,7 +151,7 @@ void applicationOn(const T &list, int &header, int &body) {
             body = true;
         if (f.mScope & ApplicationScope::HEADER)
             header = true;
-     }
+    }
 }
 
 template <class T>
@@ -179,7 +162,7 @@ void applicationOnMap(const T &list, int &header, int &body) {
             body = true;
         if (f.second.mScope & ApplicationScope::HEADER)
             header = true;
-     }
+    }
 }
 
 const tFilter *
@@ -269,9 +252,9 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, tRequestProcessorComman
 
 bool
 RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
-                                std::list<tKeyVal> &pParsedArgs,
-                                ApplicationScope::eApplicationScope scope,
-                                std::string &result){
+        std::list<tKeyVal> &pParsedArgs,
+        ApplicationScope::eApplicationScope scope,
+        std::string &result){
     apr_pool_t *lPool = NULL;
     apr_pool_create(&lPool, 0);
 
@@ -287,7 +270,7 @@ RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
         if (lSubstIter != pSubs.end()) {
             BOOST_FOREACH(const tSubstitute &lSubst, lSubstIter->second) {
                 Log::debug("Key substitute: %d | lVal:%s | lSubst:%s | Rep:%s", (int) lSubst.mScope, lVal.c_str(),
-                           lSubst.mRegex.str().c_str(), lSubst.mReplacement.c_str());
+                        lSubst.mRegex.str().c_str(), lSubst.mReplacement.c_str());
                 if (!(scope & lSubst.mScope))
                     continue;
 
@@ -325,25 +308,25 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, tRequestProcessorComm
             if (s.mScope & ApplicationScope::HEADER)
                 keySubOnHeader = true;
         }
-     }
+    }
 
     bool lDidSubstitute = false;
     // Perform the key substitutions
     if (keySubOnHeader) {
         // On the header
         lDidSubstitute = keySubstitute(pCommands.mSubstitutions,
-                                       pHeaderParsedArgs,
-                                       ApplicationScope::HEADER,
-                                       pRequest.mArgs);
+                pHeaderParsedArgs,
+                ApplicationScope::HEADER,
+                pRequest.mArgs);
     }
     if (keySubOnBody) {
         // On the body
         std::list<tKeyVal> lParsedArgs;
         parseArgs(lParsedArgs, pRequest.mBody);
         lDidSubstitute |= keySubstitute(pCommands.mSubstitutions,
-                                       lParsedArgs,
-                                       ApplicationScope::BODY,
-                                       pRequest.mBody);
+                lParsedArgs,
+                ApplicationScope::BODY,
+                pRequest.mBody);
     }
     // Run the raw substitutions
     BOOST_FOREACH(const tSubstitute &s, pCommands.mRawSubstitutions) {
@@ -395,8 +378,8 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
 }
 
 RequestProcessor::RequestProcessor() :
-    mTimeout(0), mTimeoutCount(0),
-    mDuplicatedCount(0) {
+            mTimeout(0), mTimeoutCount(0),
+            mDuplicatedCount(0) {
     setUrlCodec();
 }
 
@@ -413,7 +396,7 @@ RequestProcessor::sendInBody(CURL *curl, struct curl_slist *&slist, const std::s
     slist = curl_slist_append(slist, "Expect:");
 
     std::string contentLen = std::string("Content-Length: ") +
-        boost::lexical_cast<std::string>(toSend.size());
+            boost::lexical_cast<std::string>(toSend.size());
     slist = curl_slist_append(slist, contentLen.c_str());
     curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
@@ -549,7 +532,7 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
     int count = 0;
     std::list<tContextEnrichment> &cE = it->second.mEnrichContext;
 
-   // Iteration through context enrichment
+    // Iteration through context enrichment
     BOOST_FOREACH(const tContextEnrichment &ctx, cE) {
         if (ctx.mScope & ApplicationScope::HEADER) {
             std::string toSet = regex_replace(rInfo.mArgs, ctx.mRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
@@ -568,7 +551,7 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
 #ifndef UNIT_TESTING
                 apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
 #endif
-               ++count;
+                ++count;
             }
         }
     }
@@ -576,15 +559,15 @@ RequestProcessor::enrichContext(request_rec *pRequest, const RequestInfo &rInfo)
 }
 
 tElementBase::tElementBase(const std::string &r, ApplicationScope::eApplicationScope s)
-    : mScope(s)
-    , mRegex(r) {
+: mScope(s)
+, mRegex(r) {
 }
 
 tElementBase::tElementBase(const std::string &regex,
-                           boost::regex::flag_type flags,
-                           ApplicationScope::eApplicationScope scope)
-    : mScope(scope)
-    , mRegex(regex, flags) {
+        boost::regex::flag_type flags,
+        ApplicationScope::eApplicationScope scope)
+: mScope(scope)
+, mRegex(regex, flags) {
 
 }
 
@@ -592,13 +575,13 @@ tElementBase::~tElementBase() {
 }
 
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
-                 const std::string &currentDupDestination,
-                 DuplicationType::eDuplicationType dupType,
-                 tFilter::eFilterTypes fType)
-    : tElementBase(regex, scope)
-    , mDestination(currentDupDestination)
-    , mDuplicationType(dupType)
-    , mFilterType(fType) {
+        const std::string &currentDupDestination,
+        DuplicationType::eDuplicationType dupType,
+        tFilter::eFilterTypes fType)
+: tElementBase(regex, scope)
+, mDestination(currentDupDestination)
+, mDuplicationType(dupType)
+, mFilterType(fType) {
 }
 
 tFilter::~tFilter() {
@@ -612,8 +595,8 @@ tElementBase::tElementBase(const tElementBase &other) {
 }
 
 tSubstitute::tSubstitute(const std::string &regex, const std::string &replacement, ApplicationScope::eApplicationScope scope)
-    : tElementBase(regex, scope)
-    , mReplacement(replacement){
+: tElementBase(regex, scope)
+, mReplacement(replacement){
 }
 
 
@@ -621,12 +604,12 @@ tSubstitute::~tSubstitute() {
 }
 
 tContextEnrichment::tContextEnrichment(const std::string &varName,
-                                       const std::string &matchRegex,
-                                       const std::string &setValue,
-                                       ApplicationScope::eApplicationScope scope)
-    : tElementBase(matchRegex, boost::regex::icase, scope)
-    , mVarName(varName)
-    , mSetValue(setValue) {
+        const std::string &matchRegex,
+        const std::string &setValue,
+        ApplicationScope::eApplicationScope scope)
+: tElementBase(matchRegex, boost::regex::icase, scope)
+, mVarName(varName)
+, mSetValue(setValue) {
 }
 
 tContextEnrichment::~tContextEnrichment() {

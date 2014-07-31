@@ -30,6 +30,7 @@ file(GLOB lib_SOURCE_FILES
   ../../src/mod_dup.cc
   ../../src/Log.cc
   ../../src/RequestProcessor.cc
+  ../../src/RequestCommon.cc
   ../../src/RequestInfo.cc
   ../../src/UrlCodec.cc
   ../../src/filters.cc

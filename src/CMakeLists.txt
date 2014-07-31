@@ -20,6 +20,7 @@ include(../cmake/Include.cmake)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 file(GLOB mod_dup_SOURCE_FILES
+  RequestCommon.cc
   filters.cc
   mod_dup.cc
   Log.cc
@@ -37,6 +38,15 @@ file(GLOB mod_compare_SOURCE_FILES
   Log.cc
   Utils.cc
   RequestInfo.cc)
+  
+file(GLOB mod_migrate_SOURCE_FILES
+  filters_migrate.cc
+  mod_migrate.cc
+  Log.cc
+  RequestCommon.cc
+  RequestInfo.cc
+  Utils.cc
+  UrlCodec.cc)
 
 
 # find_package(Boost REQUIRED COMPONENTS regex serialization)
@@ -53,5 +63,10 @@ add_library(mod_compare MODULE ${mod_compare_SOURCE_FILES})
 set_target_properties(mod_compare PROPERTIES PREFIX "")
 target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} boost_serialization libws_diff rt)
 
+add_library(mod_migrate MODULE ${mod_migrate_SOURCE_FILES})
+set_target_properties(mod_migrate PROPERTIES PREFIX "")
+target_link_libraries(mod_migrate ${APR_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} boost_serialization libws_diff rt)
+
 install(TARGETS mod_dup LIBRARY DESTINATION lib COMPONENT mod_dup)
 install(TARGETS mod_compare LIBRARY DESTINATION lib COMPONENT mod_compare)
+install(TARGETS mod_migrate LIBRARY DESTINATION lib COMPONENT mod_migrate)

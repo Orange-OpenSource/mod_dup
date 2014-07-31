@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include "Log.hh"
+#include "RequestCommon.hh"
 #include "RequestProcessor.hh"
 #include "ThreadPool.hh"
 
