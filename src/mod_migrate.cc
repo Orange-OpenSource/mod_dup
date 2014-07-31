@@ -166,6 +166,7 @@ command_rec gCmds[] = {
                 "VarName: The name of the variable to define"
                 "MatchRegex: The regex that must match to define the variable"
                 "SetRegex: The value to set if MatchRegex matches"),
+
         AP_INIT_NO_ARGS("Migrate",
                 reinterpret_cast<const char *(*)()>(&setActive),
                 0,

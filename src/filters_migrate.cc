@@ -55,15 +55,15 @@ namespace MigrateModule {
 int
 translateHook(request_rec *pRequest) {
     Log::debug("In translateHook");
-//    if (!pRequest->per_dir_config)
-//        return DECLINED;
-//    Log::debug("test");
-//    MigrateConf *conf = reinterpret_cast<MigrateConf *>(ap_get_module_config(pRequest->per_dir_config, &migrate_module));
-//    if (!conf || !conf->mDirName) {
-//        // Not a location that we treat, we decline the request
-//        return DECLINED;
-//    }
-//    Log::debug("match regex %s",conf->mEnvList.front().mMatchregex.c_str());
+    if (!pRequest->per_dir_config)
+        return DECLINED;
+    Log::debug("Before conf casting");
+    MigrateConf *conf = reinterpret_cast<MigrateConf *>(ap_get_module_config(pRequest->per_dir_config, &migrate_module));
+    if (!conf || !conf->mDirName) {
+        // Not a location that we treat, we decline the request
+        return DECLINED;
+    }
+    Log::debug("match regex %s",conf->mEnvList.front().mMatchregex.c_str());
 //    unsigned int lReqID = MigrateModule::getNextReqId();
 //    std::string reqId = boost::lexical_cast<std::string>(lReqID);
 //    RequestInfo *info = new RequestInfo(reqId);
