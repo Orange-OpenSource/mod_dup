@@ -35,6 +35,11 @@ set(BUILD_TOOLS ON CACHE BOOL "Build mod_dup tools")
 set(INPUT_CMAKE_DIR ${CMAKE_SOURCE_DIR}/cmake)
 set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
+add_custom_target(install_migrate
+COMMAND cp -v ${CMAKE_BINARY_DIR}/src/mod_migrate.so /usr/lib/apache2/modules
+COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.conf /etc/apache2/mods-available
+COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.load /etc/apache2/mods-available
+)
 
 #-----------------------------------------------------------------------------
 # Set some compiler options
