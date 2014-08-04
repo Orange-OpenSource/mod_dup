@@ -44,8 +44,7 @@ namespace MigrateModule {
 
 
 const char* gName = "Migrate";
-const char* gNameOut = "MigrateOut";
-const char* gNameOut2 = "MigrateOut2";
+const char *gNameBody2Brigade = "MigrateBody2Brigade";
 const char* c_COMPONENT_VERSION = "Migrate/1.0";
 const char* c_named_mutex = "mod_migrate_log_mutex";
 //bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
@@ -54,8 +53,7 @@ const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
 bool gWriteInFile = true;
 std::string gLogFacility;
 
-const char*
-setActive(cmd_parms* pParams, void* pCfg) {
+const char* setActive(cmd_parms* pParams, void* pCfg) {
     struct MigrateConf *lConf = reinterpret_cast<MigrateConf *>(pCfg);
     if (!lConf) {
         return "No per_dir conf defined. This should never happen!";
@@ -74,8 +72,7 @@ setActive(cmd_parms* pParams, void* pCfg) {
     return NULL;
 }
 
-const char*
-setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
+const char* setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
         return lErrorMsg;
@@ -99,7 +96,8 @@ const char* setMigrateEnv(cmd_parms* pParams, void* pCfg, const char *pVarName, 
     struct MigrateConf *conf = reinterpret_cast<MigrateConf *>(pCfg);
     assert(conf);
 
-    conf->mEnvList.push_back(MigrateConf::MigrateEnv{pVarName,pMatchRegex,pSetValue,conf->mCurrentApplicationScope});
+    MigrateConf::MigrateEnv env{pVarName,boost::regex(pMatchRegex),pSetValue,conf->mCurrentApplicationScope};
+    conf->mEnvLists[pParams->path].push_back(env);
 
     return NULL;
 }
@@ -110,8 +108,7 @@ const char* setMigrateEnv(cmd_parms* pParams, void* pCfg, const char *pVarName, 
  * @param pDirName the directory name for which to create data
  * @return a void pointer to newly allocated object
  */
-void *
-createDirConfig(apr_pool_t *pPool, char *pDirName)
+void* createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
     void *addr= apr_pcalloc(pPool, sizeof(class MigrateConf));
     new (addr) MigrateConf();
@@ -136,10 +133,26 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
 
 }
 
+static const char* _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
+    const char *lErrorMsg = setActive(pParams, pCfg);
+    if (lErrorMsg) {
+        return lErrorMsg;
+    }
 
-void
-childInit(apr_pool_t *pPool, server_rec *pServer)
-{
+    struct MigrateConf *conf = reinterpret_cast<MigrateConf *>(pCfg);
+    assert(conf);
+
+    conf->mInputFilters[pParams->path].push_back(std::make_tuple(pField,pFilter,conf->mCurrentApplicationScope));
+    return NULL;
+}
+
+
+const char* setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
+    return _setFilter(pParams, pCfg, pField, pFilter);
+}
+
+
+void childInit(apr_pool_t *pPool, server_rec *pServer) {
     Log::debug("CHILD INIT");
 }
 
@@ -166,7 +179,12 @@ command_rec gCmds[] = {
                 "VarName: The name of the variable to define"
                 "MatchRegex: The regex that must match to define the variable"
                 "SetRegex: The value to set if MatchRegex matches"),
-
+        AP_INIT_TAKE2("MigrateFilter",
+                reinterpret_cast<const char *(*)()>(&setFilter),
+                0,
+                ACCESS_CONF,
+                "Filter incoming request fields before duplicating them. "
+                "If one or more filters are specified, at least one of them has to match."),
         AP_INIT_NO_ARGS("Migrate",
                 reinterpret_cast<const char *(*)()>(&setActive),
                 0,
@@ -182,7 +200,7 @@ static void insertInputFilter(request_rec *pRequest) {
     MigrateConf *lConf = reinterpret_cast<MigrateConf *>(ap_get_module_config(pRequest->per_dir_config, &migrate_module));
     assert(lConf);
     if (lConf->mDirName){
-        ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
+        ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
     }
 }
 
@@ -207,18 +225,16 @@ static void insertInputFilter(request_rec *pRequest) {
  * @brief register hooks in apache
  * @param pPool the apache pool
  */
-void
-registerHooks(apr_pool_t *pPool) {
+void registerHooks(apr_pool_t *pPool) {
 #ifndef UNIT_TESTING
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
 
     // Here we want to be almost the last filter
-//    ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
+    ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
 
     static const char * const beforeRewrite[] = {MOD_REWRITE_NAME, NULL};
     ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
-//    ap_register_input_filter(gName, inputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_RESOURCE => only the body will be read ( the headers_out not set yet)
     //ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_CONNECTION => only the response header will be read

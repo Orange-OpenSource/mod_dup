@@ -23,6 +23,20 @@
 
 #include <httpd.h>
 
+namespace MigrateModule {
+
+    extern const unsigned int CMaxBytes;
+    extern const char* c_UNIQUE_ID;
+
+    /*
+     * Returns the next random request ID
+     * method is reentrant
+     */
+    unsigned int getNextReqId();
+
+    bool extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content);
+
+};
 
 namespace DupModule {
 

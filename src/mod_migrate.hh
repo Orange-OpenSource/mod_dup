@@ -33,6 +33,9 @@
 #include <fstream>
 #include <ios>
 #include <boost/interprocess/sync/named_mutex.hpp>
+#include <unordered_map>
+#include <boost/regex.hpp>
+#include <tuple>
 
 #include "Log.hh"
 #include "RequestInfo.hh"
@@ -60,16 +63,22 @@ class MigrateConf {
 public:
     struct MigrateEnv {
         std::string mVarName;
-        std::string mMatchregex;
+        boost::regex mMatchRegex;
         std::string mSetValue;
         ApplicationScope::eApplicationScope mApplicationScope;
     };
 
-    std::list<MigrateEnv> mEnvList;
+    /// MigrateEnv directive elements list
+    //std::list<MigrateEnv> mEnvList;
 
     char* mDirName;
 
     ApplicationScope::eApplicationScope mCurrentApplicationScope;
+
+    /// Map with Location as key and a list of MigrateEnv structure as value
+    std::unordered_map<std::string, std::list<MigrateEnv>> mEnvLists;
+    /// Map with Location as key and a list of tuple consisting of (field, regex filter, scope)
+    std::unordered_map<std::string, std::list<std::tuple<std::string, std::string, ApplicationScope::eApplicationScope>>> mInputFilters;
 
     MigrateConf() : mDirName(NULL),mCurrentApplicationScope(ApplicationScope::ALL) {}
 };
@@ -110,12 +119,18 @@ int translateHook(request_rec *r);
  */
 void registerHooks(apr_pool_t *pPool);
 
-///**
-// * @brief the input filter callback
-// */
-//apr_status_t
-//inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
-//
+/**
+ * @brief the input filter callback
+ */
+apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
+
+/**
+ * @brief the source input filter callback
+ * This filter is placed first in the chain and serves the body stored in a RequestInfo object in the request context
+ * to the other filters
+ */
+apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
+
 ///** @brief the output filter callback
 // * Plugged only in REQUEST_WITH_ANSWER mode
 // */
