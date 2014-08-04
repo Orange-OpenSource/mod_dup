@@ -147,9 +147,11 @@ int translateHook(request_rec *pRequest) {
     if(lID == NULL) {
         apr_table_set(pRequest->headers_in, c_UNIQUE_ID, info->mId.c_str());
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, info->mId.c_str());
+        Log::debug("lID == null, ID : %s", info->mId.c_str());
     }
     else {
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
+        Log::debug("lID != null, ID : %s", info->mId.c_str());
     }
 
     // Synchronous context enrichment
@@ -182,6 +184,8 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
     }
     RequestInfo *info = shPtr->get();
 
+    Log::debug("BODY: %s",info->mBody.c_str());
+
     if (pF->ctx != (void *) -1) {
         if (!pF->ctx) {
             pRequest->remaining = info->mBody.size();
@@ -195,7 +199,7 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
                 Log::warn(1, "Failed to write request body in a brigade: %s",  info->mBody.c_str());
                 return st;
             }
-
+            Log::debug("Remaining: %d", (int)pRequest->remaining);
             read += toRead;
             pRequest->remaining -= toRead;
         }

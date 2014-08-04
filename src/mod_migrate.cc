@@ -36,6 +36,8 @@
 #include "mod_migrate.hh"
 
 #define MOD_REWRITE_NAME "mod_rewrite.c"
+#define MOD_PROXY_NAME "mod_proxy.c"
+#define MOD_PROXY_HTTP_NAME "mod_proxy_http.c"
 
 namespace alg = boost::algorithm;
 
@@ -46,12 +48,6 @@ namespace MigrateModule {
 const char* gName = "Migrate";
 const char *gNameBody2Brigade = "MigrateBody2Brigade";
 const char* c_COMPONENT_VERSION = "Migrate/1.0";
-const char* c_named_mutex = "mod_migrate_log_mutex";
-//bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
-//std::ofstream gFile;
-const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
-bool gWriteInFile = true;
-std::string gLogFacility;
 
 const char* setActive(cmd_parms* pParams, void* pCfg) {
     struct MigrateConf *lConf = reinterpret_cast<MigrateConf *>(pCfg);
@@ -67,6 +63,12 @@ const char* setActive(cmd_parms* pParams, void* pCfg) {
 #ifndef UNIT_TESTING
         if (!ap_find_linked_module(MOD_REWRITE_NAME)) {
             return "'mod_rewrite' is not loaded, Enable mod_rewrite to use mod_migrate";
+        }
+        if (!ap_find_linked_module(MOD_PROXY_NAME)) {
+            return "'mod_proxy' is not loaded, Enable mod_proxy to use mod_migrate";
+        }
+        if (!ap_find_linked_module(MOD_PROXY_HTTP_NAME)) {
+            return "'mod_proxy_http' is not loaded, Enable mod_proxy_http to use mod_migrate";
         }
 #endif
     return NULL;
@@ -122,8 +124,7 @@ void* createDirConfig(apr_pool_t *pPool, char *pDirName)
  * @param pServer the corresponding server record
  * @return Always OK
  */
-int
-postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec * pServer) {
+int postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec * pServer) {
 
     Log::init();
 
@@ -201,24 +202,10 @@ static void insertInputFilter(request_rec *pRequest) {
     assert(lConf);
     if (lConf->mDirName){
         ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
+        Log::debug("Inserted filter");
     }
 }
 
-//static void insertOutputFilter(request_rec *pRequest) {
-////    CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
-////    assert(lConf);
-////    if (lConf->mIsActive){
-//        ap_add_output_filter(gNameOut, NULL, pRequest, pRequest->connection);
-////    }
-//}
-
-//static void insertOutputFilter2(request_rec *pRequest) {
-////    CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
-////    assert(lConf);
-////    if (lConf->mIsActive){
-//        ap_add_output_filter(gNameOut2, NULL, pRequest, pRequest->connection);
-////    }
-//}
 #endif
 
 /**
@@ -235,10 +222,7 @@ void registerHooks(apr_pool_t *pPool) {
 
     static const char * const beforeRewrite[] = {MOD_REWRITE_NAME, NULL};
     ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
-    // output filter of type AP_FTYPE_RESOURCE => only the body will be read ( the headers_out not set yet)
-    //ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
-    // output filter of type AP_FTYPE_CONNECTION => only the response header will be read
-    //ap_register_output_filter(gNameOut2, outputFilterHandler2, NULL, AP_FTYPE_TRANSCODE);
+
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
 #endif
 }
