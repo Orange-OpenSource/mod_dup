@@ -14,5 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-install(FILES  compare.load compare.conf.example DESTINATION etc COMPONENT mod_compare)
-install(FILES  dup.load dup.conf.example DESTINATION etc COMPONENT mod_dup)
+install(FILES  compare.load compare.conf.example DESTINATION /etc/apache2/mods-available COMPONENT mod_compare)
+install(FILES  dup.load dup.conf.example DESTINATION /etc/apache2/mods-available COMPONENT mod_dup)

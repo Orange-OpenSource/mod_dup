@@ -45,7 +45,6 @@ namespace alg = boost::algorithm;
 namespace MigrateModule {
 
 
-const char* gName = "Migrate";
 const char *gNameBody2Brigade = "MigrateBody2Brigade";
 const char* c_COMPONENT_VERSION = "Migrate/1.0";
 
@@ -81,9 +80,9 @@ const char* setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pApp
     }
     struct MigrateConf *tC = reinterpret_cast<MigrateConf *>(pCfg);
     try {
-        tC->mCurrentApplicationScope = ApplicationScope::stringToEnum(pAppScope);
+        tC->mCurrentApplicationScope = MigrateModule::ApplicationScope::stringToEnum(pAppScope);
     } catch (std::exception& e) {
-        return ApplicationScope::c_ERROR_ON_STRING_VALUE;
+        return MigrateModule::ApplicationScope::c_ERROR_ON_STRING_VALUE;
     }
 
     return NULL;
@@ -134,30 +133,6 @@ int postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server
 
 }
 
-static const char* _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
-    const char *lErrorMsg = setActive(pParams, pCfg);
-    if (lErrorMsg) {
-        return lErrorMsg;
-    }
-
-    struct MigrateConf *conf = reinterpret_cast<MigrateConf *>(pCfg);
-    assert(conf);
-
-    conf->mInputFilters[pParams->path].push_back(std::make_tuple(pField,pFilter,conf->mCurrentApplicationScope));
-    return NULL;
-}
-
-
-const char* setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter) {
-    return _setFilter(pParams, pCfg, pField, pFilter);
-}
-
-
-void childInit(apr_pool_t *pPool, server_rec *pServer) {
-    Log::debug("CHILD INIT");
-}
-
-
 
 /** @brief Declaration of configuration commands */
 command_rec gCmds[] = {
@@ -180,18 +155,6 @@ command_rec gCmds[] = {
                 "VarName: The name of the variable to define"
                 "MatchRegex: The regex that must match to define the variable"
                 "SetRegex: The value to set if MatchRegex matches"),
-        AP_INIT_TAKE2("MigrateFilter",
-                reinterpret_cast<const char *(*)()>(&setFilter),
-                0,
-                ACCESS_CONF,
-                "Filter incoming request fields before duplicating them. "
-                "If one or more filters are specified, at least one of them has to match."),
-        AP_INIT_NO_ARGS("Migrate",
-                reinterpret_cast<const char *(*)()>(&setActive),
-                0,
-                ACCESS_CONF,
-                "Duplicating requests on this location using the dup module. "
-                "This is only needed if no filter or substitution is defined."),
         {0}
 };
 
@@ -202,7 +165,6 @@ static void insertInputFilter(request_rec *pRequest) {
     assert(lConf);
     if (lConf->mDirName){
         ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
-        Log::debug("Inserted filter");
     }
 }
 
@@ -215,7 +177,6 @@ static void insertInputFilter(request_rec *pRequest) {
 void registerHooks(apr_pool_t *pPool) {
 #ifndef UNIT_TESTING
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
-    ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
 
     // Here we want to be almost the last filter
     ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);

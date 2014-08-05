@@ -43,6 +43,8 @@ struct RequestInfo {
     std::string mArgs;
     /** @brief The location (in the conf) which matched this query. */
     std::string mConfPath;
+    /** @brief string that represents the http header of the incoming request, e.g. "Content-Type: text/html\r\nHeader-key: Header-value*/
+    std::string mHeader;
 };
 }
 

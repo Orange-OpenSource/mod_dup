@@ -60,10 +60,10 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
 
     // Iteration through context enrichment
     for(const auto &ctx : envList) {
-        if (ctx.mApplicationScope & ApplicationScope::HEADER) {
+        if (ctx.mApplicationScope & ApplicationScope::URL) {
             std::string toSet = boost::regex_replace(rInfo.mArgs, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             if (!toSet.empty()) {
-                Log::debug("CE: header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+                Log::debug("CE: URL match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
 #ifndef UNIT_TESTING
                 apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
 #endif
@@ -80,8 +80,30 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
                 ++count;
             }
         }
+        if ((ctx.mApplicationScope & ApplicationScope::HEADER) && !rInfo.mHeader.empty()) {
+            std::string toSet = regex_replace(rInfo.mHeader, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
+            if (!toSet.empty()) {
+                Log::debug("CE: Header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+#ifndef UNIT_TESTING
+                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+#endif
+                ++count;
+            }
+        }
     }
     return count;
+}
+
+
+
+/*
+ * Callback to iterate over the headers tables
+ * Pushes a copy of key => value in a list passed without typing as the first argument
+ */
+static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+    std::string *headers = reinterpret_cast<std::string *>(d);
+    headers->append(std::string(key)+std::string(": ")+std::string(value)+"\r\n");
+    return 1;
 }
 
 /*
@@ -95,7 +117,6 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
  *   - A shared pointer manages the requestcontext object lifespan.
  */
 int translateHook(request_rec *pRequest) {
-    Log::debug("In translateHook");
     if (!pRequest->per_dir_config)
         return DECLINED;
     MigrateConf *conf = reinterpret_cast<MigrateConf *>(ap_get_module_config(pRequest->per_dir_config, &migrate_module));
@@ -140,18 +161,18 @@ int translateHook(request_rec *pRequest) {
     }
     apr_brigade_cleanup(bb);
     // Body read :)
-    Log::debug("BODY: %s",info->mBody.c_str());
-    Log::debug("id: %s",info->mId.c_str());
+
+    // Copy headers in
+    apr_table_do(&iterateOverHeadersCallBack, &info->mHeader, pRequest->headers_in, NULL);
+
     const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
     // Copy Request ID in both headers
     if(lID == NULL) {
         apr_table_set(pRequest->headers_in, c_UNIQUE_ID, info->mId.c_str());
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, info->mId.c_str());
-        Log::debug("lID == null, ID : %s", info->mId.c_str());
     }
     else {
         apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
-        Log::debug("lID != null, ID : %s", info->mId.c_str());
     }
 
     // Synchronous context enrichment
@@ -169,7 +190,6 @@ int translateHook(request_rec *pRequest) {
  */
 apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    Log::debug("In inputFilterBody2Brigade");
     request_rec *pRequest = pF->r;
     if (!pRequest || !pRequest->per_dir_config) {
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
@@ -184,8 +204,6 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
     }
     RequestInfo *info = shPtr->get();
 
-    Log::debug("BODY: %s",info->mBody.c_str());
-
     if (pF->ctx != (void *) -1) {
         if (!pF->ctx) {
             pRequest->remaining = info->mBody.size();
@@ -199,7 +217,6 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
                 Log::warn(1, "Failed to write request body in a brigade: %s",  info->mBody.c_str());
                 return st;
             }
-            Log::debug("Remaining: %d", (int)pRequest->remaining);
             read += toRead;
             pRequest->remaining -= toRead;
         }
@@ -214,19 +231,6 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
     return APR_SUCCESS;
-}
-
-
-/*
- * Callback to iterate over the headers tables
- * Pushes a copy of key => value in a list
- */
-int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
-    std::map< std::string, std::string> *lHeader = reinterpret_cast< std::map< std::string, std::string> *>(d);
-
-    (*lHeader)[std::string(key)] = std::string(value);
-
-    return 1;
 }
 
 };

@@ -12,11 +12,13 @@ namespace ApplicationScope {
  * Scopes that a filter/sub can have
  */
 enum eApplicationScope{
-    ALL = 0x3,
-    HEADER = 0x1,
-    BODY = 0x2,
+    ALL = 0x7,
+    URL = 0x1,
+    HEADER = 0x2,
+    BODY = 0x4,
 };
 extern const char* c_ALL;
+extern const char* c_URL;
 extern const char* c_HEADER;
 extern const char* c_BODY;
 extern const char* c_ERROR_ON_STRING_VALUE;
