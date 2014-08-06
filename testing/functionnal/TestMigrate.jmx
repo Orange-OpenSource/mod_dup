@@ -70,7 +70,7 @@
               <collectionProp name="HeaderManager.headers">
                 <elementProp name="" elementType="Header">
                   <stringProp name="Header.name">sid</stringProp>
-                  <stringProp name="Header.value">headerscope</stringProp>
+                  <stringProp name="Header.value">HeAderscope</stringProp>
                 </elementProp>
               </collectionProp>
             </HeaderManager>
@@ -100,7 +100,7 @@
               <collectionProp name="Arguments.arguments">
                 <elementProp name="" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">sid=bodyscope${large_text}</stringProp>
+                  <stringProp name="Argument.value">sid=BodYscOpe${large_text}</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>
@@ -150,7 +150,7 @@
               <collectionProp name="Arguments.arguments">
                 <elementProp name="" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">sid=allscope\r\n${large_text}</stringProp>
+                  <stringProp name="Argument.value">sid=aLLsCOpe\r\n${large_text}</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>
@@ -225,7 +225,7 @@
               <collectionProp name="HeaderManager.headers">
                 <elementProp name="" elementType="Header">
                   <stringProp name="Header.name">sid</stringProp>
-                  <stringProp name="Header.value">allscope</stringProp>
+                  <stringProp name="Header.value">allScOpE</stringProp>
                 </elementProp>
               </collectionProp>
             </HeaderManager>
@@ -254,7 +254,7 @@
               <collectionProp name="Arguments.arguments">
                 <elementProp name="sid" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">allscope</stringProp>
+                  <stringProp name="Argument.value">allsCoPe</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                   <boolProp name="HTTPArgument.use_equals">true</boolProp>
                   <stringProp name="Argument.name">sid</stringProp>
@@ -292,7 +292,7 @@
             <hashTree/>
             <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Data assertion" enabled="true">
               <collectionProp name="Asserion.test_strings">
-                <stringProp name="1285423249">Query String: sid=allscope</stringProp>
+                <stringProp name="1284468945">Query String: sid=allsCoPe</stringProp>
               </collectionProp>
               <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
@@ -303,12 +303,12 @@
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Success match in URL" enabled="true">
             <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
               <collectionProp name="Arguments.arguments">
-                <elementProp name="sid" elementType="HTTPArgument">
+                <elementProp name="siD" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">urlscope</stringProp>
+                  <stringProp name="Argument.value">uRlScopE</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                   <boolProp name="HTTPArgument.use_equals">true</boolProp>
-                  <stringProp name="Argument.name">sid</stringProp>
+                  <stringProp name="Argument.name">siD</stringProp>
                 </elementProp>
               </collectionProp>
             </elementProp>
@@ -343,7 +343,7 @@
             <hashTree/>
             <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Data assertion" enabled="true">
               <collectionProp name="Asserion.test_strings">
-                <stringProp name="-1483020925">Query String: sid=urlscope</stringProp>
+                <stringProp name="2145544515">Query String: siD=uRlScopE</stringProp>
               </collectionProp>
               <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
               <boolProp name="Assertion.assume_success">false</boolProp>
