@@ -97,7 +97,7 @@ const char* setMigrateEnv(cmd_parms* pParams, void* pCfg, const char *pVarName, 
     struct MigrateConf *conf = reinterpret_cast<MigrateConf *>(pCfg);
     assert(conf);
 
-    MigrateConf::MigrateEnv env{pVarName,boost::regex(pMatchRegex),pSetValue,conf->mCurrentApplicationScope};
+    MigrateConf::MigrateEnv env{pVarName,boost::regex(pMatchRegex,boost::regex_constants::icase),pSetValue,conf->mCurrentApplicationScope};
     conf->mEnvLists[pParams->path].push_back(env);
 
     return NULL;
