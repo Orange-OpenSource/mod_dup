@@ -57,3 +57,9 @@ add_custom_target(check-functional-compare)
 add_custom_command(TARGET check-functional-compare PRE_BUILD
     COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_compare.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/data/compare/
   )
+
+add_custom_target(check-functional-migrate)
+
+add_custom_command(TARGET check-functional-migrate PRE_BUILD
+    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/
+)

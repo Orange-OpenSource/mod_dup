@@ -1,0 +1,18 @@
+1407253525684,125,Success match in Header,200,OK,Thread Group 1-1,text,true,2685,114
+1407253525824,15,Success match in Body,200,OK,Thread Group 1-1,text,true,2675,10
+1407253525840,10,Success match in All - Body,200,OK,Thread Group 1-1,text,true,2676,5
+1407253525851,10,Success match in All - Header,200,OK,Thread Group 1-1,text,true,2681,4
+1407253525862,12,Success match in All - URL,200,OK,Thread Group 1-1,text,true,564,6
+1407253525875,9,Success match in URL,200,OK,Thread Group 1-1,text,true,564,4
+1407253609070,118,Success match in Header,200,OK,Thread Group 1-1,text,true,2685,111
+1407253609202,12,Success match in Body,200,OK,Thread Group 1-1,text,true,2672,6
+1407253609215,11,Success match in All - Body,200,OK,Thread Group 1-1,text,true,2676,5
+1407253609227,9,Success match in All - Header,200,OK,Thread Group 1-1,text,true,2681,4
+1407253609237,18,Success match in All - URL,200,OK,Thread Group 1-1,text,true,565,12
+1407253609255,9,Success match in URL,200,OK,Thread Group 1-1,text,true,564,4
+1407253683971,57,Success match in Header,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
+1407253684045,0,Success match in Body,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
+1407253684055,1,Success match in All - Body,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
+1407253684057,1,Success match in All - Header,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
+1407253684060,0,Success match in All - URL,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
+1407253684061,0,Success match in URL,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
