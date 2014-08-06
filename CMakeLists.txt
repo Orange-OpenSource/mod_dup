@@ -40,6 +40,7 @@ COMMAND cp -v ${CMAKE_BINARY_DIR}/src/mod_migrate.so /usr/lib/apache2/modules
 COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.conf /etc/apache2/mods-available
 COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.load /etc/apache2/mods-available
 COMMAND cp -v ${CMAKE_SOURCE_DIR}/testing/functionnal/test.cgi /usr/lib/cgi-bin
+COMMAND cp -v ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_vhost /etc/apache2/sites-available
 )
 
 #-----------------------------------------------------------------------------
