@@ -36,11 +36,26 @@ set(INPUT_CMAKE_DIR ${CMAKE_SOURCE_DIR}/cmake)
 set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
 add_custom_target(install_migrate_test
-COMMAND cp -v ${CMAKE_BINARY_DIR}/src/mod_migrate.so /usr/lib/apache2/modules
+COMMAND make install
+
+# make backup of migrate.conf, if it exists
+COMMAND
+if [ -e /etc/apache2/mods-available/migrate.conf ]\; then
+	mv -fv /etc/apache2/mods-available/migrate.conf /etc/apache2/mods-available/migrate.conf.bak\;
+fi
+
 COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.conf /etc/apache2/mods-available
-COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.load /etc/apache2/mods-available
-COMMAND cp -v ${CMAKE_SOURCE_DIR}/testing/functionnal/test.cgi /usr/lib/cgi-bin
-COMMAND cp -v ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_vhost /etc/apache2/sites-available
+COMMAND cp -fv ${CMAKE_SOURCE_DIR}/testing/functionnal/print_content.cgi /usr/lib/cgi-bin
+COMMAND cp -fv ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_vhost /etc/apache2/sites-available
+COMMAND a2ensite test_migrate_vhost
+COMMAND a2enmod migrate
+COMMAND service apache2 restart
+
+# backup restore handled in the script
+COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/TestMigrate.jmx
+
+COMMAND a2dissite test_migrate_vhost
+COMMAND service apache2 reload
 )
 
 #-----------------------------------------------------------------------------

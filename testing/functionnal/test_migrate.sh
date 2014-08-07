@@ -1,24 +1,29 @@
-#!/bin/bash
+#!/bin/zsh
+source ~/.zshrc
 
-RESULT_DIR=`cd $1; echo $PWD`
-outjtl=$RESULT_DIR/results.jtl
-echo $RESULT_DIR
-echo $outjtl
-if [ -e $outjtl ]
+
+rm -f outjmeter
+jmeter -n -l outjmeter.tmp -t $1
+
+linecount=`cat outjmeter.tmp | grep ',true' | wc -l`
+
+rm -f outjmeter.tmp
+
+# restore backup of migrate.conf
+if [ -e /etc/apache2/mods-available/migrate.conf.bak ]
 then
-   rm $outjtl
+	mv -fv /etc/apache2/mods-available/migrate.conf.bak /etc/apache2/mods-available/migrate.conf
+else
+	echo "" > /etc/apache2/mods-available/migrate.conf
 fi
 
-jmeter -n -l $outjtl -t $RESULT_DIR/TestMigrate.jmx
-#>/dev/null 2>&1
-    grep -q ',false,' $outjtl
-    if [ $? -eq 0 ]; then
-        echo -n "`date` - TestMigrate.jmx - "
-	echo "$(tput setaf 1)FAILURE$(tput sgr0)"
-	grep ',false,' $outjtl
-    else
-        rm $outjtl
-	echo -n "`date` - TestMigrate.jmx - "
-        echo "$(tput setaf 2)SUCCESS$(tput sgr0)"
-    fi
+# check that the 6 tests in JMeter succeeded
+if [ $linecount -eq 6 ]
+then
+	echo "\n\nOK : JMeter test passed\n"
+	exit 0
+else
+	echo "\n\nKO : At least of the JMeter test did not succeed\n"
+	exit 1
+fi
 

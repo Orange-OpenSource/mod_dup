@@ -60,7 +60,7 @@ Listen 1234
 	CustomLog ${APACHE_LOG_DIR}/access.log combined
 	CustomLog /var/log/apache_notes.log vhost_combined_w_notes
 
-    ScriptAlias /print_body /usr/lib/cgi-bin/test.cgi
+    ScriptAlias /print_content /usr/lib/cgi-bin/print_content.cgi
 
     Alias /doc/ "/usr/share/doc/"
     <Directory "/usr/share/doc/">
