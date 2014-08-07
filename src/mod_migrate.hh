@@ -30,7 +30,6 @@
 #include <list>
 #include <ios>
 #include <boost/regex.hpp>
-#include <tuple>
 #include <unordered_map>
 
 #include "Log.hh"
@@ -59,8 +58,6 @@ public:
 
     /// Map with Location as key and a list of MigrateEnv structure as value
     std::unordered_map<std::string, std::list<MigrateEnv>> mEnvLists;
-    /// Map with Location as key and a list of tuple consisting of (field, regex filter, scope)
-    std::unordered_map<std::string, std::list<std::tuple<std::string, std::string, ApplicationScope::eApplicationScope>>> mInputFilters;
 
     MigrateConf() : mDirName(NULL),mCurrentApplicationScope(ApplicationScope::ALL) {}
 };
@@ -122,6 +119,16 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
  * @param pDupType the string representing the application scope
  */
 const char* setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope);
+
+const char* setMigrateEnv(cmd_parms* pParams, void* pCfg, const char *pVarName, const char* pMatchRegex, const char* pSetValue);
+
+/**
+ * @brief Activate duplication
+ * @param pParams miscellaneous data
+ * @param pCfg user data for the directory/location
+ * @return NULL
+ */
+const char* setActive(cmd_parms* pParams, void* pCfg);
 
 /*
  * Method that calls the destructor of an object which type is templated

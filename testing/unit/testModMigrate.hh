@@ -32,10 +32,18 @@ class TestModMigrate :
     CPPUNIT_TEST( testEnrichContext );
     CPPUNIT_TEST( testTranslateHook );
     CPPUNIT_TEST( testInputFilterBody2Brigade );
+    CPPUNIT_TEST( testConfig );
+    CPPUNIT_TEST( testScope );
+    CPPUNIT_TEST( testMigrateEnv );
+    CPPUNIT_TEST( testInitAndCleanUp );
     CPPUNIT_TEST_SUITE_END();
 
 public:
     void testEnrichContext();
     void testTranslateHook();
     void testInputFilterBody2Brigade();
+    void testConfig();
+    void testScope();
+    void testMigrateEnv();
+    void testInitAndCleanUp();
 };
