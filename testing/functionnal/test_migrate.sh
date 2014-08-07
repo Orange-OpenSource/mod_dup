@@ -18,11 +18,12 @@ if [ $linecount -eq 0 ]
 then
 	# rm will fail if for any reason jmeter did not actually output to the log file
 	rm outjmeter.tmp
-	echo "\n\nOK : JMeter test passed\n"
+	echo -e "\n\nOK : JMeter test passed\n"
 	exit 0
 else
-	echo "\n\nKO : At least of the JMeter test did not succeed:\n"
+	echo -e "\n\nKO : At least of the JMeter test did not succeed:\n"
 	cat outjmeter.tmp | grep ',false'
+    echo -e "\n"
 	rm outjmeter.tmp
 	exit 1
 fi
