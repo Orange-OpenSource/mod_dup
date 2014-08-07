@@ -35,7 +35,6 @@ typedef void CURL;
 struct request_rec;
 
 class TestRequestProcessor;
-class TestContextEnrichment;
 
 namespace DupModule {
 
@@ -100,47 +99,44 @@ public:
     std::string mReplacement; /** The replacement value regex */
 };
 
-/**
- * Context enrichment bean
- */
-class tContextEnrichment : public tElementBase{
-public:
-    tContextEnrichment(const std::string &varName,
-            const std::string &matchregex,
-            const std::string &setValue,
-            ApplicationScope::eApplicationScope scope);
-
-    virtual ~tContextEnrichment();
-
-    std::string mVarName;   /** The variable name to set if it matches */
-    std::string mSetValue;  /** The value to set if it matches */
-};
-
-
 /** @brief Maps a path to a substitution. Not a multimap because order matters. */
 typedef std::map<std::string, std::list<tSubstitute> > tFieldSubstitutionMap;
 
 
-/** @brief A container for the filter and substituion commands */
-class tRequestProcessorCommands {
+
+/** @brief A container for the operations */
+class Commands {
 public:
+
     /** @brief The list of filter commands
      * Indexed by the field on which they apply
      */
     std::multimap<std::string, tFilter> mFilters;
 
-    /** @brief The substition maps */
-    tFieldSubstitutionMap mSubstitutions;
-
     /** @brief The Raw filter list */
     std::list<tFilter> mRawFilters;
 
+    /** @brief The substition maps */
+    tFieldSubstitutionMap mSubstitutions;
+
     /** @brief The Raw Substitution list */
     std::list<tSubstitute> mRawSubstitutions;
+};
 
-    /** @brief The Context enrichment list */
-    std::list<tContextEnrichment> mEnrichContext;
+/**
+ * @brief Overlay on the commands object
+ * Adds a destination concept
+ */
+struct CommandsByDestination {
 
+    /** Commands indexed by the duplication destination*/
+    std::map<std::string, Commands> mCommands;
+
+    /**
+     * @brief Returns true if we have to duplicate to this destination
+     * Means that at least, one of it's filters matches
+     */
+    bool toDuplicate() const;
 };
 
 /**
@@ -153,7 +149,7 @@ class RequestProcessor
 
 private:
     /** @brief Maps paths to their corresponding processing (filter and substitution) directives */
-    std::map<std::string, tRequestProcessorCommands> mCommands;
+    std::map<std::string, CommandsByDestination> mCommands;
 
     /** @brief The timeout for outgoing requests in ms */
     unsigned int                                    mTimeout;
@@ -164,7 +160,7 @@ private:
     /** @brief The number of requests duplicated */
     volatile unsigned int                           mDuplicatedCount;
 
-    /** @brief The url codec */
+    /** @brief The codec to use when encoding the url*/
     boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
 
     void
@@ -241,21 +237,6 @@ public:
             const DupConf &pAssociatedConf);
 
     /**
-     * @brief EnrichContext instructions
-     * @param pPath the path of the request
-     * @param pVarName the name of the variable to declare
-     * @param pMatch the regexp that must match to declare the variable
-     * Regex scope if defined in the DupConf struct
-     * @param pSetValue the value to set to the variable if the regex matches
-     */
-    void
-    addEnrichContext(const std::string &pPath, const std::string &pVarName,
-            const std::string &pMatch, const std::string &pSetValue,
-            const DupConf &pAssociatedConf);
-
-
-
-    /**
      * @brief Schedule a Raw substitution on the value of all requests on a given path
      * @param pPath the path of the request
      * @param pField the field on which to do the substitution
@@ -273,7 +254,7 @@ public:
      * @return true if there are no filters or at least one filter matches, false otherwhise
      */
     const tFilter*
-    argsMatchFilter(RequestInfo &pRequest, tRequestProcessorCommands &pCommands, std::list<tKeyVal> &pParsedArgs);
+    argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, std::list<tKeyVal> &pParsedArgs);
 
     /**
      * @brief Parses arguments into key valye pairs. Also url-decodes values and converts keys to upper case.
@@ -287,10 +268,9 @@ public:
      * @brief Process a field. This includes filtering and executing substitutions
      * @param pConfPath the path of the configuration which is applied
      * @param pArgs the HTTP arguments/parameters of the incoming request
-     * @return NULL if the request does not need to be duplicated, a pointer on the filter that matched otherwise.
-     * If and only if a filter matches, substitutions will be applied.
+     * @return an empty list if the request does not need to be duplicated, a filter by duplication that matched otherwise.
      */
-    const tFilter *
+    std::list<const tFilter *>
     processRequest(RequestInfo &pRequest);
 
     /**
@@ -313,20 +293,10 @@ public:
      */
     CURL * initCurl();
 
-    /**
-     * @brief Define some environnement variables if the query matches the criteria defined
-     * using the DupEnrichContext directive
-     * @param pRequest the apache request structure
-     * @param the RequestInfo internal struct containing the body
-     * @return the number of variables defined
-     */
-    int
-    enrichContext(request_rec *pRequest, const RequestInfo &rInfo);
-
 private:
 
     bool
-    substituteRequest(RequestInfo &pRequest, tRequestProcessorCommands &pCommands,
+    substituteRequest(RequestInfo &pRequest, Commands &pCommands,
             std::list<tKeyVal> &pHeaderParsedArgs);
 
     const tFilter *
@@ -343,7 +313,6 @@ private:
     performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
 
     friend class ::TestRequestProcessor;
-    friend class ::TestContextEnrichment;
 };
 
 
