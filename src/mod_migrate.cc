@@ -97,8 +97,8 @@ const char* setMigrateEnv(cmd_parms* pParams, void* pCfg, const char *pVarName, 
     struct MigrateConf *conf = reinterpret_cast<MigrateConf *>(pCfg);
     assert(conf);
 
-    MigrateConf::MigrateEnv env{pVarName,boost::regex(pMatchRegex),pSetValue,conf->mCurrentApplicationScope};
-    conf->mEnvLists[pParams->path].push_back(env);
+    // Flag boost::regex_constants::icase must be set in order for the regex to be case insensitive
+    conf->mEnvLists[pParams->path].push_back(MigrateConf::MigrateEnv{pVarName,boost::regex(pMatchRegex,boost::regex_constants::icase),pSetValue,conf->mCurrentApplicationScope});
 
     return NULL;
 }

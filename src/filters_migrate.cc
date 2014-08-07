@@ -180,6 +180,7 @@ int translateHook(request_rec *pRequest) {
     info->mArgs = pRequest->args ? pRequest->args : "";
     enrichContext(pRequest, *info);
     pRequest->read_length = 0;
+
     return DECLINED;
 }
 
