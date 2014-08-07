@@ -39,14 +39,12 @@
 
 namespace alg = boost::algorithm;
 
-
 namespace DupModule {
 
 RequestProcessor                                *gProcessor;
 ThreadPool<boost::shared_ptr<RequestInfo> >    *gThreadPool;
 
 const char *gName = "Dup";
-const char *gNameBody2Brigade = "DupBody2Brigade";
 const char *gNameOutBody = "DupOutBody";
 const char *gNameOutHeaders = "DupOutHeaders";
 
@@ -245,24 +243,6 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
         gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, *conf);
     } catch (boost::bad_expression) {
         return "Invalid regular expression in substitution definition.";
-    }
-    return NULL;
-}
-
-const char*
-setEnrichContext(cmd_parms* pParams, void* pCfg, const char *pVarName, const char* pMatchRegex, const char* pSetValue) {
-    const char *lErrorMsg = setActive(pParams, pCfg);
-    if (lErrorMsg) {
-        return lErrorMsg;
-    }
-
-    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
-    assert(conf);
-
-    try {
-        gProcessor->addEnrichContext(pParams->path, pVarName, pMatchRegex, pSetValue, *conf);
-    } catch (boost::bad_expression) {
-        return "Invalid regular expression in EnrichContext definition.";
     }
     return NULL;
 }
@@ -474,15 +454,6 @@ command_rec gCmds[] = {
                   0,
                   ACCESS_CONF,
                   ""),
-    AP_INIT_TAKE3("DupEnrichContext",
-                  reinterpret_cast<const char *(*)()>(&setEnrichContext),
-                  0,
-                  ACCESS_CONF,
-                  "Enrich apache context with some variable."
-                  "Usage: DupEnrichContext VarName MatchRegex SetRegex"
-                  "VarName: The name of the variable to define"
-                  "MatchRegex: The regex that must match to define the variable"
-                  "SetRegex: The value to set if MatchRegex matches"),
     AP_INIT_NO_ARGS("DupSync",
                     reinterpret_cast<const char *(*)()>(&setSynchronous),
                     0,
@@ -499,14 +470,6 @@ command_rec gCmds[] = {
 };
 
 #ifndef UNIT_TESTING
-// Register the dup filters
-static void insertInputFilter(request_rec *pRequest) {
-    struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
-    assert(tConf);
-    if (tConf->dirName) {
-        ap_add_input_filter(gNameBody2Brigade, NULL, pRequest, pRequest->connection);
-    }
-}
 
 static void insertOutputBodyFilter(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
@@ -515,6 +478,7 @@ static void insertOutputBodyFilter(request_rec *pRequest) {
         ap_add_output_filter(gNameOutBody, NULL, pRequest, pRequest->connection);
     }
 }
+
 static void insertOutputHeadersFilter(request_rec *pRequest) {
     struct DupConf *tConf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     assert(tConf);
@@ -522,6 +486,7 @@ static void insertOutputHeadersFilter(request_rec *pRequest) {
         ap_add_output_filter(gNameOutHeaders, NULL, pRequest, pRequest->connection);
     }
 }
+
 #endif
 
 /**
@@ -534,13 +499,6 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_pre_config(preConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
-
-    // Here we want to be almost the last filter
-    ap_register_input_filter(gNameBody2Brigade, inputFilterBody2Brigade, NULL, AP_FTYPE_CONTENT_SET);
-
-    static const char * const beforeRewrite[] = {MOD_REWRITE_NAME, NULL};
-    ap_hook_translate_name(&translateHook, NULL, beforeRewrite, APR_HOOK_MIDDLE);
-    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
 
     // One of the first to get the body of the response
     ap_register_output_filter(gNameOutBody, outputBodyFilterHandler, NULL, AP_FTYPE_RESOURCE);

@@ -1,3 +1,4 @@
+#if 0
 /*
 * mod_dup - duplicates apache requests
 *
@@ -72,3 +73,5 @@ public:
 private:
     cmd_parms * mParms;
 };
+
+#endif
