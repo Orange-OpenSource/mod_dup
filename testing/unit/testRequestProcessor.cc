@@ -96,74 +96,108 @@ void TestRequestProcessor::testSubstitution()
     proc.parseArgs(lParsedArgs, ri.mArgs);
     CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
     Commands &c = cbd.mCommands.at(conf.currentDupDestination);
-
     proc.substituteRequest(ri, c, lParsedArgs);
     CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=tatae"), ri.mArgs);
 
-    // //  Empty fields are preserved
-    // query = "titi=tatae&tutu";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
+    {
+        //  Empty fields are preserved
+        query = "titi=tatae&tutu";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
+    }
 
-    // //  Empty fields can be substituted
-    // proc.addSubstitution("/toto", "tutu", "^$", "titi", conf);
-    // query = "titi=tatae&tutu";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=titi"), ri.mArgs);
+    {
+        //  Empty fields can be substituted
+        proc.addSubstitution("/toto", "tutu", "^$", "titi", conf);
+        query = "titi=tatae&tutu";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=titi"), ri.mArgs);
+    }
 
-    // // Substitutions are case-sensitive
-    // query = "titi=TATAE&tutu=TATAE";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=TATAE&TUTU=TATAE"), ri.mArgs);
+    {
+        // Substitutions are case-sensitive
+        query = "titi=TATAE&tutu=TATAE";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=TATAE&TUTU=TATAE"), ri.mArgs);
+    }
 
-    // // Substitutions on the same path and field are executed in the order they are added
-    // proc.addSubstitution("/toto", "titi", "-(.*)-", "T\\1", conf);
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tatae"), ri.mArgs);
+    {
+        // Substitutions on the same path and field are executed in the order they are added
+        proc.addSubstitution("/toto", "titi", "-(.*)-", "T\\1", conf);
+        query = "titi=tatae&tutu=tatae";
+        ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tatae"), ri.mArgs);
+    }
 
-    // // Substituions in other field but same path
-    // proc.addSubstitution("/toto", "tutu", "ata", "W", conf);
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    {
+        // Substituions in other field but same path
+        proc.addSubstitution("/toto", "tutu", "ata", "W", conf);
+        query = "titi=tatae&tutu=tatae";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    }
 
-    // // No Substitution on another path
-    // proc.addSubstitution("/x/y/z", "tutu", "ata", "W", conf);
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/x/y/z", "/x/y/z", query);
-    // CPPUNIT_ASSERT(!proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("titi=tatae&tutu=tatae"), ri.mArgs);
+    {
+        // ... doesn't affect previous path
+        query = "titi=tatae&tutu=tatae";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    }
 
-    // // ... doesn't affect previous path
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    {
+        // Substitute escaped characters
+        proc.addSubstitution("/toto", "titi", ",", "/", conf);
+        query = "titi=1%2C2%2C3";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
+    }
 
-    // // ... nor unknow path
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/UNKNOWN", "/UNKNOWN", query);
-    // CPPUNIT_ASSERT(!proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("titi=tatae&tutu=tatae"), ri.mArgs);
-
-    // // Substitute escaped characters
-    // proc.addSubstitution("/toto", "titi", ",", "/", conf);
-    // query = "titi=1%2C2%2C3";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
-
-    // // Keys should be compared case-insensitively
-    // query = "TiTI=1%2C2%2C3";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
+    {
+        // Keys should be compared case-insensitively
+        query = "TiTI=1%2C2%2C3";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
+    }
 }
 
 void TestRequestProcessor::testFilterBasic()
