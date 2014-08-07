@@ -271,7 +271,7 @@ public:
      * @return an empty list if the request does not need to be duplicated, a filter by duplication that matched otherwise.
      */
     std::list<const tFilter *>
-    processRequest(RequestInfo &pRequest);
+    processRequest(RequestInfo &pRequest, std::list<std::pair<std::string, std::string> > parsedArgs);
 
     /**
      * @brief Run the infinite loop which pops new requests of the given queue, processes them and sends the over to the configured destination

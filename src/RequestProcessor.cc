@@ -333,7 +333,7 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
 }
 
 std::list<const tFilter *>
-RequestProcessor::processRequest(RequestInfo &pRequest) {
+RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std::string, std::string> > parsedArgs) {
     std::list<const tFilter *> ret;
 
     const std::string &pConfPath = pRequest.mConfPath;
@@ -345,9 +345,6 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
 
     CommandsByDestination &lCommands = (*it).second;
 
-    std::list<std::pair<std::string, std::string> > lParsedArgs;
-    parseArgs(lParsedArgs, pRequest.mArgs);
-
     // For each duplication destination
     std::map<std::string, Commands>::iterator itb = lCommands.mCommands.begin(),
         itbe = lCommands.mCommands.end();
@@ -355,7 +352,7 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
 
         // Tests if at least one active filter matches on this duplication location
         const tFilter* matchedFilter = NULL;
-        if (!(matchedFilter = argsMatchFilter(pRequest, itb->second, lParsedArgs))) {
+        if ((matchedFilter = argsMatchFilter(pRequest, itb->second, parsedArgs))) {
             ret.push_back(matchedFilter);
         }
         ++itb;
@@ -363,9 +360,6 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
 
 
     return ret;
-    // FIXME // We have a match, perform substitutions
-    // substituteRequest(pRequest, lCommands, lParsedArgs);
-    // return matchedFilter;
 }
 
 RequestProcessor::RequestProcessor() :
@@ -463,13 +457,32 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
 
 void
 RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
-    std::list<const tFilter *> matchedFilters = processRequest(reqInfo);
+
+    std::list<std::pair<std::string, std::string> > lParsedArgs;
+    parseArgs(lParsedArgs, reqInfo.mArgs);
+
+
+    std::list<const tFilter *> matchedFilters = processRequest(reqInfo, lParsedArgs);
     std::list<const tFilter *>::const_iterator it = matchedFilters.begin(),
         ite = matchedFilters.end();
         while (it != ite) {
-        __sync_fetch_and_add(&mDuplicatedCount, 1);
-        performCurlCall(pCurl, **it, reqInfo);
-        ++it;
+
+            // First get a hand the commands structure that matches the destination duplication
+            CommandsByDestination &cbd = mCommands.at(reqInfo.mConfPath);
+            Commands &c = cbd.mCommands.at((*it)->mDestination);
+
+            if (!c.mSubstitutions.empty() || !c.mRawSubstitutions.empty()) {
+                // perform substitutions specific to this location
+                RequestInfo b(reqInfo);
+                substituteRequest(b, c, lParsedArgs);
+                performCurlCall(pCurl, **it, b);
+
+            } else {
+                performCurlCall(pCurl, **it, reqInfo);
+            }
+
+            __sync_fetch_and_add(&mDuplicatedCount, 1);
+            ++it;
     }
 }
 

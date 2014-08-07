@@ -29,7 +29,6 @@ class TestRequestProcessor :
 {
 
     CPPUNIT_TEST_SUITE(TestRequestProcessor);
-    CPPUNIT_TEST(init);
     CPPUNIT_TEST(testParseArgs);
     CPPUNIT_TEST(testFilter);
     CPPUNIT_TEST(testSubstitution);
@@ -47,7 +46,6 @@ class TestRequestProcessor :
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    void init();
     void testUrlEncodeDecode();
     void testFilter();
     void testSubstitution();
