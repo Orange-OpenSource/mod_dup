@@ -1,6 +1,4 @@
-#!/bin/zsh
-source ~/.zshrc
-
+#!/bin/bash
 
 rm -f outjmeter
 jmeter -n -l outjmeter.tmp -t $1
