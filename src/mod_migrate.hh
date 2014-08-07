@@ -53,9 +53,6 @@ public:
         ApplicationScope::eApplicationScope mApplicationScope;
     };
 
-    /// MigrateEnv directive elements list
-    //std::list<MigrateEnv> mEnvList;
-
     char* mDirName;
 
     ApplicationScope::eApplicationScope mCurrentApplicationScope;
@@ -103,6 +100,8 @@ int translateHook(request_rec *r);
  * @param pPool the apache pool
  */
 void registerHooks(apr_pool_t *pPool);
+
+int enrichContext(request_rec *pRequest, const RequestInfo &rInfo);
 
 /**
  * @brief the input filter callback
