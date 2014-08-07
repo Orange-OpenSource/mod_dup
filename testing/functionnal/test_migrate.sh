@@ -5,7 +5,7 @@ source ~/.zshrc
 rm -f outjmeter
 jmeter -n -l outjmeter.tmp -t $1
 
-linecount=`cat outjmeter.tmp | grep ',true' | wc -l`
+linecount=`cat outjmeter.tmp | grep ',false' | wc -l`
 
 rm -f outjmeter.tmp
 
@@ -18,7 +18,7 @@ else
 fi
 
 # check that the 6 tests in JMeter succeeded
-if [ $linecount -eq 6 ]
+if [ $linecount -eq 0 ]
 then
 	echo "\n\nOK : JMeter test passed\n"
 	exit 0
