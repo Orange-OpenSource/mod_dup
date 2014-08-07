@@ -16,3 +16,4 @@
 
 install(FILES  compare.load compare.conf.example DESTINATION /etc/apache2/mods-available COMPONENT mod_compare)
 install(FILES  dup.load dup.conf.example DESTINATION /etc/apache2/mods-available COMPONENT mod_dup)
+install(FILES  migrate.load DESTINATION /etc/apache2/mods-available COMPONENT mod_migrate)
