@@ -56,29 +56,6 @@ void TestRequestProcessor::testRun()
     // but this might be overkill for a unit test
 }
 
-void TestRequestProcessor::testFilterAndSubstitution()
-{
-    // RequestProcessor proc;
-    // std::string query;
-    // DupConf conf;
-    // conf.currentApplicationScope = ApplicationScope::ALL;
-    // conf.currentDupDestination = "Honolulu:8080";
-
-    // // Filter
-    // proc.addFilter("/toto", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-    // proc.addRawFilter("/toto", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-
-    // // Sub
-    // conf.currentApplicationScope = ApplicationScope::HEADER;
-    // proc.addSubstitution("/toto", "INFO", "[i]", "f", conf);
-
-    // query = "titi=tata&tutu";
-
-    // RequestInfo ri = RequestInfo(std::string("42"), "/toto", "/toto/pws/titi/", "INFO=myinfo");
-    // CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
-    // CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("INFO=myfnfo"));
-}
-
 void TestRequestProcessor::testSubstitution()
 {
     RequestProcessor proc;
@@ -96,74 +73,108 @@ void TestRequestProcessor::testSubstitution()
     proc.parseArgs(lParsedArgs, ri.mArgs);
     CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
     Commands &c = cbd.mCommands.at(conf.currentDupDestination);
-
     proc.substituteRequest(ri, c, lParsedArgs);
     CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=tatae"), ri.mArgs);
 
-    // //  Empty fields are preserved
-    // query = "titi=tatae&tutu";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
+    {
+        //  Empty fields are preserved
+        query = "titi=tatae&tutu";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
+    }
 
-    // //  Empty fields can be substituted
-    // proc.addSubstitution("/toto", "tutu", "^$", "titi", conf);
-    // query = "titi=tatae&tutu";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=titi"), ri.mArgs);
+    {
+        //  Empty fields can be substituted
+        proc.addSubstitution("/toto", "tutu", "^$", "titi", conf);
+        query = "titi=tatae&tutu";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=titi"), ri.mArgs);
+    }
 
-    // // Substitutions are case-sensitive
-    // query = "titi=TATAE&tutu=TATAE";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=TATAE&TUTU=TATAE"), ri.mArgs);
+    {
+        // Substitutions are case-sensitive
+        query = "titi=TATAE&tutu=TATAE";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=TATAE&TUTU=TATAE"), ri.mArgs);
+    }
 
-    // // Substitutions on the same path and field are executed in the order they are added
-    // proc.addSubstitution("/toto", "titi", "-(.*)-", "T\\1", conf);
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tatae"), ri.mArgs);
+    {
+        // Substitutions on the same path and field are executed in the order they are added
+        proc.addSubstitution("/toto", "titi", "-(.*)-", "T\\1", conf);
+        query = "titi=tatae&tutu=tatae";
+        ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tatae"), ri.mArgs);
+    }
 
-    // // Substituions in other field but same path
-    // proc.addSubstitution("/toto", "tutu", "ata", "W", conf);
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    {
+        // Substituions in other field but same path
+        proc.addSubstitution("/toto", "tutu", "ata", "W", conf);
+        query = "titi=tatae&tutu=tatae";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    }
 
-    // // No Substitution on another path
-    // proc.addSubstitution("/x/y/z", "tutu", "ata", "W", conf);
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/x/y/z", "/x/y/z", query);
-    // CPPUNIT_ASSERT(!proc.processRequest(ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("titi=tatae&tutu=tatae"), ri.mArgs);
+    {
+        // ... doesn't affect previous path
+        query = "titi=tatae&tutu=tatae";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    }
 
-    // // ... doesn't affect previous path
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
+    {
+        // Substitute escaped characters
+        proc.addSubstitution("/toto", "titi", ",", "/", conf);
+        query = "titi=1%2C2%2C3";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
+    }
 
-    // // ... nor unknow path
-    // query = "titi=tatae&tutu=tatae";
-    // ri = RequestInfo(std::string("42"),"/UNKNOWN", "/UNKNOWN", query);
-    // CPPUNIT_ASSERT(!proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(std::string("titi=tatae&tutu=tatae"), ri.mArgs);
-
-    // // Substitute escaped characters
-    // proc.addSubstitution("/toto", "titi", ",", "/", conf);
-    // query = "titi=1%2C2%2C3";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
-
-    // // Keys should be compared case-insensitively
-    // query = "TiTI=1%2C2%2C3";
-    // ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    // CPPUNIT_ASSERT(proc.processRequest( ri));
-    // CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
+    {
+        // Keys should be compared case-insensitively
+        query = "TiTI=1%2C2%2C3";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CommandsByDestination &cbd = proc.mCommands.at(ri.mConfPath);
+        Commands &c = cbd.mCommands.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
+    }
 }
 
 void TestRequestProcessor::testFilterBasic()
@@ -230,39 +241,55 @@ void TestRequestProcessor::testFilterBasic()
 
 void TestRequestProcessor::testFilterOnNotMatching()
 {
-    // DupConf conf;
-    // conf.currentApplicationScope = ApplicationScope::ALL;
+    DupConf conf;
+    conf.currentApplicationScope = ApplicationScope::ALL;
+    conf.currentDupDestination = "Honolulu:8080";
 
-    // {
-    // 	// Exemple of negativ look ahead matching
-    //     RequestProcessor proc;
-    //     proc.addFilter("/toto","DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
-    //                    "(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
-    //                    "(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))",conf,
-    //                    tFilter::eFilterTypes::REGULAR);
+    {
+    	// Exemple of negativ look ahead matching
+        RequestProcessor proc;
+        proc.addFilter("/toto","DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
+                       "(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
+                       "(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))",conf,
+                       tFilter::eFilterTypes::REGULAR);
 
-    //     RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd");
-    //     CPPUNIT_ASSERT(proc.processRequest( ri));
+        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd");
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
 
-    //     std::cout << "IN" << std::endl;
-    //     RequestInfo ri2 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri2));
+        RequestInfo ri2 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri2.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri2, lParsedArgs).empty());
 
-    //     RequestInfo ri3 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri3));
+        RequestInfo ri3 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri3.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri3, lParsedArgs).empty());
 
-    //     RequestInfo ri4 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri4));
+        RequestInfo ri4 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri4.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri4, lParsedArgs).empty());
 
-    //     RequestInfo ri5 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fd,FullCompositeOffer,lskFibrejqdffdsfdsfqsfgsqf");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri5));
 
-    //     RequestInfo ri6 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri6));
+        RequestInfo ri5 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fd,FullCompositeOffer,lskFibrejqdffdsfdsfqsfgsqf");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri5.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri5, lParsedArgs).empty());
 
-    //     RequestInfo ri7 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "REQUEST=getPNS&DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri7));
-    // }
+        RequestInfo ri6 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri6.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri6, lParsedArgs).empty());
+
+        RequestInfo ri7 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "REQUEST=getPNS&DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri7.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri7, lParsedArgs).empty());
+
+     }
 }
 
 void TestRequestProcessor::testFilter()
@@ -473,33 +500,6 @@ void TestRequestProcessor::testRawSubstitution()
     //     CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
     //     CPPUNIT_ASSERT_EQUAL(std::string("mybody3test"), ri.mBody);
     // }
-}
-
-
-void TestRequestProcessor::testContextEnrichment()
-{
-    // // Simple substitution on a header
-    // // Body untouched
-    // RequestProcessor proc;
-    // std::string query;
-
-    // query = "joker=robin";
-    // std::string body = "mybody1test";
-    // RequestInfo ri = RequestInfo(std::string("42"),"/mypath", "/mypath/wb", query, &body);
-    // DupConf conf;
-    // conf.currentApplicationScope = ApplicationScope::HEADER;
-
-    // proc.addEnrichContext("/mypath", "batman", "joker=robin", "bruce=wayne", conf);
-
-
-    // tRequestProcessorCommands &c = proc.mCommands["/mypath"];
-
-    // CPPUNIT_ASSERT(c.mEnrichContext.size() == 1);
-    // tContextEnrichment &e = c.mEnrichContext.front();
-    // CPPUNIT_ASSERT_EQUAL(e.mVarName, std::string("batman"));
-    // CPPUNIT_ASSERT_EQUAL(e.mSetValue, std::string("bruce=wayne"));
-    // CPPUNIT_ASSERT_EQUAL(e.mScope, ApplicationScope::HEADER);
-    // CPPUNIT_ASSERT_EQUAL(e.mRegex.str(), std::string("joker=robin"));
 }
 
 void TestRequestProcessor::testDupFormat() {
