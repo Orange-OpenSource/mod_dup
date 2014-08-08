@@ -32,12 +32,10 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testParseArgs);
     CPPUNIT_TEST(testFilter);
     CPPUNIT_TEST(testSubstitution);
-    CPPUNIT_TEST(testFilterAndSubstitution);
     CPPUNIT_TEST(testRun);
     CPPUNIT_TEST(testFilterBasic);
     CPPUNIT_TEST(testRawSubstitution);
     CPPUNIT_TEST(testDupFormat);
-    CPPUNIT_TEST(testContextEnrichment);
     CPPUNIT_TEST(testRequestInfo);
     CPPUNIT_TEST(testKeySubstitutionOnBody);
     CPPUNIT_TEST(testTimeout);
@@ -49,12 +47,10 @@ public:
     void testUrlEncodeDecode();
     void testFilter();
     void testSubstitution();
-    void testFilterAndSubstitution();
     void testParseArgs();
     void testRun();
     void testFilterBasic();
     void testRawSubstitution();
-    void testContextEnrichment();
     void testRequestInfo();
     void testTimeout();
     void testFilterOnNotMatching();

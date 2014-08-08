@@ -56,29 +56,6 @@ void TestRequestProcessor::testRun()
     // but this might be overkill for a unit test
 }
 
-void TestRequestProcessor::testFilterAndSubstitution()
-{
-    // RequestProcessor proc;
-    // std::string query;
-    // DupConf conf;
-    // conf.currentApplicationScope = ApplicationScope::ALL;
-    // conf.currentDupDestination = "Honolulu:8080";
-
-    // // Filter
-    // proc.addFilter("/toto", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-    // proc.addRawFilter("/toto", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-
-    // // Sub
-    // conf.currentApplicationScope = ApplicationScope::HEADER;
-    // proc.addSubstitution("/toto", "INFO", "[i]", "f", conf);
-
-    // query = "titi=tata&tutu";
-
-    // RequestInfo ri = RequestInfo(std::string("42"), "/toto", "/toto/pws/titi/", "INFO=myinfo");
-    // CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
-    // CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("INFO=myfnfo"));
-}
-
 void TestRequestProcessor::testSubstitution()
 {
     RequestProcessor proc;
@@ -264,39 +241,55 @@ void TestRequestProcessor::testFilterBasic()
 
 void TestRequestProcessor::testFilterOnNotMatching()
 {
-    // DupConf conf;
-    // conf.currentApplicationScope = ApplicationScope::ALL;
+    DupConf conf;
+    conf.currentApplicationScope = ApplicationScope::ALL;
+    conf.currentDupDestination = "Honolulu:8080";
 
-    // {
-    // 	// Exemple of negativ look ahead matching
-    //     RequestProcessor proc;
-    //     proc.addFilter("/toto","DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
-    //                    "(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
-    //                    "(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))",conf,
-    //                    tFilter::eFilterTypes::REGULAR);
+    {
+    	// Exemple of negativ look ahead matching
+        RequestProcessor proc;
+        proc.addFilter("/toto","DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
+                       "(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
+                       "(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))",conf,
+                       tFilter::eFilterTypes::REGULAR);
 
-    //     RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd");
-    //     CPPUNIT_ASSERT(proc.processRequest( ri));
+        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd");
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
 
-    //     std::cout << "IN" << std::endl;
-    //     RequestInfo ri2 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri2));
+        RequestInfo ri2 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri2.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri2, lParsedArgs).empty());
 
-    //     RequestInfo ri3 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri3));
+        RequestInfo ri3 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri3.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri3, lParsedArgs).empty());
 
-    //     RequestInfo ri4 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri4));
+        RequestInfo ri4 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri4.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri4, lParsedArgs).empty());
 
-    //     RequestInfo ri5 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fd,FullCompositeOffer,lskFibrejqdffdsfdsfqsfgsqf");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri5));
 
-    //     RequestInfo ri6 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri6));
+        RequestInfo ri5 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fd,FullCompositeOffer,lskFibrejqdffdsfdsfqsfgsqf");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri5.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri5, lParsedArgs).empty());
 
-    //     RequestInfo ri7 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "REQUEST=getPNS&DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
-    //     CPPUNIT_ASSERT(!proc.processRequest(ri7));
-    // }
+        RequestInfo ri6 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri6.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri6, lParsedArgs).empty());
+
+        RequestInfo ri7 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "REQUEST=getPNS&DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
+        lParsedArgs.clear();
+        proc.parseArgs(lParsedArgs, ri7.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri7, lParsedArgs).empty());
+
+     }
 }
 
 void TestRequestProcessor::testFilter()
@@ -507,33 +500,6 @@ void TestRequestProcessor::testRawSubstitution()
     //     CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
     //     CPPUNIT_ASSERT_EQUAL(std::string("mybody3test"), ri.mBody);
     // }
-}
-
-
-void TestRequestProcessor::testContextEnrichment()
-{
-    // // Simple substitution on a header
-    // // Body untouched
-    // RequestProcessor proc;
-    // std::string query;
-
-    // query = "joker=robin";
-    // std::string body = "mybody1test";
-    // RequestInfo ri = RequestInfo(std::string("42"),"/mypath", "/mypath/wb", query, &body);
-    // DupConf conf;
-    // conf.currentApplicationScope = ApplicationScope::HEADER;
-
-    // proc.addEnrichContext("/mypath", "batman", "joker=robin", "bruce=wayne", conf);
-
-
-    // tRequestProcessorCommands &c = proc.mCommands["/mypath"];
-
-    // CPPUNIT_ASSERT(c.mEnrichContext.size() == 1);
-    // tContextEnrichment &e = c.mEnrichContext.front();
-    // CPPUNIT_ASSERT_EQUAL(e.mVarName, std::string("batman"));
-    // CPPUNIT_ASSERT_EQUAL(e.mSetValue, std::string("bruce=wayne"));
-    // CPPUNIT_ASSERT_EQUAL(e.mScope, ApplicationScope::HEADER);
-    // CPPUNIT_ASSERT_EQUAL(e.mRegex.str(), std::string("joker=robin"));
 }
 
 void TestRequestProcessor::testDupFormat() {
