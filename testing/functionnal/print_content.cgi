@@ -18,6 +18,6 @@ echo $data
 
 echo ""
 env | grep -i content_length
-echo "Word count: ${#data}"
+echo "Character count: ${#data}"
 
 exit 0
