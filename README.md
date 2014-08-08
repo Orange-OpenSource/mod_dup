@@ -27,10 +27,12 @@ Two operating modes are possible:
  * Response Comparison
  * No Comparison
 
+Basic Request Migration
+=========================
+![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/mod_migrate.png)
 Basic Request Duplication
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/mod_dup_overview.png)
-
 Duplication with Response
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/dup_comp.png)
