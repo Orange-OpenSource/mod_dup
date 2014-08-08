@@ -35,7 +35,7 @@ This mod uses mod_rewrite and mod_proxy to redirect the requests.
 
 Basic Request Migration
 =========================
-![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/mod_migrate.png)
+![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/multidest/docs/mod_migrate.png)
 
 Basic Request Duplication
 =========================
