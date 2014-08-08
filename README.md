@@ -27,12 +27,20 @@ Two operating modes are possible:
  * Response Comparison
  * No Comparison
 
+mod_migrate
+=======
+mod_migrate migrates Apache requests (POST, GET or both).
+Only requests which match specified filters are migrated.
+This mod uses mod_rewrite and mod_proxy to redirect the requests.
+
 Basic Request Migration
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/mod_migrate.png)
+
 Basic Request Duplication
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/mod_dup_overview.png)
+
 Duplication with Response
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/dup_comp.png)
