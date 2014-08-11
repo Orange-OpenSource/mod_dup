@@ -37,7 +37,7 @@ Basic Request Migration
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/multidest/docs/mod_migrate.png)
 
-Basic Request Duplication
+Basic Request Duplication with Migration
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/mod_dup_overview.png)
 
