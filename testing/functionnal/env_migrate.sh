@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "IN ENV.SH"
+
 BIN=`cd $1; echo $PWD`
 CONF=`cd $2; echo $PWD`
 ROOT=`cd $1/..; echo $PWD`
@@ -27,6 +29,8 @@ touch $APACHE_DIR/mime.types
 #cat $DATA/largeresponse > $APACHE_DIR/htdocs/dup_test/largeresponse
 #echo -n "MULTI" > $APACHE_DIR/htdocs/multi
 
+echo "BEGINNING OK"
+
 echo "#!/bin/sh
 
 echo \"Content-type: text/html\"
@@ -42,7 +46,7 @@ env | grep -i http_
 echo \"\"
 echo \"Data:\"
 
-data=`cat <&0`
+data=\`cat <&0\`
 echo $data
 
 echo \"\"
@@ -52,6 +56,7 @@ echo \"Character count: ${#data}\"
 exit 0" > $APACHE_DIR/htdocs/cgi_bin/print_content.cgi
 chmod +x $APACHE_DIR/htdocs/cgi_bin/print_content.cgi
 
+echo "WRITING OK"
 
 sed 's|{{ROOT}}|'"$ROOT"'|;s|{{APACHE_MODS}}|'"$APACHE_MODS"'|;s|{{BIN}}|'"$BIN"'|;s|{{CONF}}|'"$CONF"'|;' $PWD/httpd.migrate_conf.templ > $APACHE_DIR/httpd_func_tests.conf
 

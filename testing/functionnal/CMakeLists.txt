@@ -60,15 +60,23 @@ add_custom_command(TARGET check-functional-compare PRE_BUILD
 
 
 add_custom_target(check-functional-migrate
+COMMAND echo "STEP 0"
+
 ## Prepare apache
 COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env_migrate.sh ${CMAKE_BINARY_DIR}/src ${CMAKE_SOURCE_DIR}/testing/functionnal/data/migrate/
+COMMAND echo "STEP 1"
+
 ## Launch apache
 COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
+COMMAND echo "STEP 2"
 
 # backup restore handled in the script
-COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/TestMigrate.jmx
+COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_for_jenkins.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/TestMigrate.jmx
+COMMAND echo "STEP 3"
 
 COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
+COMMAND echo "STEP 4"
+
 ## Apache sometimes needs some time to stop
 COMMAND sleep 2
 )
@@ -93,4 +101,4 @@ COMMAND sleep 2
 
 #COMMAND a2dissite test_migrate_vhost
 #COMMAND service apache2 reload
-)
+#)
