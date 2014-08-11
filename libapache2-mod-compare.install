@@ -1,0 +1,2 @@
+debian/tmp/etc/apache2/mods-available/mod_compare.* /etc/apache2/mods-available
+debian/tmp/usr/lib/apache2/modules/mod_compare.so /usr/lib/apache2/modules

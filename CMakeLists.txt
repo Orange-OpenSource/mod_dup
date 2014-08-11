@@ -44,7 +44,7 @@ if [ -e /etc/apache2/mods-available/migrate.conf ]\; then
 	mv -fv /etc/apache2/mods-available/migrate.conf /etc/apache2/mods-available/migrate.conf.bak\;
 fi
 
-COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.conf /etc/apache2/mods-available
+COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.conf.example /etc/apache2/mods-available/migrate.conf
 COMMAND cp -fv ${CMAKE_SOURCE_DIR}/testing/functionnal/print_content.cgi /usr/lib/cgi-bin
 COMMAND cp -fv ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_vhost /etc/apache2/sites-available
 COMMAND a2ensite test_migrate_vhost
