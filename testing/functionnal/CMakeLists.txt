@@ -60,22 +60,22 @@ add_custom_command(TARGET check-functional-compare PRE_BUILD
 
 
 add_custom_target(check-functional-migrate
-COMMAND echo "STEP 0"
+COMMAND echo Starting mod_migrate functional test...
+COMMAND echo Setting up the test environment...
 
 ## Prepare apache
 COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env_migrate.sh ${CMAKE_BINARY_DIR}/src ${CMAKE_SOURCE_DIR}/testing/functionnal/data/migrate/
-COMMAND echo "STEP 1"
 
+COMMAND echo "Starting Apache with the test conf..."
 ## Launch apache
 COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
-COMMAND echo "STEP 2"
 
+COMMAND echo "Starting JMeter test..."
 # backup restore handled in the script
 COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_for_jenkins.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/TestMigrate.jmx
-COMMAND echo "STEP 3"
 
+COMMAND echo "Stoping Apache..."
 COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
-COMMAND echo "STEP 4"
 
 ## Apache sometimes needs some time to stop
 COMMAND sleep 2
