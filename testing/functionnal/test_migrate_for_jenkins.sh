@@ -1,7 +1,7 @@
 #!/bin/bash
 
 rm -f $1/outjmeter
-jmeter -n -l $1/outjmeter.tmp -t $1/TestMigrate.jmx > /dev/null 2>&1
+jmeter -n -l $1/outjmeter.tmp -t $1/TestMigrate.jmx
 
 linecount=`cat $1/outjmeter.tmp | grep ',false' | wc -l`
 
