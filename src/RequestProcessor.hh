@@ -281,17 +281,20 @@ public:
     run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue);
 
     /**
+     * @brief initialize curl handle and common curl options
+     * @return a curl handle
+     */
+    CURL * initCurl();
+
+    void
+    performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
+
+    /**
      * @brief perform curl for one request if it matches
      * @param reqInfo the RequestInfo instance for this request
      * @param pCurl a preinitialized curl handle
      */
     void runOne(RequestInfo &reqInfo, CURL * pCurl);
-
-    /**
-     * @brief initialize curl handle and common curl options
-     * @return a curl handle
-     */
-    CURL * initCurl();
 
 private:
 
@@ -308,9 +311,6 @@ private:
             std::list<tKeyVal> &pParsedArgs,
             ApplicationScope::eApplicationScope scope,
             std::string &result);
-
-    void
-    performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
 
     friend class ::TestRequestProcessor;
 };
