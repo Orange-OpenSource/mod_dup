@@ -2,75 +2,14 @@ Listen 4321
 Listen 1234
 Listen 1212
 
-<VirtualHost *:1234>
-	ServerAdmin webmaster@localhost
-
-	ErrorLog ${APACHE_LOG_DIR}/error.log
-
-	# Possible values include: debug, info, notice, warn, error, crit,
-	# alert, emerg.
-	LogLevel warn
-
-	CustomLog ${APACHE_LOG_DIR}/access.log combined
-	CustomLog /var/log/apache_notes.log vhost_combined_w_notes
-
-    Alias /doc/ "/usr/share/doc/"
-    <Directory "/usr/share/doc/">
-        Options Indexes MultiViews FollowSymLinks
-        AllowOverride None
-        Order deny,allow
-        Deny from all
-        Allow from 127.0.0.0/255.0.0.0 ::1/128
-    </Directory>
-
-</VirtualHost>
-
 <VirtualHost *:4321>
-	ServerAdmin webmaster@localhost
-
-	ErrorLog ${APACHE_LOG_DIR}/error.log
-
-	# Possible values include: debug, info, notice, warn, error, crit,
-	# alert, emerg.
-	LogLevel warn
-
-	CustomLog ${APACHE_LOG_DIR}/access.log combined
-	CustomLog /var/log/apache_notes.log vhost_combined_w_notes
 
     ScriptAlias /print_content /usr/lib/cgi-bin/print_content.cgi
-
-    Alias /doc/ "/usr/share/doc/"
-    <Directory "/usr/share/doc/">
-        Options Indexes MultiViews FollowSymLinks
-        AllowOverride None
-        Order deny,allow
-        Deny from all
-        Allow from 127.0.0.0/255.0.0.0 ::1/128
-    </Directory>
 
 </VirtualHost>
 
 <VirtualHost *:1212>
-	ServerAdmin webmaster@localhost
-
-	ErrorLog ${APACHE_LOG_DIR}/error.log
-
-	# Possible values include: debug, info, notice, warn, error, crit,
-	# alert, emerg.
-	LogLevel warn
-
-	CustomLog ${APACHE_LOG_DIR}/access.log combined
-	CustomLog /var/log/apache_notes.log vhost_combined_w_notes
 
     ScriptAlias /local/print_content /usr/lib/cgi-bin/print_content.cgi
-
-    Alias /doc/ "/usr/share/doc/"
-    <Directory "/usr/share/doc/">
-        Options Indexes MultiViews FollowSymLinks
-        AllowOverride None
-        Order deny,allow
-        Deny from all
-        Allow from 127.0.0.0/255.0.0.0 ::1/128
-    </Directory>
 
 </VirtualHost>

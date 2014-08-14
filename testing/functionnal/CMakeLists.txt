@@ -58,8 +58,47 @@ add_custom_command(TARGET check-functional-compare PRE_BUILD
     COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_compare.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/data/compare/
   )
 
-add_custom_target(check-functional-migrate)
 
-add_custom_command(TARGET check-functional-migrate PRE_BUILD
-    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/
+add_custom_target(check-functional-migrate
+COMMAND echo Starting mod_migrate functional test...
+COMMAND echo Setting up the test environment...
+
+## Prepare apache
+COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env_migrate.sh ${CMAKE_BINARY_DIR}/src ${CMAKE_SOURCE_DIR}/testing/functionnal/data/migrate/
+
+COMMAND echo "Starting Apache with the test conf..."
+## Launch apache
+COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
+
+COMMAND echo "Starting JMeter test..."
+# backup restore handled in the script
+COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_for_jenkins.sh ${CMAKE_SOURCE_DIR}/testing/functionnal
+
+COMMAND echo "Stoping Apache..."
+COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
+
+## Apache sometimes needs some time to stop
+COMMAND sleep 2
 )
+
+#COMMAND make install
+
+# make backup of migrate.conf, if it exists
+#COMMAND
+#if [ -e /etc/apache2/mods-available/migrate.conf ]\; then
+#	mv -fv /etc/apache2/mods-available/migrate.conf /etc/apache2/mods-available/migrate.conf.bak\;
+#fi
+
+#COMMAND cp -v ${CMAKE_SOURCE_DIR}/conf/migrate.conf.example /etc/apache2/mods-available/migrate.conf
+#COMMAND cp -fv ${CMAKE_SOURCE_DIR}/testing/functionnal/print_content.cgi /usr/lib/cgi-bin
+#COMMAND cp -fv ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_vhost /etc/apache2/sites-available
+#COMMAND a2ensite test_migrate_vhost
+#COMMAND a2enmod migrate
+#COMMAND service apache2 restart
+
+# backup restore handled in the script
+#COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/TestMigrate.jmx
+
+#COMMAND a2dissite test_migrate_vhost
+#COMMAND service apache2 reload
+#)

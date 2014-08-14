@@ -27,7 +27,17 @@ Two operating modes are possible:
  * Response Comparison
  * No Comparison
 
-Basic Request Duplication
+mod_migrate
+=======
+mod_migrate migrates Apache requests (POST, GET or both).
+Only requests which match specified filters are migrated.
+This mod uses mod_rewrite and mod_proxy to redirect the requests.
+
+Basic Request Migration
+=========================
+![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/multidest/docs/mod_migrate.png)
+
+Basic Request Duplication with Migration
 =========================
 ![](https://raw.githubusercontent.com/Orange-OpenSource/mod_dup/master/docs/mod_dup_overview.png)
 

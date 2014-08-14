@@ -1,3 +1,9 @@
+pns-mod-dup (1.5-0) precise; urgency=low
+
+  * Split mod_dup into mod_migrate and mod_dup
+
+ -- Clarens Caraccio <ccaraccio.ext@orange.com>  Mon, 11 Aug 2014 14:05:00 +0200
+
 pns-mod-dup (1.4-1) precise; urgency=low
 
   * Adding libws_diff into mod_dup for github
