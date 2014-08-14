@@ -62,6 +62,8 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
  */
 apr_status_t
 outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    Log::debug("### Output body filter call");
+
     request_rec *pRequest = pFilter->r;
     apr_status_t rv;
     // Reject requests that do not meet our requirements
@@ -128,10 +130,13 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
  */
 apr_status_t
 outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    Log::debug("### Output header filter call");
+
     apr_status_t rv;
     if ( pFilter->ctx == (void *) -1 ) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
+        Log::debug("### A");
         return rv;
     }
 
@@ -141,6 +146,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = (void *) -1;
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
+        Log::debug("### B");
         return rv;
     }
 
@@ -149,6 +155,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = (void *) -1;
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
+        Log::debug("### C");
         return rv;
     }
 
@@ -158,6 +165,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = (void *) -1;
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
+        Log::debug("### D");
         return rv;
     }
     RequestInfo *ri = reqInfo->get();
@@ -168,6 +176,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (!ri->eos_seen) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
+        Log::debug("### E");
         return rv;
     }
     // Pushing the answer to the processor
@@ -181,6 +190,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         gProcessor->runOne(*ri, lCurl);
     }
     else {
+        Log::debug("### Pushing a request to yhe pool");
         gThreadPool->push(*reqInfo);
     }
     pFilter->ctx = (void *) -1;

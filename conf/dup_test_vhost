@@ -1,0 +1,15 @@
+#<IfModule mod_dup.cpp>
+
+Listen 8042
+<VirtualHost *:8042>
+
+    DocumentRoot /var/www/
+
+    # Cgi configuration
+    Options +ExecCGI
+    ScriptAlias /get_body_size /var/www/dup_test/cgi/get_body_size.cgi
+    ScriptAlias /get_body_size_direct /var/www/dup_test/cgi/get_body_size.cgi
+
+</VirtualHost>
+
+#</IfModule>

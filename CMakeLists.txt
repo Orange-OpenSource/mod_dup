@@ -86,7 +86,7 @@ if(BUILD_COVERAGE)
       COMMAND make coverage-functional-clean
       COMMAND make -j2 all
       COMMAND make check-functional
-	  COMMAND make check-functional-migrate
+      COMMAND make check-functional-migrate
       COMMAND make coverage-functionalP
       )
 
