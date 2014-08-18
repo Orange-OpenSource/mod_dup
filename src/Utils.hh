@@ -18,12 +18,9 @@
 
 #pragma once
 
-//#include <apr_pools.h>
-//#include <apr_hooks.h>
-
 #include <httpd.h>
 
-namespace MigrateModule {
+namespace CommonModule {
 
     extern const unsigned int CMaxBytes;
     extern const char* c_UNIQUE_ID;
@@ -36,19 +33,7 @@ namespace MigrateModule {
 
     bool extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content);
 
-};
 
-namespace DupModule {
-
-    extern const unsigned int CMaxBytes;
-    extern const char* c_UNIQUE_ID;
-
-    /*
-     * Returns the next random request ID
-     * method is reentrant
-     */
-    unsigned int getNextReqId();
-
-    bool extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content);
+    std::string getOrSetUniqueID(request_rec *pRequest);
 
 };

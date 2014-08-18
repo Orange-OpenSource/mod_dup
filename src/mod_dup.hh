@@ -293,6 +293,12 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
 apr_status_t
 outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
 
+/**
+ * @brief The input filter handler. Reads the request, stores it in a shared pointer allocated on the pool
+ */
+apr_status_t
+inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
+
 /*
  * Method that calls the destructor of an object which type is templated
  */

@@ -31,6 +31,7 @@
 CPPUNIT_TEST_SUITE_REGISTRATION( TestModMigrate );
 
 using namespace MigrateModule;
+using namespace CommonModule;
 
 static request_rec *prep_request_rec() {
     request_rec *req = new request_rec;

@@ -30,19 +30,7 @@
 #include <apache2/httpd.h>
 #include <boost/regex.hpp>
 
-
-
 namespace MigrateModule {
-
-//void
-//printRequest(request_rec *pRequest, std::string pBody)
-//{
-//    const char *reqId = apr_table_get(pRequest->headers_in, DupModule::c_UNIQUE_ID);
-//    Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
-//    Log::debug("### Uri:%s", pRequest->uri);
-//    Log::debug("### Request args: %s", pRequest->args);
-//}
-
 
 int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
     MigrateConf *conf = reinterpret_cast<MigrateConf *>(ap_get_module_config(pRequest->per_dir_config, &migrate_module));
@@ -94,8 +82,6 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
     return count;
 }
 
-
-
 /*
  * Callback to iterate over the headers tables
  * Pushes a copy of key => value in a list passed without typing as the first argument
@@ -125,7 +111,7 @@ int translateHook(request_rec *pRequest) {
         return DECLINED;
     }
 
-    unsigned int lReqID = MigrateModule::getNextReqId();
+    unsigned int lReqID = CommonModule::getNextReqId();
     std::string reqId = boost::lexical_cast<std::string>(lReqID);
     RequestInfo *info = new RequestInfo(reqId);
     // Allocation on a shared pointer on the request pool
@@ -156,7 +142,7 @@ int translateHook(request_rec *pRequest) {
         return DECLINED;
     }
     std::string body;
-    while (!MigrateModule::extractBrigadeContent(bb, pRequest->input_filters, info->mBody)){
+    while (!CommonModule::extractBrigadeContent(bb, pRequest->input_filters, info->mBody)){
         apr_brigade_cleanup(bb);
     }
     apr_brigade_cleanup(bb);
@@ -165,14 +151,14 @@ int translateHook(request_rec *pRequest) {
     // Copy headers in
     apr_table_do(&iterateOverHeadersCallBack, &info->mHeader, pRequest->headers_in, NULL);
 
-    const char* lID = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
+    const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
     // Copy Request ID in both headers
     if(lID == NULL) {
-        apr_table_set(pRequest->headers_in, c_UNIQUE_ID, info->mId.c_str());
-        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, info->mId.c_str());
+        apr_table_set(pRequest->headers_in, CommonModule::c_UNIQUE_ID, info->mId.c_str());
+        apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, info->mId.c_str());
     }
     else {
-        apr_table_set(pRequest->headers_out, c_UNIQUE_ID, lID);
+        apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
     }
 
     // Synchronous context enrichment

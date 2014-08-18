@@ -103,10 +103,17 @@ class TeeRequest:
             assert  server_port == 16555 ,  "########### SHOULD BE ON SECOND LOCATION  ###############"
         else:
             assert  server_port != 16555 ,  "########### SHOULD BE ON FIRST LOCATION  ###############"
-        assert self.t_path and path == self.t_path and re.search(self.t_body, body, re.MULTILINE|re.DOTALL) ,\
-                '''Received unexpected request:
-  path: %s
-  body: %s''' % (path, body)
+        assert self.t_path, '''Unexpected request received
+               path: %s
+               body: %s''' % (path, body)
+        assert self.t_path and path == self.t_path ,\
+                '''Path did not match:
+                   path: %s
+                   body: %s''' % (path, body)
+        assert re.search(self.t_body, body, re.MULTILINE|re.DOTALL),\
+                 '''Body did not match:
+                 path: %s
+                 body: %s''' % (path, body)
 
     def assert_not_received(self):
         assert not self.t_path and not self.t_body, 'Request not duplicated'

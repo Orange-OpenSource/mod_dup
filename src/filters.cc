@@ -49,10 +49,79 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
 
 static void
 printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
-    const char *reqId = apr_table_get(pRequest->headers_in, c_UNIQUE_ID);
+    const char *reqId = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
     Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("### Request args: %s", pRequest->args);
+}
+
+apr_status_t
+inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes) {
+    request_rec *pRequest = pFilter->r;
+    if (!pRequest || !pRequest->per_dir_config) {
+        return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
+    }
+    struct DupConf *conf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
+    if (!conf || !conf->dirName) {
+        // Not a location that we treat, we decline the request
+        return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
+    }
+
+    RequestInfo *info;
+    if (!pFilter->ctx) {
+
+        // Unique request id
+        std::string uid = CommonModule::getOrSetUniqueID(pRequest);
+        info = new RequestInfo(uid);
+
+        // Allocation on a shared pointer on the request pool
+        // We guarantee that whatever happens, the RequestInfo will be deleted
+        void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
+        new (space) boost::shared_ptr<RequestInfo>(info);
+        // Registering of the shared pointer destructor on the pool
+        apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
+                                  apr_pool_cleanup_null);
+        // Backup in request context
+        ap_set_module_config(pRequest->request_config, &dup_module, (void *)space);
+        // Backup in filter context
+        pFilter->ctx = info;
+
+        info->mConfPath = conf->dirName;
+        info->mArgs = pRequest->args ? pRequest->args : "";
+
+    }
+    if (pFilter->ctx != (void *) -1) {
+        // Request not read yet
+        info = reinterpret_cast<RequestInfo *>(pFilter->ctx);
+        apr_status_t st = ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
+        if (st != APR_SUCCESS) {
+            pFilter->ctx = (void *) -1;
+            return st;
+        }
+        // Concats the brigade content to the reqinfo
+        for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
+             b != APR_BRIGADE_SENTINEL(pB);
+             b = APR_BUCKET_NEXT(b) ) {
+            // Metadata end of stream
+            if (APR_BUCKET_IS_EOS(b)) {
+                return APR_SUCCESS;
+            }
+            if (APR_BUCKET_IS_METADATA(b))
+                continue;
+            const char *data = 0;
+            apr_size_t len = 0;
+            apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+            if (rv != APR_SUCCESS) {
+                Log::error(42, "Bucket read failed, skipping the rest of the body");
+                return rv;
+            }
+            if (len) {
+                info->mBody.append(data, len);
+            }
+        }
+    }
+    // Data is read
+    return APR_SUCCESS;
 }
 
 /**
@@ -62,7 +131,6 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
  */
 apr_status_t
 outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::debug("### Output body filter call");
 
     request_rec *pRequest = pFilter->r;
     apr_status_t rv;
@@ -130,13 +198,11 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
  */
 apr_status_t
 outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::debug("### Output header filter call");
 
     apr_status_t rv;
     if ( pFilter->ctx == (void *) -1 ) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        Log::debug("### A");
         return rv;
     }
 
@@ -146,7 +212,6 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = (void *) -1;
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        Log::debug("### B");
         return rv;
     }
 
@@ -155,7 +220,6 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = (void *) -1;
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        Log::debug("### C");
         return rv;
     }
 
@@ -165,7 +229,6 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = (void *) -1;
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        Log::debug("### D");
         return rv;
     }
     RequestInfo *ri = reqInfo->get();
@@ -176,7 +239,6 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (!ri->eos_seen) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        Log::debug("### E");
         return rv;
     }
     // Pushing the answer to the processor
@@ -190,7 +252,6 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         gProcessor->runOne(*ri, lCurl);
     }
     else {
-        Log::debug("### Pushing a request to yhe pool");
         gThreadPool->push(*reqInfo);
     }
     pFilter->ctx = (void *) -1;
