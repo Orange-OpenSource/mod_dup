@@ -34,56 +34,40 @@ install(FILES
   DESTINATION /var/www/dup_test/cgi COMPONENT mod_dup)
 
 
-## Collecting the functionnal directories
-file(GLOB test_dirs "${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/*" )
+## Runs dup functional tests
+add_custom_target(check-functional-dup
+   ## Launching the tests script
+    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/requests/
+)
 
-## Runs the functional tests
-## Iterate over the directories in the functional repo to launch the corresponding tests
-add_custom_target(check-functional)
+add_custom_target(check-functional-dup-describe
+    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/requests/ --desc=true
+)
 
-foreach(td ${test_dirs})
-  add_custom_command(TARGET check-functional PRE_BUILD
-    ## Launching the tests script
-    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${td}/requests/
-  )
-endforeach()
-
-add_custom_target(check-functional-describe)
-
-foreach(td ${test_dirs})
-  add_custom_command(TARGET check-functional-describe PRE_BUILD
-    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${td}/requests/ --desc=true
-  )
-endforeach()
-
-
-add_custom_target(check-functional-compare)
-
-add_custom_command(TARGET check-functional-compare PRE_BUILD
+add_custom_target(check-functional-compare
     COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_compare.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/data/compare/
-  )
-
+)
 
 add_custom_target(check-functional-migrate
-COMMAND echo Starting mod_migrate functional test...
-COMMAND echo Setting up the test environment...
+  COMMAND echo Starting mod_migrate functional test...
+  COMMAND echo Setting up the test environment...
 
-## Prepare apache
-COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env_migrate.sh ${CMAKE_BINARY_DIR}/src ${CMAKE_SOURCE_DIR}/testing/functionnal/data/migrate/
+  ## Prepare apache
+  COMMAND cd ${CMAKE_SOURCE_DIR}/testing/functionnal/ && ./env_migrate.sh ${CMAKE_BINARY_DIR}/src ${CMAKE_SOURCE_DIR}/testing/functionnal/data/migrate/
 
-COMMAND echo "Starting Apache with the test conf..."
-## Launch apache
-COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
+  COMMAND echo "Starting Apache with the test conf..."
+  ## Launch apache
+  COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf
 
-COMMAND echo "Starting JMeter test..."
-# backup restore handled in the script
-COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_for_jenkins.sh ${CMAKE_SOURCE_DIR}/testing/functionnal
+  COMMAND echo "Starting JMeter test..."
+  # backup restore handled in the script
+  COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_for_jenkins.sh ${CMAKE_SOURCE_DIR}/testing/functionnal
 
-COMMAND echo "Stoping Apache..."
-COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
+  COMMAND echo "Stoping Apache..."
+  COMMAND ${APACHE2BIN} -f ${CMAKE_BINARY_DIR}/apache2/httpd_func_tests.conf -k stop
 
-## Apache sometimes needs some time to stop
-COMMAND sleep 2
+  ## Apache sometimes needs some time to stop
+  COMMAND sleep 2
 )
 
 #COMMAND make install
