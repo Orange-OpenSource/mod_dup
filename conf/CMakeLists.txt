@@ -20,4 +20,5 @@ install(FILES dup_test.load dup_test.conf DESTINATION /etc/apache2/mods-availabl
 install(FILES dup_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_dup)
 
 install(FILES migrate_test.load migrate_test.conf DESTINATION /etc/apache2/mods-available COMPONENT mod_migrate)
+install(FILES migrate_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_migrate)
 

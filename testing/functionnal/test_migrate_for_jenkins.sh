@@ -1,17 +1,9 @@
 #!/bin/bash
 
 rm -f $1/outjmeter
-jmeter -n -l $1/outjmeter.tmp -t $1/TestMigrate.jmx
+jmeter -n -l $1/outjmeter.tmp -t $1/data/migrate/test_migrate.jmx
 
 linecount=`cat $1/outjmeter.tmp | grep ',false' | wc -l`
-
-# restore backup of migrate.conf
-#if [ -e /etc/apache2/mods-available/migrate.conf.bak ]
-#then
-#	mv -fv /etc/apache2/mods-available/migrate.conf.bak /etc/apache2/mods-available/migrate.conf
-#else
-#	echo "" > /etc/apache2/mods-available/migrate.conf
-#fi
 
 # check that the 6 tests in JMeter succeeded
 if [ $linecount -eq 0 ]
