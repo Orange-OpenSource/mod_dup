@@ -349,7 +349,7 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
     std::map<std::string, Commands>::iterator itb = lCommands.mCommands.begin(),
         itbe = lCommands.mCommands.end();
     while (itb != itbe) {
-
+        Log::debug("### Duplication tested: %s", itb->first.c_str() );
         // Tests if at least one active filter matches on this duplication location
         const tFilter* matchedFilter = NULL;
         if ((matchedFilter = argsMatchFilter(pRequest, itb->second, parsedArgs))) {
@@ -357,8 +357,6 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
         }
         ++itb;
     }
-
-
     return ret;
 }
 

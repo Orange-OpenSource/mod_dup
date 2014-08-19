@@ -29,17 +29,18 @@ class TestRequestProcessor :
 {
 
     CPPUNIT_TEST_SUITE(TestRequestProcessor);
-    CPPUNIT_TEST(testParseArgs);
-    CPPUNIT_TEST(testFilter);
-    CPPUNIT_TEST(testSubstitution);
-    CPPUNIT_TEST(testRun);
-    CPPUNIT_TEST(testFilterBasic);
-    CPPUNIT_TEST(testRawSubstitution);
-    CPPUNIT_TEST(testDupFormat);
-    CPPUNIT_TEST(testRequestInfo);
-    CPPUNIT_TEST(testKeySubstitutionOnBody);
-    CPPUNIT_TEST(testTimeout);
-    CPPUNIT_TEST(testFilterOnNotMatching);
+    // CPPUNIT_TEST(testParseArgs);
+    // CPPUNIT_TEST(testFilter);
+    // CPPUNIT_TEST(testSubstitution);
+    // CPPUNIT_TEST(testRun);
+    // CPPUNIT_TEST(testFilterBasic);
+    // CPPUNIT_TEST(testRawSubstitution);
+    // CPPUNIT_TEST(testDupFormat);
+    // CPPUNIT_TEST(testRequestInfo);
+    // CPPUNIT_TEST(testKeySubstitutionOnBody);
+    // CPPUNIT_TEST(testTimeout);
+    // CPPUNIT_TEST(testFilterOnNotMatching);
+    CPPUNIT_TEST(testMultiDestination);
 
     CPPUNIT_TEST_SUITE_END();
 
@@ -64,4 +65,9 @@ public:
      * Tests that the a duplicated request respects the dup format
      */
     void testDupFormat();
+
+    /**
+     * @brief Tests that a single request can be duplicated several times depending on the location
+     */
+    void testMultiDestination();
 };

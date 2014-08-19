@@ -96,56 +96,6 @@ void TestModDup::testInitAndCleanUp()
 
 }
 
-void TestModDup::testRequestHandler()
-{
-    // THIS TEST IS PRETTY MUCH INVALID AS THE CALLS RELY ON APACHE REQUEST FILTERING NOW
-    // request_rec lReq;
-    // memset(&lReq, 0, sizeof(request_rec));
-    // cmd_parms * lParms = getParms();
-    // lReq.server = lParms->server;
-    // lParms->path = new char[10];
-    // strcpy(lParms->path, "/spp/main");
-
-    // gActiveLocations.clear();
-
-    // lReq.handler = NULL;
-    // lReq.per_dir_config = reinterpret_cast<ap_conf_vector_t *>(apr_pcalloc(lParms->pool, sizeof(void *) * 1000));
-
-    // DummyThreadPool<RequestInfo> *gDummyThreadPool = dynamic_cast<DummyThreadPool<RequestInfo> *>(gThreadPool);
-
-    // size_t lQueued = 0;
-
-    // gDummyThreadPool->mDummyQueued.clear();
-    // CPPUNIT_ASSERT_EQUAL(lQueued, gDummyThreadPool->mDummyQueued.size());
-
-    // // Path not active yet
-    // DupModule::pushRequest("/spp/main", "");
-    // CPPUNIT_ASSERT_EQUAL(lQueued, gDummyThreadPool->mDummyQueued.size());
-
-    // void *lCfg = createDirConfig(lParms->pool, strdup("/spp/main"));
-    // CPPUNIT_ASSERT(!setActive(lParms, lCfg));
-
-    // // Activate path
-    // DupModule::pushRequest("/spp/main", "");
-    // CPPUNIT_ASSERT_EQUAL(++lQueued, gDummyThreadPool->mDummyQueued.size());
-
-    // // Non-activate path
-    // DupModule::pushRequest("/spp/main200", "");
-    // CPPUNIT_ASSERT_EQUAL(lQueued, gDummyThreadPool->mDummyQueued.size());
-
-    // // Activate sub-path
-    // DupModule::pushRequest("/spp/main/200", "");
-    // CPPUNIT_ASSERT_EQUAL(++lQueued, gDummyThreadPool->mDummyQueued.size());
-
-    // // Activate sub-path
-    // DupModule::pushRequest("/spp/main/200/", "a=b&c=12");
-    // CPPUNIT_ASSERT_EQUAL(++lQueued, gDummyThreadPool->mDummyQueued.size());
-
-    // // Non-activate path
-    // DupModule::pushRequest("/spp/", "");
-    //    CPPUNIT_ASSERT_EQUAL(lQueued, gDummyThreadPool->mDummyQueued.size());
-}
-
 void TestModDup::testConfig()
 {
 

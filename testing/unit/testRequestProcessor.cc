@@ -659,6 +659,82 @@ void TestRequestProcessor::testKeySubstitutionOnBody()
     CPPUNIT_ASSERT_EQUAL(std::string("KEY1=what%3f%3f&TITI=replacedValue"), ri.mBody);
 }
 
+void TestRequestProcessor::testMultiDestination() {
+
+    DupConf conf;
+    conf.currentApplicationScope = ApplicationScope::ALL;
+    {
+        // 2 filters that match on one destination
+        RequestProcessor proc;
+        conf.currentDupDestination = "Honolulu:8080";
+
+        proc.addFilter("/match", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
+        proc.addFilter("/match", "INFO", "myinfo", conf, tFilter::eFilterTypes::REGULAR);
+
+        RequestInfo ri = RequestInfo(std::string("42"),"/match", "/match/pws/titi/", "INFO=myinfo");
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT_EQUAL(1, (int)proc.processRequest(ri, lParsedArgs).size());
+    }
+
+    {
+        // 2 filters that match 2 different destinations
+        RequestProcessor proc;
+        conf.currentDupDestination = "Honolulu:8080";
+
+        proc.addFilter("/match", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
+        conf.currentDupDestination = "Hikkaduwa:8090";
+        proc.addFilter("/match", "INFO", "myinfo", conf, tFilter::eFilterTypes::REGULAR);
+
+        RequestInfo ri = RequestInfo(std::string("42"),"/match", "/match/pws/titi/", "INFO=myinfo");
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        std::list<const tFilter *> ff = proc.processRequest(ri, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(2, (int)ff.size());
+
+        // Check the first filter
+        const tFilter *first = ff.front();
+        ff.pop_front();
+        const tFilter *second = ff.front();
+
+        // Order is not guaranteed
+        if (second->mDestination == "Honolulu:8080") {
+            std::swap(first, second);
+        }
+
+        CPPUNIT_ASSERT_EQUAL(std::string("Honolulu:8080"), first->mDestination);
+        CPPUNIT_ASSERT_EQUAL(std::string("Hikkaduwa:8090"), second->mDestination);
+
+        CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, first->mFilterType);
+        CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, second->mFilterType);
+    }
+
+    {
+        Log::debug("### 2 filters that match 2 different destinations but one destination has a prevent filter that matches too  ###");
+        RequestProcessor proc;
+        conf.currentDupDestination = "Honolulu:8080";
+
+        proc.addFilter("/match", "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
+        conf.currentDupDestination = "Hikkaduwa:8090";
+        proc.addFilter("/match", "INFO", "myinfo", conf, tFilter::eFilterTypes::REGULAR);
+        proc.addFilter("/match", "NO", "dup", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
+
+        RequestInfo ri = RequestInfo(std::string("42"),"/match", "/match/pws/titi/", "INFO=myinfo&NO=dup");
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        std::list<const tFilter *> ff = proc.processRequest(ri, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(1, (int)ff.size());
+
+        // Check the filter that matched
+        const tFilter *first = ff.front();
+        CPPUNIT_ASSERT_EQUAL(std::string("Honolulu:8080"), first->mDestination);
+        CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, first->mFilterType);
+    }
+
+
+
+
+}
 
 //--------------------------------------
 // the main method

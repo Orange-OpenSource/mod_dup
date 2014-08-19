@@ -77,7 +77,6 @@ public:
 
     virtual ~tFilter();
 
-    std::string mField;                                     /** The key or field the filter applies on */
     std::string mDestination;                               /** The host to duplicate the request to if the filter matches
                                                                     the destination in &lt;host>[:&lt;port>] format */
     DuplicationType::eDuplicationType mDuplicationType;     /** The duplication type for this filter */
