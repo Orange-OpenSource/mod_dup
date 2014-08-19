@@ -63,3 +63,25 @@ add_custom_target(check-functional-migrate
 # Global testing target
 add_custom_target(check-functional)
 add_dependencies(check-functional check-functional-dup check-functional-compare check-functional-migrate)
+
+# Activation of testing modules + sites
+add_custom_target(activate-all
+  COMMAND echo Activating apache modules...
+  COMMAND a2enmod compare_test
+  COMMAND a2enmod dup_test
+  COMMAND a2enmod migrate_test
+  COMMAND echo Activating apache sites...
+  COMMAND a2ensite dup_test_vhost migrate_test_vhost
+  COMMAND service apache2 restart
+)
+
+# Desactivation of testing modules + sites
+add_custom_target(desactivate-all
+  COMMAND echo Desactivating apache modules...
+  COMMAND a2dismod compare_test
+  COMMAND a2dismod dup_test
+  COMMAND a2dismod migrate_test
+  COMMAND echo Desactivating apache sites...
+  COMMAND a2dissite dup_test_vhost migrate_test_vhost
+  COMMAND service apache2 restart
+)
