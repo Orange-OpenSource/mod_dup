@@ -100,7 +100,7 @@ class TeeRequest:
 
     def assert_received(self, path, body, server_port):
         if (len(self.t_dest)):
-            assert  server_port == 16555 ,  "########### SHOULD BE ON SECOND LOCATION  ###############"
+            assert server_port == 16555 ,  "########### SHOULD BE ON SECOND LOCATION  ###############"
         else:
             assert  server_port != 16555 ,  "########### SHOULD BE ON FIRST LOCATION  ###############"
         assert self.t_path, '''Unexpected request received
@@ -144,6 +144,7 @@ def run_tests(request_files, queue, options):
                 print "************************************"
                 print "########### EXPECTED ###############"
                 print "Expected:", request
+                exit(1)
 
 def display_test_content(request_files):
     for r_fname in request_files:

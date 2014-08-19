@@ -6,12 +6,13 @@ then
    rm $outjtl
 fi
 
-/home/mlornac/bin/jakarta-jmeter-2.9/bin/jmeter -n -l $outjtl -t $RESULT_DIR/compare.jmx #>/dev/null 2>&1
+jmeter -n -l $outjtl -t $RESULT_DIR/compare.jmx >/dev/null 2>&1
     grep -q ',false,' $outjtl
     if [ $? -eq 0 ]; then
         echo -n "`date` - compare.jmx - "
 	echo "$(tput setaf 1)FAILURE$(tput sgr0)"
 	grep ',false,' $outjtl
+        exit 1
     else
         rm $outjtl
 	echo -n "`date` - compare.jmx - "
