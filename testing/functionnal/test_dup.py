@@ -99,9 +99,10 @@ class TeeRequest:
         return buf
 
     def assert_received(self, path, body, server_port):
-        if (len(self.t_dest)):
+        # if (self.t_dest == "MULTI")
+        if (len(self.t_dest) and self.t_dest != "MULTI"):
             assert server_port == 16555 ,  "########### SHOULD BE ON SECOND LOCATION  ###############"
-        else:
+        elif not len(self.t_dest):
             assert  server_port != 16555 ,  "########### SHOULD BE ON FIRST LOCATION  ###############"
         assert self.t_path, '''Unexpected request received
                path: %s
@@ -134,10 +135,15 @@ def run_tests(request_files, queue, options):
             try:
                 try:
                     method, path, body, server_port = queue.get(timeout=3)
+                    request.assert_received(path, body, server_port)
+                    if (request.t_dest == "MULTI"):
+                        # second extraction from the queue
+                        method, path, body, server_port = queue.get(timeout=3)
+                        request.assert_received(path, body, server_port)
+
                 except Queue.Empty:
                     request.assert_not_received()
-                else:
-                    request.assert_received(path, body, server_port)
+
             except AssertionError, err:
                 print "########### RECEIVED ###############"
                 print "Error:", err
@@ -145,6 +151,7 @@ def run_tests(request_files, queue, options):
                 print "########### EXPECTED ###############"
                 print "Expected:", request
                 exit(1)
+
 
 def display_test_content(request_files):
     for r_fname in request_files:

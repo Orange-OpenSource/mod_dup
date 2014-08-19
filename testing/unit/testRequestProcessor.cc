@@ -731,9 +731,6 @@ void TestRequestProcessor::testMultiDestination() {
         CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, first->mFilterType);
     }
 
-
-
-
 }
 
 //--------------------------------------
