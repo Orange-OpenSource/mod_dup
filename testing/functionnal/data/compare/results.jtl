@@ -1,18 +1,19 @@
-1407253525684,125,Success match in Header,200,OK,Thread Group 1-1,text,true,2685,114
-1407253525824,15,Success match in Body,200,OK,Thread Group 1-1,text,true,2675,10
-1407253525840,10,Success match in All - Body,200,OK,Thread Group 1-1,text,true,2676,5
-1407253525851,10,Success match in All - Header,200,OK,Thread Group 1-1,text,true,2681,4
-1407253525862,12,Success match in All - URL,200,OK,Thread Group 1-1,text,true,564,6
-1407253525875,9,Success match in URL,200,OK,Thread Group 1-1,text,true,564,4
-1407253609070,118,Success match in Header,200,OK,Thread Group 1-1,text,true,2685,111
-1407253609202,12,Success match in Body,200,OK,Thread Group 1-1,text,true,2672,6
-1407253609215,11,Success match in All - Body,200,OK,Thread Group 1-1,text,true,2676,5
-1407253609227,9,Success match in All - Header,200,OK,Thread Group 1-1,text,true,2681,4
-1407253609237,18,Success match in All - URL,200,OK,Thread Group 1-1,text,true,565,12
-1407253609255,9,Success match in URL,200,OK,Thread Group 1-1,text,true,564,4
-1407253683971,57,Success match in Header,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
-1407253684045,0,Success match in Body,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
-1407253684055,1,Success match in All - Body,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
-1407253684057,1,Success match in All - Header,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
-1407253684060,0,Success match in All - URL,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
-1407253684061,0,Success match in URL,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,Non HTTP response message: Connection to http://localhost refused,Thread Group 1-1,text,false,1935,0
+1408437757621,30,UC2: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,30
+1408437757670,2,UC3: GET no body => invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408437757673,2,UC4: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408437757676,2,UC5: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408437757683,1,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,1
+1408437757686,3,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,3
+1408437757691,2,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408437757695,5,UC1: OK - No comparison made,200,OK,Test Compare 1-1,,true,269,5
+1408437757701,1,UC1: OK - LargeData No comparison made,200,OK,Test Compare 1-1,,true,26292,1
+1408437757705,7,UC2: OK - Writes in log,200,OK,Test Compare 1-1,,true,290,7
+1408437757714,1,UC3: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
+1408437757722,5,UC4: OK - Comparison enabled,200,OK,Test Compare 1-1,,true,288,5
+1408437757728,1,UC5: OK - get the log file,200,OK,Test Compare 1-1,,true,1113,1
+1408437757730,1,UC3: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
+1408437757732,2,UC4: OK - Comparison disabled,200,OK,Test Compare 1-1,,true,289,2
+1408437757735,1,UC5: OK - get the log file,200,OK,Test Compare 1-1,,true,1030,1
+1408437757737,1,UC6: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
+1408437757740,34,UC7: OK - LargeData in Request,200,OK,Test Compare 1-1,,true,291,34
+1408437757775,1,UC8: OK - get the log file,200,OK,Test Compare 1-1,,false,33496,1

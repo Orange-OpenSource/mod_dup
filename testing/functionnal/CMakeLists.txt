@@ -17,6 +17,9 @@
 cmake_minimum_required(VERSION 2.8)
 
 install(FILES
+  data/compare/www/comp_truncate
+  data/compare/www/comp_test1
+  data/compare/www/comp_test2
   data/dup/www/compare
   data/dup/www/dup
   data/dup/www/enrich
