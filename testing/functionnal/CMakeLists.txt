@@ -57,16 +57,9 @@ add_custom_target(check-functional-migrate
   COMMAND echo "Starting JMeter test..."
 
   # backup restore handled in the script
-  COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate_for_jenkins.sh ${CMAKE_SOURCE_DIR}/testing/functionnal
+  COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/functionnal
 )
 
-#COMMAND a2ensite test_migrate_vhost
-#COMMAND a2enmod migrate
-#COMMAND service apache2 restart
-
-# backup restore handled in the script
-#COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/TestMigrate.jmx
-
-#COMMAND a2dissite test_migrate_vhost
-#COMMAND service apache2 reload
-
+# Global testing target
+add_custom_target(check-functional)
+add_dependencies(check-functional check-functional-dup check-functional-compare check-functional-migrate)

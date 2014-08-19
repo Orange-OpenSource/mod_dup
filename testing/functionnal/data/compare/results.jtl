@@ -1,19 +1,19 @@
-1408437757621,30,UC2: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,30
-1408437757670,2,UC3: GET no body => invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
-1408437757673,2,UC4: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
-1408437757676,2,UC5: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
-1408437757683,1,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,1
-1408437757686,3,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,3
-1408437757691,2,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,2
-1408437757695,5,UC1: OK - No comparison made,200,OK,Test Compare 1-1,,true,269,5
-1408437757701,1,UC1: OK - LargeData No comparison made,200,OK,Test Compare 1-1,,true,26292,1
-1408437757705,7,UC2: OK - Writes in log,200,OK,Test Compare 1-1,,true,290,7
-1408437757714,1,UC3: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
-1408437757722,5,UC4: OK - Comparison enabled,200,OK,Test Compare 1-1,,true,288,5
-1408437757728,1,UC5: OK - get the log file,200,OK,Test Compare 1-1,,true,1113,1
-1408437757730,1,UC3: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
-1408437757732,2,UC4: OK - Comparison disabled,200,OK,Test Compare 1-1,,true,289,2
-1408437757735,1,UC5: OK - get the log file,200,OK,Test Compare 1-1,,true,1030,1
-1408437757737,1,UC6: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
-1408437757740,34,UC7: OK - LargeData in Request,200,OK,Test Compare 1-1,,true,291,34
-1408437757775,1,UC8: OK - get the log file,200,OK,Test Compare 1-1,,false,33496,1
+1408442565613,795,UC2: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,795
+1408442566431,4,UC3: GET no body => invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,4
+1408442566440,2,UC4: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408442566444,2,UC5: invalid body format ,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408442566448,2,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408442566452,2,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,2
+1408442566455,3,UC6: invalid size value,400,Bad Request,Test Compare 1-1,text,true,508,3
+1408442566460,6,UC1: OK - No comparison made,200,OK,Test Compare 1-1,,true,269,6
+1408442566468,2,UC1: OK - LargeData No comparison made,200,OK,Test Compare 1-1,,true,26292,2
+1408442566474,10,UC2: OK - Writes in log,200,OK,Test Compare 1-1,,true,291,10
+1408442566487,2,UC3: OK - Truncate,200,OK,Test Compare 1-1,,true,289,2
+1408442566490,2,UC4: OK - Comparison enabled,200,OK,Test Compare 1-1,,true,288,2
+1408442566494,1,UC5: OK - get the log file,200,OK,Test Compare 1-1,,true,1113,1
+1408442566496,1,UC3: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
+1408442566499,2,UC4: OK - Comparison disabled,200,OK,Test Compare 1-1,,true,289,2
+1408442566502,1,UC5: OK - get the log file,200,OK,Test Compare 1-1,,true,1030,1
+1408442566505,1,UC6: OK - Truncate,200,OK,Test Compare 1-1,,true,289,1
+1408442566508,43,UC7: OK - LargeData in Request,200,OK,Test Compare 1-1,,true,291,42
+1408442566552,1,UC8: OK - get the log file,200,OK,Test Compare 1-1,,false,33496,1
