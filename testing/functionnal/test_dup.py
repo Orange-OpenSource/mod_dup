@@ -138,8 +138,9 @@ def run_tests(request_files, queue, options):
                     request.assert_received(path, body, server_port)
                     if (request.t_dest == "MULTI"):
                         # second extraction from the queue
-                        method, path, body, server_port = queue.get(timeout=3)
-                        request.assert_received(path, body, server_port)
+                        method2, path2, body2, server_port2 = queue.get(timeout=3)
+                        assert server_port != server_port2, "Multi sent on the same location"
+                        request.assert_received(path2, body2, server_port2)
 
                 except Queue.Empty:
                     request.assert_not_received()
