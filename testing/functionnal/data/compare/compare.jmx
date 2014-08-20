@@ -1034,15 +1034,18 @@ UNIQUE_ID: 7855441177&#xd;
               <hashTree/>
               <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check log content" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="-1967659388">Key with value differences :
+                  <stringProp name="1390773182">Key with value differences :
 &apos;Content-Length&apos; ==&gt; &apos;411&apos;/&apos;7&apos;
-&apos;Content-Type&apos; ==&gt; &apos;text/xml; charset=UTF-8&apos;/&apos;text/plain&apos;
 &apos;UNIQUE_ID&apos; ==&gt; &apos;COMP12345678&apos;/&apos;1587963206&apos;</stringProp>
-                  <stringProp name="-2094427141">Key missing in the destination map :
+                  <stringProp name="-1386818870">Key missing in the destination map :
+&apos;Content-Type&apos; ==&gt; &apos;text/xml; charset=UTF-8&apos;
 &apos;Transfer-Encoding&apos; ==&gt; &apos;chunked&apos;
 Key missing in src map :
 &apos;Accept-Ranges&apos; ==&gt; &apos;bytes&apos;
-&apos;Connection&apos; ==&gt; &apos;Keep-Alive&apos;</stringProp>
+&apos;Connection&apos; ==&gt; &apos;Keep-Alive&apos;
+&apos;ETag&apos; ==&gt; &apos;&quot;40032-7-500fa41c7f240&quot;&apos;
+&apos;Keep-Alive&apos; ==&gt; &apos;timeout=5, max=90&apos;
+&apos;Last-Modified&apos; ==&gt; &apos;Tue, 19 Aug 2014 12:02:09 GMT&apos;</stringProp>
                   <stringProp name="517813910">\+COMPARE</stringProp>
                   <stringProp name="2016365415">-&lt;OOPSApplications&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris e</stringProp>
                 </collectionProp>
