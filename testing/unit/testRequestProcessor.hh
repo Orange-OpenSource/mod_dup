@@ -41,7 +41,6 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testTimeout);
     CPPUNIT_TEST(testFilterOnNotMatching);
     CPPUNIT_TEST(testMultiDestination);
-    CPPUNIT_TEST(testDuplicationPercentage);
 
     CPPUNIT_TEST_SUITE_END();
 
@@ -72,8 +71,4 @@ public:
      */
     void testMultiDestination();
 
-    /**
-     * @brief Tests the duplication percentage according to the destination
-     */
-    void testDuplicationPercentage();
 };
