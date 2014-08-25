@@ -65,6 +65,8 @@ public:
 
     /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
+    /** The percentage of request to duplicate. Destination level */
+    int                                         currentDuplicationPercentage;
 
     bool                                        synchronous;
 
@@ -114,10 +116,11 @@ postConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp, server_rec
  * @param pParams miscellaneous data
  * @param pCfg user data for the directory/location
  * @param pDestionation the destination in <host>[:<port>] format
+ * @param percentageToDuplicate percentage of requests that matches to duplicate to this destination
  * @return Always DECLINED to let other modules handle the request
  */
 const char*
-setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination);
+setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination, const char* percentageToDuplicate);
 
 /**
  * @brief Set the minimum and maximum number of threads

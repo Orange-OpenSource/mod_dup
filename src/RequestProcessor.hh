@@ -35,6 +35,7 @@ typedef void CURL;
 struct request_rec;
 
 class TestRequestProcessor;
+class TestModDup;
 
 namespace DupModule {
 
@@ -107,6 +108,12 @@ typedef std::map<std::string, std::list<tSubstitute> > tFieldSubstitutionMap;
 class Commands {
 public:
 
+    /**
+     * @brief Default Ctor
+     */
+    Commands() : mDuplicationPercentage(100) {
+    }
+
     /** @brief The list of filter commands
      * Indexed by the field on which they apply
      */
@@ -120,6 +127,16 @@ public:
 
     /** @brief The Raw Substitution list */
     std::list<tSubstitute> mRawSubstitutions;
+
+    /** The percentage of matching requests to duplicate */
+    unsigned int mDuplicationPercentage;
+
+    /**
+     * @brief Returns true if the request must be duplicated
+     * Uses the percentage of duplication to determine if the request must be
+     * duplicated or not
+     */
+    bool toDuplicate();
 };
 
 /**
@@ -127,15 +144,8 @@ public:
  * Adds a destination concept
  */
 struct CommandsByDestination {
-
     /** Commands indexed by the duplication destination*/
     std::map<std::string, Commands> mCommands;
-
-    /**
-     * @brief Returns true if we have to duplicate to this destination
-     * Means that at least, one of it's filters matches
-     */
-    bool toDuplicate() const;
 };
 
 /**
@@ -212,6 +222,16 @@ public:
     void
     addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
             const DupConf &pAssociatedConf, tFilter::eFilterTypes fType);
+
+    /**
+     * @brief Sets a destination duplication percentage
+     * @param pPath the path of the request
+     * @param destination : the destination to treat
+     * @param percentage : the percentage to affect to this destination
+     */
+    void
+    setDestinationDuplicationPercentage(const std::string &pPath, const std::string &destination,
+                                        int percentage);
 
     /**
      * @brief Add a RAW filter for all requests on a given path
@@ -312,6 +332,8 @@ private:
             std::string &result);
 
     friend class ::TestRequestProcessor;
+    friend class ::TestModDup;
+
 };
 
 

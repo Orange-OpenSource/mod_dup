@@ -65,7 +65,7 @@ add_custom_target(check-functional)
 add_dependencies(check-functional check-functional-dup check-functional-compare check-functional-migrate)
 
 # Activation of testing modules + sites
-add_custom_target(activate-all
+add_custom_target(activate
   COMMAND echo Activating apache modules...
   COMMAND a2enmod compare_test
   COMMAND a2enmod dup_test
@@ -76,7 +76,7 @@ add_custom_target(activate-all
 )
 
 # Desactivation of testing modules + sites
-add_custom_target(desactivate-all
+add_custom_target(desactivate
   COMMAND echo Desactivating apache modules...
   COMMAND a2dismod compare_test
   COMMAND a2dismod dup_test

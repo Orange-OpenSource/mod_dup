@@ -35,6 +35,12 @@ namespace DupModule {
 
 const char * gUserAgent = "mod-dup";
 
+bool
+Commands::toDuplicate() {
+    return ((rand() % 100) < mDuplicationPercentage);
+}
+
+
 void
 RequestProcessor::setTimeout(const unsigned int &pTimeout) {
     mTimeout = pTimeout;
@@ -67,6 +73,12 @@ RequestProcessor::addFilter(const std::string &pPath, const std::string &pField,
             tFilter(pFilter, pAssociatedConf.currentApplicationScope,
                     pAssociatedConf.currentDupDestination, pAssociatedConf.getCurrentDuplicationType(),
             fType)));
+}
+
+void
+RequestProcessor::setDestinationDuplicationPercentage(const std::string &pPath, const std::string &destination,
+                                                      int percentage) {
+    mCommands[pPath].mCommands[destination].mDuplicationPercentage = percentage;
 }
 
 void
@@ -161,7 +173,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
     const tFilter *matched = NULL;
     std::multimap<std::string, tFilter> &pFilters = pCommands.mFilters;
 
-    // Key filter type detection
+    // Key filter type deection
     int keyFilterOnHeader, keyFilterOnBody;
     applicationOnMap(pFilters, keyFilterOnHeader, keyFilterOnBody);
 
@@ -468,6 +480,13 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
             // First get a hand the commands structure that matches the destination duplication
             CommandsByDestination &cbd = mCommands.at(reqInfo.mConfPath);
             Commands &c = cbd.mCommands.at((*it)->mDestination);
+
+            // Should we drop the duplication?
+            if (!c.toDuplicate()) {
+                Log::debug("Regulation drop");
+                ++it;
+                continue;
+            }
 
             if (!c.mSubstitutions.empty() || !c.mRawSubstitutions.empty()) {
                 // perform substitutions specific to this location

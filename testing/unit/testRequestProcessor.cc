@@ -733,6 +733,13 @@ void TestRequestProcessor::testMultiDestination() {
 
 }
 
+void TestRequestProcessor::testDuplicationPercentage() {
+
+
+
+}
+
+
 //--------------------------------------
 // the main method
 //--------------------------------------

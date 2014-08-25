@@ -121,9 +121,9 @@ void TestModDup::testConfig()
     DupConf *lDoHandle = new DupConf();
 
 
-    CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, NULL));
-    CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, ""));
-    CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost"));
+    CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, NULL, NULL));
+    CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "", NULL));
+    CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost", NULL));
 
     // Substitutions
     CPPUNIT_ASSERT(!setSubstitute(lParms, (void *)lDoHandle, "toto", "toto", "titi"));
@@ -231,6 +231,80 @@ void TestModDup::testHighestDuplicationType()
     // Should NOT go back to HEADER_ONLY
     CPPUNIT_ASSERT(!setDuplicationType(lParms, (void *)conf, "HEADER_ONLY"));
     CPPUNIT_ASSERT_EQUAL(DuplicationType::COMPLETE_REQUEST, conf->getHighestDuplicationType());
+}
+
+void TestModDup::testDuplicationPercentage() {
+    // Basic part
+    {
+        testInit();
+        cmd_parms * lParms = getParms();
+        lParms->path = strdup("/spp/main");
+        // Pointer to a boolean meant to activate the module on a given path
+        DupConf *lDoHandle = new DupConf();
+
+        // NAN test
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "JeNeSuisPasUnNombre"));
+
+        // Out of range
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "666"));
+
+        // Nominal test
+        CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost", "12"));
+    }
+
+    {
+        testInit();
+        cmd_parms * lParms = getParms();
+        lParms->path = strdup("/spp/main");
+        // Pointer to a boolean meant to activate the module on a given path
+        DupConf *lDoHandle = new DupConf();
+
+        CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost:42", "42"));
+        CPPUNIT_ASSERT(!setFilter(lParms, (void *) lDoHandle, "SID", "fortytwo"));
+
+        CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost:84", "84"));
+        CPPUNIT_ASSERT(!setFilter(lParms, (void *) lDoHandle, "SID", "eightyfour"));
+
+
+        {
+            RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=eightyfour");
+            std::list<std::pair<std::string, std::string> > lParsedArgs;
+            gProcessor->parseArgs(lParsedArgs, ri.mArgs);
+            std::list<const tFilter *> ff = gProcessor->processRequest(ri, lParsedArgs);
+            CPPUNIT_ASSERT_EQUAL(1, (int)ff.size());
+
+            // Check the filter that matched
+            const tFilter *first = ff.front();
+            CPPUNIT_ASSERT_EQUAL(std::string("localhost:84"), first->mDestination);
+            CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, first->mFilterType);
+
+            // Get a handle on the corresponding command
+            CommandsByDestination &cbd = gProcessor->mCommands.at(ri.mConfPath);
+            Commands &c = cbd.mCommands.at(first->mDestination);
+            // Checks the duplication percentage
+            CPPUNIT_ASSERT_EQUAL((unsigned int)84, c.mDuplicationPercentage);
+        }
+
+        {
+            RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=fortytwo");
+            std::list<std::pair<std::string, std::string> > lParsedArgs;
+            gProcessor->parseArgs(lParsedArgs, ri.mArgs);
+            std::list<const tFilter *> ff = gProcessor->processRequest(ri, lParsedArgs);
+            CPPUNIT_ASSERT_EQUAL(1, (int)ff.size());
+
+            // Check the filter that matched
+            const tFilter *first = ff.front();
+            CPPUNIT_ASSERT_EQUAL(std::string("localhost:42"), first->mDestination);
+            CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, first->mFilterType);
+
+            // Get a handle on the corresponding command
+            CommandsByDestination &cbd = gProcessor->mCommands.at(ri.mConfPath);
+            Commands &c = cbd.mCommands.at(first->mDestination);
+            // Checks the duplication percentage
+            CPPUNIT_ASSERT_EQUAL((unsigned int)42, c.mDuplicationPercentage);
+        }
+
+    }
 
 
 }

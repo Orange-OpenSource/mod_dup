@@ -45,6 +45,7 @@ class TestModDup :
     CPPUNIT_TEST(testDuplicationType);
     CPPUNIT_TEST(testHighestDuplicationType);
     CPPUNIT_TEST(testInitAndCleanUp);
+    CPPUNIT_TEST(testDuplicationPercentage);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -56,6 +57,7 @@ public:
     void testDuplicationType();
     void testHighestDuplicationType();
 
+    void testDuplicationPercentage();
 };
 
 

@@ -133,7 +133,7 @@ setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
 }
 
 const char*
-setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
+setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination, const char* duplicationPercentage) {
     const char *lErrorMsg = setActive(pParams, pCfg);
     if (lErrorMsg) {
         return lErrorMsg;
@@ -144,6 +144,21 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination) {
         return "Missing destination argument";
     }
     tC->currentDupDestination = pDestination;
+    if (!duplicationPercentage) {
+        tC->currentDuplicationPercentage = 100;
+    } else {
+        try {
+            unsigned int perc = boost::lexical_cast<unsigned int>(duplicationPercentage);
+            if (perc > 100) {
+                return "Duplication percentage value not valid: must be an integer between 0 and 100";
+            }
+            gProcessor->setDestinationDuplicationPercentage(pParams->path, pDestination, perc);
+        } catch (boost::bad_lexical_cast) {
+            std::string msg = "Duplication percentage value not valid: ";
+            msg += duplicationPercentage;
+            return strdup(msg.c_str());
+        }
+    }
     return NULL;
 }
 
@@ -409,7 +424,7 @@ command_rec gCmds[] = {
                   0,
                   ACCESS_CONF,
                   "Sets the duplication type that will used for all the following filters declarations"),
-    AP_INIT_TAKE1("DupDestination",
+    AP_INIT_TAKE12("DupDestination",
                   reinterpret_cast<const char *(*)()>(&setDestination),
                   0,
                   ACCESS_CONF,
