@@ -16,7 +16,7 @@
 
 install(FILES compare_test.load compare_test.conf DESTINATION /etc/apache2/mods-available COMPONENT mod_compare)
 
-install(FILES dup_test.load dup_test.conf DESTINATION /etc/apache2/mods-available COMPONENT mod_dup)
+install(FILES dup_test.load dup_test.conf dup.load DESTINATION /etc/apache2/mods-available COMPONENT mod_dup)
 install(FILES dup_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_dup)
 
 install(FILES migrate_test.load migrate_test.conf DESTINATION /etc/apache2/mods-available COMPONENT mod_migrate)
