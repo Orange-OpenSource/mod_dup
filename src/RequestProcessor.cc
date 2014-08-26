@@ -37,7 +37,38 @@ const char * gUserAgent = "mod-dup";
 
 bool
 Commands::toDuplicate() {
-    return ((rand() % 100) < mDuplicationPercentage);
+    static bool GlobalInit = false;
+    static __thread bool lInitialized = false;
+    static __thread struct random_data lRD = { 0, 0, 0, 0, 0, 0, 0} ;
+    static __thread char lRSB[8];
+
+    if (!GlobalInit) {
+        srandom(getpid());
+        GlobalInit = true;
+    }
+
+    // Initialized per thread
+    int lRet = 0;
+    if ( ! lInitialized ) {
+        memset(lRSB,0, 8);
+        // init State must be different for all threads or each will answer the same sequence
+        lRet = initstate_r(random(), lRSB, 8, &lRD);
+        if (lRet) {
+            Log::error(523, "Failed to Initialize Random State");
+        }
+        lInitialized = true;
+    }
+
+    // Thread-safe calls with thread local initialization
+    int randNum = 1;
+    lRet = random_r(&lRD, &randNum);
+    if (lRet) {
+        Log::error(524, "random_r failed");
+        // No duplication
+        return false;
+    }
+
+    return ((randNum % 100) < mDuplicationPercentage);
 }
 
 
