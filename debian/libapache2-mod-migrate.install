@@ -1,6 +1,4 @@
-/etc/apache2/mods-available/migrate.conf.example
 /etc/apache2/mods-available/migrate.load
-/etc/apache2/mods-available/migrate.conf.example 	/etc/apache2/mods-available/
 /etc/apache2/mods-available/migrate.load 			/etc/apache2/mods-available/
 /usr/lib/apache2/modules/mod_migrate.so
 /usr/lib/apache2/modules/mod_migrate.so 			/opt/hosting/run/libapache2-mod-dup/unversionned

@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-install(FILES compare_test.load compare_test.conf DESTINATION /etc/apache2/mods-available COMPONENT mod_compare)
+install(FILES compare_test.load compare_test.conf compare.load DESTINATION /etc/apache2/mods-available COMPONENT mod_compare)
 
 install(FILES dup_test.load dup_test.conf dup.load DESTINATION /etc/apache2/mods-available COMPONENT mod_dup)
 install(FILES dup_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_dup)
 
-install(FILES migrate_test.load migrate_test.conf DESTINATION /etc/apache2/mods-available COMPONENT mod_migrate)
+install(FILES migrate_test.load migrate_test.conf migrate.load DESTINATION /etc/apache2/mods-available COMPONENT mod_migrate)
 install(FILES migrate_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_migrate)
 
