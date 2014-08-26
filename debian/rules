@@ -19,7 +19,8 @@ INSTALL=install
 # removing default LDFLAGS in dpkg-buildpackage: '-Wl,-Bsymbolic-functions' => causes conflict in boost::split with mod_spp!!!
 export LDFLAGS=
 
-build: build-stamp
+build: build-stamp build-test-stamp
+
 build-stamp:
 	dh_testdir
 
@@ -39,8 +40,7 @@ build-test-stamp:
 
 	touch build-test-stamp
 
-clean:
-	dh_testdir
+clean:	dh_testdir
 	dh_testroot
 
 	# Add commands to clean up after the build process here
@@ -60,7 +60,7 @@ install-stamp:
 	$(MAKE) -C $(BUILD) install DESTDIR=$(CURDIR)/debian/tmp
 
 	touch install-stamp
-	
+
 binary-indep: build install
 
 binary-arch: build install
