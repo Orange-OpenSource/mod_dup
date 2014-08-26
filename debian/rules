@@ -31,16 +31,19 @@ build-stamp:
 	touch build-stamp
 
 build-test-stamp:
+	echo "Test stamp"
 	dh_testdir
 	mkdir -p $(BUILD_TEST)
 	cd $(BUILD_TEST) && cmake -DBUILD_COVERAGE=ON -DBUILD_XML=ON $(SRCDIR)
-	$(MAKE) -j4 -C $(BUILD_TEST) VERBOSE=1
+	$(MAKE) -j 4 -C $(BUILD_TEST)
 	$(MAKE) -C $(BUILD_TEST) coverage-unit VERBOSE=1
-	$(MAKE) -C $(BUILD_TEST) coverage-functional VERBOSE=1
+	#Functional coverage desactivated
+	#$(MAKE) -C $(BUILD_TEST) coverage-functional VERBOSE=1
 
 	touch build-test-stamp
 
-clean:	dh_testdir
+clean:
+	dh_testdir
 	dh_testroot
 
 	# Add commands to clean up after the build process here
