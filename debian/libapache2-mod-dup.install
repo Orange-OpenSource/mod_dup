@@ -1,4 +1,3 @@
 /etc/apache2/mods-available/dup.load
 /etc/apache2/mods-available/dup.load 			/etc/apache2/mods-available/
 /usr/lib/apache2/modules/mod_dup.so
-/usr/lib/apache2/modules/mod_dup.so 			/opt/hosting/run/libapache2-mod-dup/unversionned

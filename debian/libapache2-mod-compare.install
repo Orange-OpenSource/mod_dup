@@ -1,4 +1,3 @@
 /etc/apache2/mods-available/compare.load
 /etc/apache2/mods-available/compare.load 			/etc/apache2/mods-available/
 /usr/lib/apache2/modules/mod_compare.so
-/usr/lib/apache2/modules/mod_compare.so 			/opt/hosting/run/libapache2-mod-dup/unversionned
