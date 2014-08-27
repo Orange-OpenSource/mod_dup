@@ -63,6 +63,10 @@ Depends: ${misc:Depends},
 Description: Apache module which migrates requests from a server to another
 Homepage: http://sourceforge.x-echo.com/projects/pns/
 
+Package: libapache2-mod-dup-migrate-validation
+Architecture: any
+Description: Validation files necessary for non reg tests
+
 Package: libws-diff
 Architecture: any
 Depends: cmake, debhelper (>= 5.0.0),

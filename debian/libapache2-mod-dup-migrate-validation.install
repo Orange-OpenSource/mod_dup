@@ -1,0 +1,4 @@
+/usr/local/etc/testing/functionnal/*				/usr/local/etc/testing/functionnal
+/etc/apache2/mods-available/migrate_test.load 		/etc/apache2/mods-available/
+/etc/apache2/mods-available/migrate_test.conf 		/etc/apache2/mods-available/
+/etc/apache2/sites-available/migrate_test_vhost		/etc/apache2/sites-available
