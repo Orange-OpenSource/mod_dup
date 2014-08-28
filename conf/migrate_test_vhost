@@ -1,17 +1,6 @@
 Listen 4321
-Listen 1212
 # Vhost activation
-Listen 1234
 
-<VirtualHost *:1234>
-	DocumentRoot /var/www
-    <Directory />
-        Options FollowSymLinks
-        AllowOverride None
-		Order allow,deny
-		allow from all
-    </Directory>
-</VirtualHost>
 
 <VirtualHost *:4321>
 	DocumentRoot /var/www
