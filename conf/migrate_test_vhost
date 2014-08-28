@@ -13,12 +13,10 @@ Listen 1234
     </Directory>
 </VirtualHost>
 
-
 <VirtualHost *:4321>
 	DocumentRoot /var/www
-
     <Directory />
-    	Options FollowSymLinks
+        Options FollowSymLinks
         AllowOverride None
     </Directory>
 
@@ -28,14 +26,13 @@ Listen 1234
         allow from all
     </Directory>
 
-    ScriptAlias /print_content /var/www/dup_test/cgi/print_content.cgi
+	ScriptAlias /print_content /var/www/dup_test/cgi/print_content.cgi
 </VirtualHost>
 
-<VirtualHost *:1212>
+<VirtualHost *:8080>
 	DocumentRoot /var/www
-
     <Directory />
-    	Options FollowSymLinks
+        Options FollowSymLinks
         AllowOverride None
     </Directory>
 
@@ -47,3 +44,4 @@ Listen 1234
 
     ScriptAlias /local/print_content /var/www/dup_test/cgi/print_content.cgi
 </VirtualHost>
+
