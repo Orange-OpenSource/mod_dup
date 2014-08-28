@@ -65,7 +65,7 @@ target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} boost_seri
 
 add_library(mod_migrate MODULE ${mod_migrate_SOURCE_FILES})
 set_target_properties(mod_migrate PROPERTIES PREFIX "")
-target_link_libraries(mod_migrate ${APR_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} boost_serialization libws_diff rt)
+target_link_libraries(mod_migrate ${APR_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} boost_regex boost_thread rt)
 
 install(TARGETS mod_dup LIBRARY DESTINATION /usr/lib/apache2/modules COMPONENT mod_dup)
 install(TARGETS mod_compare LIBRARY DESTINATION /usr/lib/apache2/modules COMPONENT mod_compare)

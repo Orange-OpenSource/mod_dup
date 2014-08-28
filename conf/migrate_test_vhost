@@ -1,12 +1,36 @@
 Listen 4321
-Listen 1212
 # Vhost activation
-Listen 1234
+
 
 <VirtualHost *:4321>
-    ScriptAlias /print_content /var/www/dup_test/cgi/print_content.cgi
+	DocumentRoot /var/www
+    <Directory />
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    <Directory /var/www/dup_test/cgi/>
+        AllowOverride None
+        Order allow,deny
+        allow from all
+    </Directory>
+
+	ScriptAlias /print_content /var/www/dup_test/cgi/print_content.cgi
 </VirtualHost>
 
-<VirtualHost *:1212>
+<VirtualHost *:8080>
+	DocumentRoot /var/www
+    <Directory />
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    <Directory /var/www/dup_test/cgi/>
+        AllowOverride None
+        Order allow,deny
+        allow from all
+    </Directory>
+
     ScriptAlias /local/print_content /var/www/dup_test/cgi/print_content.cgi
 </VirtualHost>
+

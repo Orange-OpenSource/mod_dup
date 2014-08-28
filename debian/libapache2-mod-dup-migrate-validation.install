@@ -1,0 +1,10 @@
+/usr/local/etc/testing/functionnal/*				/usr/local/etc/testing/functionnal
+/usr/local/etc/testing/functionnal/data/migrate/www/print_content.cgi  /var/www/dup_test/cgi/
+/etc/apache2/mods-available/migrate_test.load 		/etc/apache2/mods-available/
+/etc/apache2/mods-available/migrate_test.conf 		/etc/apache2/mods-available/
+/etc/apache2/mods-available/compare_test.load 		/etc/apache2/mods-available/
+/etc/apache2/mods-available/compare_test.conf 		/etc/apache2/mods-available/
+/etc/apache2/mods-available/dup_test.load 			/etc/apache2/mods-available/
+/etc/apache2/mods-available/dup_test.conf 			/etc/apache2/mods-available/
+/etc/apache2/sites-available/migrate_test_vhost		/etc/apache2/sites-available
+/etc/apache2/sites-available/dup_test_vhost			/etc/apache2/sites-available

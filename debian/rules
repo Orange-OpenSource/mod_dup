@@ -58,6 +58,9 @@ install-stamp:
 	dh_testroot
 	dh_clean -k
 
+	mkdir -p $(CURDIR)/debian/tmp/usr/local/etc/testing
+	cp -rv testing/functionnal $(CURDIR)/debian/tmp/usr/local/etc/testing
+
 	# Add here commands to install the package into debian/tmp
 	cd $(BUILD)
 	$(MAKE) -C $(BUILD) install DESTDIR=$(CURDIR)/debian/tmp
