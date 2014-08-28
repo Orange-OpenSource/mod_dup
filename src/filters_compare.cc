@@ -200,7 +200,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         apr_size_t len;
 
         if (APR_BUCKET_IS_EOS(currentBucket)) {
-            req->eos_seen = 1;
+            req->eos_seen(true);
             continue;
         }
 
@@ -245,7 +245,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     }
 
     DupModule::RequestInfo *req = shPtr->get();
-    if (!req->eos_seen) {
+    if (!req->eos_seen()) {
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return lStatus;

@@ -40,6 +40,9 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
     // Copy headers in
     apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
 
+    // Add the elapsed time header
+    r.mHeadersOut.push_back(std::make_pair(std::string("ELAPSED_TIME_BY_DUP"), boost::lexical_cast<std::string>(r.getElapsedTimeMS())));
+
     // Basic
     r.mPoison = false;
     r.mConfPath = tConf->dirName;
@@ -88,7 +91,6 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
 
         info->mConfPath = conf->dirName;
         info->mArgs = pRequest->args ? pRequest->args : "";
-
     }
     if (pFilter->ctx != (void *) -1) {
         // Request not read yet
@@ -163,7 +165,7 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
           currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
 
         if (APR_BUCKET_IS_EOS(currentBucket)) {
-            ri->eos_seen = true;
+            ri->eos_seen(true);
             pFilter->ctx = (void *) -1;
             rv = ap_pass_brigade(pFilter->next, pBrigade);
             apr_brigade_cleanup(pBrigade);
@@ -236,11 +238,12 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
 
-    if (!ri->eos_seen) {
+    if (!ri->eos_seen()) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return rv;
     }
+
     // Pushing the answer to the processor
     prepareRequestInfo(tConf, pRequest, *ri);
 

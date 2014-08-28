@@ -18,17 +18,21 @@
 
 #pragma once
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/basic_text_oarchive.hpp>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/string.hpp>
 #include <boost/shared_ptr.hpp>
+
 #include <list>
 #include <map>
 #include <string>
 #include <sstream>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/archive/basic_text_oarchive.hpp>
 
 struct apr_bucket_brigade;
 
@@ -73,6 +77,7 @@ eDuplicationType stringToEnum(const char *value) throw (std::exception);
  * @brief Contains information about the incoming request.
  */
 struct RequestInfo {
+
     typedef std::map<std::string,std::string> mapStr;
 
     friend class boost::serialization::access;
@@ -129,7 +134,6 @@ struct RequestInfo {
     /** @brief list that represents the headers of the request answer */
     tHeaders mHeadersOut;
 
-    bool eos_seen;
     unsigned int offset;
 
     /**
@@ -144,12 +148,13 @@ struct RequestInfo {
     /**
      * @brief Constructor dedicated for serialization purpose
      */
-    RequestInfo(mapStr reqHeader,std::string reqBody,mapStr respHeader,std::string respBody,mapStr dupHeader,std::string dupBody);
+    RequestInfo(const mapStr &reqHeader, const std::string &reqBody, const mapStr &respHeader,
+                const std::string &respBody, const mapStr &dupHeader, const std::string &dupBody);
 
     /**
      * @brief Constructs a request initialising it's id
      */
-    RequestInfo(std::string id);
+    RequestInfo(const std::string &id);
 
     /**
      * @brief Constructs a poisonous object causing the processor to stop when read
@@ -174,6 +179,39 @@ struct RequestInfo {
      * content is appended to output
      */
     static void Serialize(const std::string &toSerialize, std::stringstream &output);
+
+
+    /**
+     * @brief Getter of the EOS flag indicator
+     */
+    bool eos_seen() const {
+        return mEOS;
+    }
+
+    /**
+     * @brief Returns true if the EOS flag has been set
+     * Computes the elapesed time on first call
+     */
+    void eos_seen(bool valToSet);
+
+
+    /**
+     * @brief Returns the computed elapsed time in MS
+     */
+    int getElapsedTimeMS() const;
+
+private:
+
+    /* End Of Stream marker */
+    bool mEOS;
+
+    /*
+     * Initialisation of this struct time
+     * Matches the start time of the apache handler
+     */
+    boost::posix_time::ptime mStartTime;
+    boost::posix_time::time_duration mElapsedTime; /* Elapsed time by the handler to process the request */
+
 
 };
 }
