@@ -3,4 +3,3 @@ a2enmod dup_test
 a2enmod migrate_test
 echo "Activating apache sites..."
 a2ensite dup_test_vhost migrate_test_vhost
-service apache2 restart
