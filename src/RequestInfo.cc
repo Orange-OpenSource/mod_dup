@@ -50,36 +50,56 @@ namespace DupModule {
 
     };
 
-RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath, const std::string &pArgs, const std::string *pBody)
+
+
+void RequestInfo::eos_seen(bool valToSet) {
+    // Compute time elapsed to first eos set
+    if (!mEOS && valToSet) {
+        mElapsedTime = boost::posix_time::microsec_clock::universal_time() - mStartTime;
+    }
+    mEOS = valToSet;
+}
+
+RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
+                         const std::string &pArgs, const std::string *pBody)
     : mPoison(false),
       mId(id),
       mConfPath(pConfPath),
       mPath(pPath),
       mArgs(pArgs),
-      eos_seen(false){
+      mEOS(false),
+      mStartTime(boost::posix_time::microsec_clock::universal_time()),
+      mElapsedTime() {
     if (pBody)
         mBody = *pBody;
 }
 
-RequestInfo::RequestInfo(mapStr reqHeader,std::string reqBody,mapStr respHeader,std::string respBody,mapStr dupHeader,std::string dupBody):
+RequestInfo::RequestInfo(const mapStr &reqHeader, const std::string &reqBody, const mapStr &respHeader,
+                         const std::string &respBody, const mapStr &dupHeader, const std::string &dupBody):
 	mReqHeader(reqHeader),
 	mReqBody(reqBody),
 	mResponseHeader(respHeader),
 	mResponseBody(respBody),
 	mDupResponseHeader(dupHeader),
 	mDupResponseBody(dupBody),
-        eos_seen(false){
+        mEOS(false),
+        mStartTime(boost::posix_time::microsec_clock::universal_time()),
+        mElapsedTime() {
 }
 
-RequestInfo::RequestInfo(std::string id)
+RequestInfo::RequestInfo(const std::string &id)
     : mPoison(false),
       mId(id),
-      eos_seen(false) {
+      mEOS(false),
+      mStartTime(boost::posix_time::microsec_clock::universal_time()),
+      mElapsedTime() {
 }
 
 RequestInfo::RequestInfo() :
     mPoison(true),
-    eos_seen(false){
+    mEOS(false),
+    mStartTime(boost::posix_time::microsec_clock::universal_time()),
+    mElapsedTime() {
 }
 
 bool
@@ -96,5 +116,11 @@ void
 RequestInfo::Serialize(const std::string &toSerialize, std::stringstream &ss) {
     ss << std::setfill('0') << std::setw(8) << toSerialize.length() << toSerialize;
 }
+
+int
+RequestInfo::getElapsedTimeMS() const {
+    return mElapsedTime.total_microseconds() / 1000;
+}
+
 
 }
