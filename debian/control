@@ -16,7 +16,7 @@ Build-Depends: cmake, debhelper (>= 5.0.0),
                 gcc (>= 4.4.3),
                 libcppunit-dev,
                 lcov
-Maintainer: Hebex Packagers Team <hebex-packagers@list.orangeportails.net>
+Maintainer: Clarens Caraccio <ccaraccio.ext@orange.com>
 Standards-Version: 3.7.2
 
 Package: libapache2-mod-dup
@@ -65,6 +65,7 @@ Homepage: http://sourceforge.x-echo.com/projects/pns/
 
 Package: libapache2-mod-dup-migrate-validation
 Architecture: any
+Depends: python-pycurl
 Description: Validation files necessary for non reg tests
 
 Package: libws-diff
