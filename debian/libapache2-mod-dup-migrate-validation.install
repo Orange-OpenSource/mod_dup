@@ -1,5 +1,6 @@
 /usr/local/etc/testing/functionnal/*				/usr/local/etc/testing/functionnal
 /usr/local/etc/testing/functionnal/data/dup/www/*	/var/www/dup_test/
+/usr/local/etc/testing/functionnal/data/compare/www/*	/var/www/dup_test/
 /usr/local/etc/testing/functionnal/data/migrate/www/print_content.cgi 	/var/www/dup_test/cgi/
 /usr/local/etc/testing/functionnal/data/dup/www/get_body_size.cgi 	/var/www/dup_test/cgi/
 /etc/apache2/mods-available/migrate_test.load 		/etc/apache2/mods-available/
