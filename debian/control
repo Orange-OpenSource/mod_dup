@@ -71,6 +71,6 @@ Description: Validation files necessary for non reg tests
 Package: libws-diff
 Architecture: any
 Depends: cmake, debhelper (>= 5.0.0),
-	libboost-regex1.40 | libboost-regex1.46
+	libboost-regex1.40.0 | libboost-regex1.46.1
 Description: C++ string diffing tool
  Homepage: https://github.com/Orange-OpenSource/mod_dup
