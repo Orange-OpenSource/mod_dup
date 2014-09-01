@@ -1,6 +1,7 @@
 pns-mod-dup (2.0.0) precise; urgency=low
 
   * Achieved separation of the different modules
+  * Support of multi duplication of requests
 
  -- Mathieu Lornac <mlornac.ext@orange.com>  Tue, 26 Aug 2014 14:43:50 +0200
 
