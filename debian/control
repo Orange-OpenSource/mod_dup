@@ -22,8 +22,7 @@ Standards-Version: 3.7.2
 Package: libapache2-mod-dup
 Architecture: any
 Depends: ${misc:Depends},
-         libboost-thread (>= 1.40) | libboost-regex1.40 | libboost-regex1.46 | libboost-regex1.48,
-         libboost-regex (>= 1.40) | libboost-regex1.40 | libboost-regex1.46 | libboost-regex1.48,
+         libboost-regex (>= 1.40) | libboost-regex1.40.0| libboost-regex1.46 | libboost-regex1.48,
          libapr1,
          libboost-serialization (>= 1.40) | libboost-serialization1.40 | libboost-serialization1.46 | libboost-serialization1.48,
          libboost-thread (>= 1.40) | libboost-thread1.40.0 | libboost-thread1.46.1 | libboost-thread1.48.0,
@@ -37,8 +36,7 @@ Homepage: http://sourceforge.x-echo.com/projects/pns/
 Package: libapache2-mod-compare
 Architecture: any
 Depends: ${misc:Depends},
-         libboost-thread (>= 1.40) | libboost-regex1.40 | libboost-regex1.46 | libboost-regex1.48,
-         libboost-regex (>= 1.40) | libboost-regex1.40 | libboost-regex1.46 | libboost-regex1.48,
+         libboost-regex (>= 1.40) | libboost-regex1.40.0 | libboost-regex1.46 | libboost-regex1.48,
          libapr1,
          libboost-serialization (>= 1.40) | libboost-serialization1.40 | libboost-serialization1.46 | libboost-serialization1.48,
          libboost-thread (>= 1.40) | libboost-thread1.40.0 | libboost-thread1.46.1 | libboost-thread1.48.0,
@@ -52,8 +50,7 @@ Homepage: http://sourceforge.x-echo.com/projects/pns/
 Package: libapache2-mod-migrate
 Architecture: any
 Depends: ${misc:Depends},
-         libboost-thread (>= 1.40) | libboost-regex1.40 | libboost-regex1.46 | libboost-regex1.48,
-         libboost-regex (>= 1.40) | libboost-regex1.40 | libboost-regex1.46 | libboost-regex1.48,
+         libboost-regex (>= 1.40) | libboost-regex1.40.0| libboost-regex1.46 | libboost-regex1.48,
          libapr1,
          libboost-serialization (>= 1.40) | libboost-serialization1.40 | libboost-serialization1.46 | libboost-serialization1.48,
          libboost-thread (>= 1.40) | libboost-thread1.40.0 | libboost-thread1.46.1 | libboost-thread1.48.0,
