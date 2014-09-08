@@ -78,19 +78,8 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     }
     // No context? new request
     if (!pF->ctx) {
-        // If there is no UNIQUE_ID in the request header copy thr Request ID generated in both headers
-        std::string reqId = CommonModule::getOrSetUniqueID(pRequest);
-        DupModule::RequestInfo *info = new DupModule::RequestInfo(reqId);
 
-        // Allocation on a shared pointer on the request pool
-        // We guarantee that whatever happens, the RequestInfo will be deleted
-        void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
-        new (space) boost::shared_ptr<DupModule::RequestInfo>(info);
-        // Registering of the shared pointer destructor on the pool
-        apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<DupModule::RequestInfo>>,
-                                  apr_pool_cleanup_null);
-        // Backup in request context
-        ap_set_module_config(pRequest->request_config, &compare_module, (void *)space);
+        DupModule::RequestInfo *info = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
 
         // Backup of info struct in the request context
         pF->ctx = info;

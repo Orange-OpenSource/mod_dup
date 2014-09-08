@@ -19,6 +19,8 @@
 #pragma once
 
 #include <httpd.h>
+#include <http_config.h>
+#include <http_request.h>
 
 namespace CommonModule {
 
@@ -33,7 +35,40 @@ namespace CommonModule {
 
     bool extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &content);
 
-
     std::string getOrSetUniqueID(request_rec *pRequest);
+
+    /*
+     * Method that calls the destructor of an object which type is templated
+     */
+    template <class T> inline apr_status_t cleaner(void *self) {
+        if (self) {
+            T *elt = reinterpret_cast<T *>(self);
+            assert(elt);
+            elt->~T();
+        }
+        return 0;
+    }
+
+    /*
+     * Method that allocates on the request pool a RequestInfo object (template is needed to choose from MigrateModule::RequestInfo or DupModule::RequestInfo)
+     * The second template parameter is the module address, usually &(compare|dup|migrate)_module
+     */
+    template<typename T, const module * mod> inline T* makeRequestInfo(request_rec *pRequest) {
+        // Unique request id
+        std::string uid = getOrSetUniqueID(pRequest);
+        T* info = new T(uid);
+
+        // Allocation on a shared pointer on the request pool
+        // We guarantee that whatever happens, the RequestInfo will be deleted
+        void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<T>));
+        new (space) boost::shared_ptr<T>(info);
+        // Registering of the shared pointer destructor on the pool
+        apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<T> >, apr_pool_cleanup_null);
+
+        // Backup in request context
+        ap_set_module_config(pRequest->request_config, mod, (void *)space);
+
+        return info;
+    }
 
 };

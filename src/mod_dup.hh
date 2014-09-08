@@ -302,18 +302,4 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade);
 apr_status_t
 inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes);
 
-/*
- * Method that calls the destructor of an object which type is templated
- */
-template <class T>
-apr_status_t
-cleaner(void *self) {
-    if (self) {
-        T *elt = reinterpret_cast<T *>(self);
-        assert(elt);
-        elt->~T();
-    }
-    return 0;
-}
-
 }

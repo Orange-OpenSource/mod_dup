@@ -34,6 +34,7 @@
 #include <sys/syscall.h>
 
 #include "mod_migrate.hh"
+#include "Utils.hh"
 
 #define MOD_REWRITE_NAME "mod_rewrite.c"
 #define MOD_PROXY_NAME "mod_proxy.c"
@@ -113,7 +114,7 @@ void* createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
     void *addr= apr_pcalloc(pPool, sizeof(class MigrateConf));
     new (addr) MigrateConf();
-    apr_pool_cleanup_register(pPool, addr, cleaner<MigrateConf>,  apr_pool_cleanup_null);
+    apr_pool_cleanup_register(pPool, addr, CommonModule::cleaner<MigrateConf>,  apr_pool_cleanup_null);
     return addr;
 }
 

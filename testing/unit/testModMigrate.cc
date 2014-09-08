@@ -81,13 +81,22 @@ void TestModMigrate::testEnrichContext()
     // in Header
     info.mArgs.clear();
     info.mHeader = "myRegexbalbaglsdfsdr";
+    // 2 because of ALL and HEADER
     CPPUNIT_ASSERT_EQUAL(2, enrichContext(req,info));
 
     // in Body
     info.mArgs.clear();
     info.mHeader.clear();
     info.mBody = "myRegexbalbaglsdfsdr";
+    // 2 because of ALL and BODY
     CPPUNIT_ASSERT_EQUAL(2, enrichContext(req,info));
+
+    // in URL, HEADER and BODY
+    info.mArgs = "myRegexsdfwhgtdwhoij";
+    info.mHeader = "myRegexbalbaglsdfsdr";
+    info.mBody = "sdfsdfesrtdfrg xdmyRegexbalbaglsdfsdr";
+    // 6 because of ALL, BODY, HEADER and URL (3 times for ALL scope + 3*1 for each scope (all, body and url)
+    CPPUNIT_ASSERT_EQUAL(6, enrichContext(req,info));
 
     delete req;
 }

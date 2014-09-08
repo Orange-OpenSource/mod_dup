@@ -33,7 +33,7 @@ file(GLOB lib_SOURCE_FILES
   ../../src/RequestCommon.cc
   ../../src/RequestInfo.cc
   ../../src/UrlCodec.cc
-  ../../src/filters.cc
+  ../../src/filters_dup.cc
   ../../src/mod_compare.cc
   ../../src/mod_migrate.cc
   ../../src/filters_migrate.cc

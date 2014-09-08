@@ -18,6 +18,7 @@
 
 #include "mod_dup.hh"
 #include "RequestProcessor.hh"
+#include "Utils.hh"
 #include <httpd.h>
 #include <http_config.h>
 #include <http_request.h>
@@ -91,7 +92,7 @@ void TestModDup::testInitAndCleanUp()
     // Cleaner test
     int test;
     Dummy d(test);
-    cleaner<Dummy>((void *)&d);
+    CommonModule::cleaner<Dummy>((void *)&d);
     CPPUNIT_ASSERT_EQUAL(42, test);
 
 }

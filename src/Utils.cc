@@ -24,12 +24,11 @@
 #include "Utils.hh"
 #include "Log.hh"
 
-#include <http_request.h>
-
 namespace CommonModule {
 
 const char* c_UNIQUE_ID = "UNIQUE_ID";
 const unsigned int CMaxBytes = 8192;
+
 
 /*
  * Returns the next random request ID

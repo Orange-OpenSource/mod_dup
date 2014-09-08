@@ -32,6 +32,21 @@
 
 namespace MigrateModule {
 
+static bool setEnvVar(request_rec *pRequest, const MigrateConf::MigrateEnv &ctx, const std::string& toSet, int& count) {
+    if (!toSet.empty()) {
+        Log::debug("CE: URL match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
+#ifndef UNIT_TESTING
+        apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
+#endif
+        return true;
+    }
+    return false;
+}
+
+/*
+ * Parse the MigrateEnv objects and for each of them
+ * If the regex matches (in the right scope), then it sets the environment variable
+ */
 int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
     MigrateConf *conf = reinterpret_cast<MigrateConf *>(ap_get_module_config(pRequest->per_dir_config, &migrate_module));
     if (!conf || !conf->mDirName) {
@@ -50,33 +65,15 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
     BOOST_FOREACH(const MigrateConf::MigrateEnv &ctx, envList) {
         if (ctx.mApplicationScope & ApplicationScope::URL) {
             std::string toSet = boost::regex_replace(rInfo.mArgs, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
-            if (!toSet.empty()) {
-                Log::debug("CE: URL match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
-#ifndef UNIT_TESTING
-                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
-#endif
-                ++count;
-            }
+            count += (int)setEnvVar(pRequest, ctx, toSet, count);
         }
         if ((ctx.mApplicationScope & ApplicationScope::BODY) && !rInfo.mBody.empty()) {
             std::string toSet = regex_replace(rInfo.mBody, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
-            if (!toSet.empty()) {
-                Log::debug("CE: Body match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
-#ifndef UNIT_TESTING
-                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
-#endif
-                ++count;
-            }
+            count += (int)setEnvVar(pRequest, ctx, toSet, count);
         }
         if ((ctx.mApplicationScope & ApplicationScope::HEADER) && !rInfo.mHeader.empty()) {
             std::string toSet = regex_replace(rInfo.mHeader, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
-            if (!toSet.empty()) {
-                Log::debug("CE: Header match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
-#ifndef UNIT_TESTING
-                apr_table_set(pRequest->subprocess_env, ctx.mVarName.c_str(), toSet.c_str());
-#endif
-                ++count;
-            }
+            count += (int)setEnvVar(pRequest, ctx, toSet, count);
         }
     }
     return count;
@@ -111,19 +108,6 @@ int translateHook(request_rec *pRequest) {
         return DECLINED;
     }
 
-    unsigned int lReqID = CommonModule::getNextReqId();
-    std::string reqId = boost::lexical_cast<std::string>(lReqID);
-    RequestInfo *info = new RequestInfo(reqId);
-    // Allocation on a shared pointer on the request pool
-    // We guarantee that whatever happens, the RequestInfo will be deleted
-    void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
-    new (space) boost::shared_ptr<RequestInfo>(info);
-    // Registering of the shared pointer destructor on the pool
-    apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
-            apr_pool_cleanup_null);
-    // Backup in request context
-    ap_set_module_config(pRequest->request_config, &migrate_module, (void *)space);
-
     if (!pRequest->connection->pool) {
         Log::error(42, "No connection pool associated to the request");
         return DECLINED;
@@ -135,6 +119,8 @@ int translateHook(request_rec *pRequest) {
             return DECLINED;
         }
     }
+
+    RequestInfo* info = CommonModule::makeRequestInfo<RequestInfo,&migrate_module>(pRequest);
 
     apr_bucket_brigade *bb = apr_brigade_create(pRequest->connection->pool, pRequest->connection->bucket_alloc);
     if (!bb) {

@@ -72,25 +72,23 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
 
     RequestInfo *info;
     if (!pFilter->ctx) {
+        info = CommonModule::makeRequestInfo<RequestInfo,&dup_module>(pRequest);
 
-        // Unique request id
-        std::string uid = CommonModule::getOrSetUniqueID(pRequest);
-        info = new RequestInfo(uid);
-
-        // Allocation on a shared pointer on the request pool
-        // We guarantee that whatever happens, the RequestInfo will be deleted
-        void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
-        new (space) boost::shared_ptr<RequestInfo>(info);
-        // Registering of the shared pointer destructor on the pool
-        apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
-                                  apr_pool_cleanup_null);
-        // Backup in request context
-        ap_set_module_config(pRequest->request_config, &dup_module, (void *)space);
         // Backup in filter context
         pFilter->ctx = info;
 
         info->mConfPath = conf->dirName;
         info->mArgs = pRequest->args ? pRequest->args : "";
+
+        const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
+        // Copy Request ID in both headers
+        if(lID == NULL) {
+            apr_table_set(pRequest->headers_in, CommonModule::c_UNIQUE_ID, info->mId.c_str());
+            apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, info->mId.c_str());
+        }
+        else {
+            apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
+        }
     }
     if (pFilter->ctx != (void *) -1) {
         // Request not read yet

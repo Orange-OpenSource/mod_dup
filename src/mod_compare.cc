@@ -66,7 +66,7 @@ boost::interprocess::named_mutex &getGlobalMutex() {
             gMutex = new boost::interprocess::named_mutex(boost::interprocess::open_or_create, c_named_mutex);
         }
         return *gMutex;
-    } catch (boost::interprocess::interprocess_exception e) {
+    } catch (boost::interprocess::interprocess_exception& e) {
         // Just in case the log has not been init yet
         Log::init();
         Log::error(42, "Cannot initialize global mutex named: %s. What: %s", c_named_mutex, e.what());

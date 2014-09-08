@@ -34,6 +34,7 @@
 #include <sys/syscall.h>
 
 #include "mod_dup.hh"
+#include "Utils.hh"
 
 #define MOD_REWRITE_NAME "mod_rewrite.c"
 
@@ -87,7 +88,7 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
     void *addr= apr_palloc(pPool, sizeof(class DupConf));
     new (addr) DupConf();
-    apr_pool_cleanup_register(pPool, addr, cleaner<DupConf>, apr_pool_cleanup_null);
+    apr_pool_cleanup_register(pPool, addr, CommonModule::cleaner<DupConf>, apr_pool_cleanup_null);
     return addr;
 }
 
@@ -153,7 +154,7 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination, const c
                 return "Duplication percentage value not valid: must be an integer between 0 and 100";
             }
             gProcessor->setDestinationDuplicationPercentage(pParams->path, pDestination, perc);
-        } catch (boost::bad_lexical_cast) {
+        } catch (boost::bad_lexical_cast&) {
             std::string msg = "Duplication percentage value not valid: ";
             msg += duplicationPercentage;
             return strdup(msg.c_str());
@@ -171,7 +172,7 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     struct DupConf *tC = reinterpret_cast<DupConf *>(pCfg);
     try {
         tC->currentApplicationScope = ApplicationScope::stringToEnum(pAppScope);
-    } catch (std::exception e) {
+    } catch (std::exception& e) {
         return ApplicationScope::c_ERROR_ON_STRING_VALUE;
     }
     return NULL;
@@ -190,7 +191,7 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     try {
         gProcessor->addRawSubstitution(pParams->path, pMatch, pReplace,
                                        *conf);
-    } catch (boost::bad_expression) {
+    } catch (boost::bad_expression&) {
         return "Invalid regular expression in substitution definition.";
     }
     return NULL;
@@ -202,7 +203,7 @@ setThreads(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 	try {
 		lMin = boost::lexical_cast<size_t>(pMin);
 		lMax = boost::lexical_cast<size_t>(pMax);
-	} catch (boost::bad_lexical_cast) {
+	} catch (boost::bad_lexical_cast&) {
 		return "Invalid value(s) for minimum and maximum number of threads.";
 	}
 
@@ -218,7 +219,7 @@ setTimeout(cmd_parms* pParams, void* pCfg, const char* pTimeout) {
     size_t lTimeout;
     try {
         lTimeout = boost::lexical_cast<unsigned int>(pTimeout);
-    } catch (boost::bad_lexical_cast) {
+    } catch (boost::bad_lexical_cast&) {
         return "Invalid value(s) for timeout.";
     }
 
@@ -232,7 +233,7 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
     try {
         lMin = boost::lexical_cast<size_t>(pMin);
         lMax = boost::lexical_cast<size_t>(pMax);
-    } catch (boost::bad_lexical_cast) {
+    } catch (boost::bad_lexical_cast&) {
         return "Invalid value(s) for minimum and maximum queue size.";
     }
 
@@ -256,7 +257,7 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
 
     try {
         gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, *conf);
-    } catch (boost::bad_expression) {
+    } catch (boost::bad_expression&) {
         return "Invalid regular expression in substitution definition.";
     }
     return NULL;
@@ -306,7 +307,7 @@ setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
 
     try {
         conf->setCurrentDuplicationType(DuplicationType::stringToEnum(pDupType));
-    } catch (std::exception e) {
+    } catch (std::exception& e) {
         return DuplicationType::c_ERROR_ON_STRING_VALUE;
     }
     return NULL;
@@ -324,7 +325,7 @@ _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilt
 
     try {
         gProcessor->addFilter(pParams->path, pField, pFilter, *conf, fType);
-    } catch (boost::bad_expression) {
+    } catch (boost::bad_expression&) {
         return "Invalid regular expression in filter definition.";
     }
     return NULL;
@@ -352,7 +353,7 @@ _setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression, tFilter::
 
     try {
         gProcessor->addRawFilter(pParams->path, pExpression, *conf, fType);
-    } catch (boost::bad_expression) {
+    } catch (boost::bad_expression&) {
         return "Invalid regular expression in filter definition.";
     }
     return NULL;

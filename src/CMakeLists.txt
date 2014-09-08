@@ -21,7 +21,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 file(GLOB mod_dup_SOURCE_FILES
   RequestCommon.cc
-  filters.cc
+  filters_dup.cc
   mod_dup.cc
   Log.cc
   RequestProcessor.cc

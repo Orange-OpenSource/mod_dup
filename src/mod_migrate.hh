@@ -130,19 +130,5 @@ const char* setMigrateEnv(cmd_parms* pParams, void* pCfg, const char *pVarName, 
  */
 const char* setActive(cmd_parms* pParams, void* pCfg);
 
-/*
- * Method that calls the destructor of an object which type is templated
- */
-template <class T>
-apr_status_t
-cleaner(void *self) {
-    if (self) {
-        T *elt = reinterpret_cast<T *>(self);
-        assert(elt);
-        elt->~T();
-    }
-    return 0;
-}
-
 }
 
