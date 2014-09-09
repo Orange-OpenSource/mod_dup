@@ -501,7 +501,9 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
 
     std::list<std::pair<std::string, std::string> > lParsedArgs;
     parseArgs(lParsedArgs, reqInfo.mArgs);
-
+    
+    Log::error(42, "runOne going to check filters" );
+    
 
     std::list<const tFilter *> matchedFilters = processRequest(reqInfo, lParsedArgs);
     std::list<const tFilter *>::const_iterator it = matchedFilters.begin(),
@@ -523,9 +525,12 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
                 // perform substitutions specific to this location
                 RequestInfo b(reqInfo);
                 substituteRequest(b, c, lParsedArgs);
+                Log::error(42, "runOne do curl with substitution" );
+                
                 performCurlCall(pCurl, **it, b);
 
             } else {
+                Log::error(42, "runOne do curl" );
                 performCurlCall(pCurl, **it, reqInfo);
             }
 

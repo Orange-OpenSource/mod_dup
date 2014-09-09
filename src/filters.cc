@@ -61,15 +61,20 @@ printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
 apr_status_t
 inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes) {
     request_rec *pRequest = pFilter->r;
+    Log::error(42, "inputFilterHandler");
     if (!pRequest || !pRequest->per_dir_config) {
+        Log::error(42, "inputFilterHandler no request");
         return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
     }
     struct DupConf *conf = reinterpret_cast<DupConf *>(ap_get_module_config(pRequest->per_dir_config, &dup_module));
     if (!conf || !conf->dirName) {
+        Log::error(42, "inputFilterHandler no conf");
         // Not a location that we treat, we decline the request
         return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
     }
 
+    Log::error(42, "inputFilterHandler ctx %p",pFilter->ctx );
+    
     RequestInfo *info;
     if (!pFilter->ctx) {
 
@@ -91,9 +96,13 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
 
         info->mConfPath = conf->dirName;
         info->mArgs = pRequest->args ? pRequest->args : "";
+        
+        Log::error(42, "inputFilterHandler new RequestInfo  %s?%s",info->mConfPath.c_str(),info->mArgs.c_str() );
+        
     }
     if (pFilter->ctx != (void *) -1) {
         // Request not read yet
+        Log::error(42, "inputFilterHandler ctx not -1" );
         info = reinterpret_cast<RequestInfo *>(pFilter->ctx);
         apr_status_t st = ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
         if (st != APR_SUCCESS) {
@@ -105,7 +114,9 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
              b != APR_BRIGADE_SENTINEL(pB);
              b = APR_BUCKET_NEXT(b) ) {
             // Metadata end of stream
+            Log::error(42, "inputFilterHandler bucket loop" );
             if (APR_BUCKET_IS_EOS(b)) {
+                Log::error(42, "inputFilterHandler eos" );
                 return APR_SUCCESS;
             }
             if (APR_BUCKET_IS_METADATA(b))
@@ -122,6 +133,7 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
             }
         }
     }
+    Log::error(42, "inputFilterHandler Received request %s?%s",info->mConfPath.c_str(),info->mArgs.c_str() );
     // Data is read
     return APR_SUCCESS;
 }
@@ -164,11 +176,14 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
           currentBucket != APR_BRIGADE_SENTINEL(pBrigade);
           currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
 
+        Log::error(42, "outputBodyFilterHandler bucket loop" );
+    
         if (APR_BUCKET_IS_EOS(currentBucket)) {
             ri->eos_seen(true);
             pFilter->ctx = (void *) -1;
             rv = ap_pass_brigade(pFilter->next, pBrigade);
             apr_brigade_cleanup(pBrigade);
+            Log::error(42, "outputBodyFilterHandler found EOS" );
             return rv;
         }
 
@@ -185,6 +200,7 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
             if ((rv == APR_SUCCESS) && data) {
                 // Appends the part read to the answer
                 ri->mAnswer.append(data, len);
+                Log::error(42, "outputBodyFilterHandler append answer" );
             }
         }
     }
@@ -231,6 +247,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         pFilter->ctx = (void *) -1;
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
+        Log::error(42, "outputHeadersFilterHandler reqInfo not found" );
         return rv;
     }
     RequestInfo *ri = reqInfo->get();
@@ -241,6 +258,7 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if (!ri->eos_seen()) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
+        Log::error(42, "outputHeadersFilterHandler eos not seen yet" );
         return rv;
     }
 
@@ -252,9 +270,11 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         if ( ! lCurl ) {
             lCurl = gProcessor->initCurl();
         }
+        Log::error(42, "outputHeadersFilterHandler run one in sync" );
         gProcessor->runOne(*ri, lCurl);
     }
     else {
+        Log::error(42, "outputHeadersFilterHandler push to queue" );
         gThreadPool->push(*reqInfo);
     }
     pFilter->ctx = (void *) -1;
