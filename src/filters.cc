@@ -92,6 +92,9 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
             info->mConfPath = conf->dirName;
             info->mArgs = pRequest->args ? pRequest->args : "";
         }
+        // if we didn't go in the code above, it means
+        // outputFilter was called first (cf comment below in outputfilter)
+        
         pFilter->ctx = reqInfo->get();
     }
     if (pFilter->ctx != (void *) -1) {
@@ -154,7 +157,13 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     RequestInfo * ri = NULL;
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
     if (!reqInfo || !reqInfo->get()) {
-        if (!pFilter->ctx) {   
+        if (!pFilter->ctx) {
+            // When the body of the response is large, and there is no request body (i.e. GET)
+            // for some unknown reason
+            // apache calls the output filter before the input filter
+            // so we need to handle this gracefully
+            // by creating the RequestInfo
+            
             // Unique request id
             std::string uid = CommonModule::getOrSetUniqueID(pRequest);
             ri = new RequestInfo(uid);
