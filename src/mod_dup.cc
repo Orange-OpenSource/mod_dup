@@ -531,9 +531,9 @@ registerHooks(apr_pool_t *pPool) {
     // using type connection produced calls to the filter with invalid brigades
     ap_register_output_filter(gNameOutHeaders, outputHeadersFilterHandler, NULL, AP_FTYPE_TRANSCODE);
 
-    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_MIDDLE);
-    ap_hook_insert_filter(&insertOutputBodyFilter, NULL, NULL, APR_HOOK_LAST);
-    ap_hook_insert_filter(&insertOutputHeadersFilter, NULL, NULL, APR_HOOK_LAST);
+    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_LAST);
+    ap_hook_insert_filter(&insertOutputBodyFilter, NULL, NULL, APR_HOOK_FIRST);
+    ap_hook_insert_filter(&insertOutputHeadersFilter, NULL, NULL, APR_HOOK_FIRST);
 
 #endif
 }
