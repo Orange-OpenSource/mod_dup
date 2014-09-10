@@ -1,20 +1,20 @@
 /*
-* mod_dup - duplicates apache requests
-*
-* Copyright (C) 2013 Orange
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * mod_dup - duplicates apache requests
+ *
+ * Copyright (C) 2013 Orange
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "mod_dup.hh"
 #include "Utils.hh"
@@ -22,21 +22,21 @@
 #include <boost/shared_ptr.hpp>
 #include <http_config.h>
 
-
 namespace DupModule {
 
 /*
  * Callback to iterate over the headers tables
  * Pushes a copy of key => value in a list passed without typing as the first argument
  */
-static int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+static int iterateOverHeadersCallBack(void *d, const char *key, const char *value)
+{
     RequestInfo::tHeaders *headers = reinterpret_cast<RequestInfo::tHeaders *>(d);
     headers->push_back(std::pair<std::string, std::string>(key, value));
     return 1;
 }
 
-static void
-prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
+static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r)
+{
     // Copy headers in
     apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
 
@@ -50,16 +50,16 @@ prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r) {
     r.mArgs = pRequest->args ? pRequest->args : "";
 }
 
-static void
-printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf) {
+static void printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf)
+{
     const char *reqId = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
     Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
     Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("### Request args: %s", pRequest->args);
 }
 
-apr_status_t
-inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes) {
+apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
+{
     request_rec *pRequest = pFilter->r;
     if (!pRequest || !pRequest->per_dir_config) {
         return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
@@ -70,25 +70,25 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
         return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
     }
 
-    RequestInfo *info;
+    RequestInfo *info = NULL;
     if (!pFilter->ctx) {
-        info = CommonModule::makeRequestInfo<RequestInfo,&dup_module>(pRequest);
+        boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
+        if (!reqInfo || !reqInfo->get()) {
+            info = CommonModule::makeRequestInfo<RequestInfo, &dup_module>(pRequest, reinterpret_cast<void**>(&reqInfo));
 
-        // Backup in filter context
-        pFilter->ctx = info;
+            const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
+            // Copy Request ID in both headers
+            if (lID == NULL) {
+                apr_table_set(pRequest->headers_in, CommonModule::c_UNIQUE_ID, info->mId.c_str());
+                apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, info->mId.c_str());
+            } else {
+                apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
+            }
 
-        info->mConfPath = conf->dirName;
-        info->mArgs = pRequest->args ? pRequest->args : "";
-
-        const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
-        // Copy Request ID in both headers
-        if(lID == NULL) {
-            apr_table_set(pRequest->headers_in, CommonModule::c_UNIQUE_ID, info->mId.c_str());
-            apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, info->mId.c_str());
+            info->mConfPath = conf->dirName;
+            info->mArgs = pRequest->args ? pRequest->args : "";
         }
-        else {
-            apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
-        }
+        pFilter->ctx = reqInfo->get();
     }
     if (pFilter->ctx != (void *) -1) {
         // Request not read yet
@@ -99,9 +99,7 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
             return st;
         }
         // Concats the brigade content to the reqinfo
-        for (apr_bucket *b = APR_BRIGADE_FIRST(pB);
-             b != APR_BRIGADE_SENTINEL(pB);
-             b = APR_BUCKET_NEXT(b) ) {
+        for (apr_bucket *b = APR_BRIGADE_FIRST(pB); b != APR_BRIGADE_SENTINEL(pB); b = APR_BUCKET_NEXT(b)) {
             // Metadata end of stream
             if (APR_BUCKET_IS_EOS(b)) {
                 return APR_SUCCESS;
@@ -129,8 +127,8 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
  * Writes the response body to the RequestInfo
  * Unless not needed because we only duplicate request and no reponses
  */
-apr_status_t
-outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade)
+{
 
     request_rec *pRequest = pFilter->r;
     apr_status_t rv;
@@ -147,20 +145,35 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return rv;
     }
 
+    RequestInfo * ri = NULL;
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
     if (!reqInfo || !reqInfo->get()) {
-        pFilter->ctx = (void *) -1;
-        rv = ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
-        return rv;
+        if (!pFilter->ctx) {
+            // Allocation on a shared pointer on the request pool
+            // We guarantee that whatever happens, the RequestInfo will be deleted
+            // Registering of the shared pointer destructor on the pool
+            // Backup in request context
+            // Backup in filter context
+            ri = CommonModule::makeRequestInfo<DupModule::RequestInfo,&dup_module>(pRequest, reinterpret_cast<void**>(&reqInfo));
+
+            pFilter->ctx = ri;
+
+            ri->mConfPath = tConf->dirName;
+            ri->mArgs = pRequest->args ? pRequest->args : "";
+
+        } else {
+            pFilter->ctx = (void *) -1;
+            rv = ap_pass_brigade(pFilter->next, pBrigade);
+            apr_brigade_cleanup(pBrigade);
+            return rv;
+        }
+    } else {
+        ri = reqInfo->get();
     }
-    RequestInfo * ri = reqInfo->get();
 
     // Write the response body to the RequestInfo if found
     apr_bucket *currentBucket;
-    for ( currentBucket = APR_BRIGADE_FIRST(pBrigade);
-          currentBucket != APR_BRIGADE_SENTINEL(pBrigade);
-          currentBucket = APR_BUCKET_NEXT(currentBucket) ) {
+    for (currentBucket = APR_BRIGADE_FIRST(pBrigade); currentBucket != APR_BRIGADE_SENTINEL(pBrigade); currentBucket = APR_BUCKET_NEXT(currentBucket)) {
 
         if (APR_BUCKET_IS_EOS(currentBucket)) {
             ri->eos_seen(true);
@@ -196,11 +209,11 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
  * Retrieves in/out headers
  * Pushes the RequestInfo object to the RequestProcessor
  */
-apr_status_t
-outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade)
+{
 
     apr_status_t rv;
-    if ( pFilter->ctx == (void *) -1 ) {
+    if (pFilter->ctx == (void *) -1) {
         rv = ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return rv;
@@ -223,15 +236,31 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return rv;
     }
 
+    RequestInfo * ri = NULL;
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
 
     if (!reqInfo || !reqInfo->get()) {
-        pFilter->ctx = (void *) -1;
-        rv = ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
-        return rv;
+        if (!pFilter->ctx) {
+            // Allocation on a shared pointer on the request pool
+            // We guarantee that whatever happens, the RequestInfo will be deleted
+            // Registering of the shared pointer destructor on the pool
+            // Backup in request context
+            // Backup in filter context
+            ri = CommonModule::makeRequestInfo<DupModule::RequestInfo,&dup_module>(pRequest, reinterpret_cast<void**>(&reqInfo));
+
+            pFilter->ctx = ri;
+
+            ri->mConfPath = tConf->dirName;
+            ri->mArgs = pRequest->args ? pRequest->args : "";
+        } else {
+            pFilter->ctx = (void *) -1;
+            rv = ap_pass_brigade(pFilter->next, pBrigade);
+            apr_brigade_cleanup(pBrigade);
+            return rv;
+        }
+    } else {
+        ri = reqInfo->get();
     }
-    RequestInfo *ri = reqInfo->get();
 
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
@@ -245,14 +274,13 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     // Pushing the answer to the processor
     prepareRequestInfo(tConf, pRequest, *ri);
 
-    if ( tConf->synchronous ) {
+    if (tConf->synchronous) {
         static __thread CURL * lCurl = NULL;
-        if ( ! lCurl ) {
+        if (!lCurl) {
             lCurl = gProcessor->initCurl();
         }
         gProcessor->runOne(*ri, lCurl);
-    }
-    else {
+    } else {
         gThreadPool->push(*reqInfo);
     }
     pFilter->ctx = (void *) -1;
@@ -262,5 +290,5 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     return rv;
 }
 
-
-};
+}
+;
