@@ -149,11 +149,11 @@ apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *p
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
     if (!reqInfo || !reqInfo->get()) {
         if (!pFilter->ctx) {
-            // Allocation on a shared pointer on the request pool
-            // We guarantee that whatever happens, the RequestInfo will be deleted
-            // Registering of the shared pointer destructor on the pool
-            // Backup in request context
-            // Backup in filter context
+            // When the body of the response is large, and there is no request body (i.e. GET)
+            // for some unknown reason
+            // apache calls the output filter before the input filter
+            // so we need to handle this gracefully
+            // by creating the RequestInfo
             ri = CommonModule::makeRequestInfo<DupModule::RequestInfo,&dup_module>(pRequest, reinterpret_cast<void**>(&reqInfo));
 
             pFilter->ctx = ri;
@@ -291,4 +291,3 @@ apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade
 }
 
 }
-;
