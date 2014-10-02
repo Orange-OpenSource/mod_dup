@@ -153,6 +153,7 @@ endif()
 
 if(BUILD_COVERAGE)
   add_subdirectory(testing/functionnal)
+  add_subdirectory(testing/mock)
 endif()
 
 add_subdirectory(docs)

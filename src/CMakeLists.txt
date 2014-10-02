@@ -38,7 +38,7 @@ file(GLOB mod_compare_SOURCE_FILES
   Log.cc
   Utils.cc
   RequestInfo.cc)
-  
+
 file(GLOB mod_migrate_SOURCE_FILES
   filters_migrate.cc
   mod_migrate.cc

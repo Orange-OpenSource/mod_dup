@@ -74,7 +74,7 @@ add_test(testFilters testFilters)
  add_executable(testCompare testModCompare.cc testBodies.cc)
  target_link_libraries(testCompare mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} libws_diff  boost_serialization boost_regex boost_thread pthread)
  add_test(testCompare testCompare)
- 
+
 add_executable(testMigrate testModMigrate.cc testBodies.cc)
  target_link_libraries(testMigrate mod_dup_lib ${cppunit_LIBRARY} ${Boost_LIBRARIES} ${APR_LIBRARIES} ${APRUTIL_LIBRARIES} libws_diff  boost_serialization boost_regex boost_thread pthread)
 add_test(testMigrate testMigrate)
