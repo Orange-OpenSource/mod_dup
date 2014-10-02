@@ -69,6 +69,7 @@ add_custom_target(activate
   COMMAND echo Activating apache modules...
   COMMAND a2enmod compare_test
   COMMAND a2enmod dup_test
+  COMMAND a2enmod dup_mock
   COMMAND a2enmod migrate_test
   COMMAND echo Activating apache sites...
   COMMAND a2ensite dup_test_vhost migrate_test_vhost
@@ -79,6 +80,7 @@ add_custom_target(activate
 add_custom_target(desactivate
   COMMAND echo Desactivating apache modules...
   COMMAND a2dismod compare_test
+  COMMAND a2dismod dup_mock
   COMMAND a2dismod dup_test
   COMMAND a2dismod migrate_test
   COMMAND echo Desactivating apache sites...
