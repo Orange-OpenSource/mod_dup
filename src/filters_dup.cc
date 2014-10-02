@@ -70,27 +70,32 @@ inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t
         return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
     }
 
-    RequestInfo *info;
+    RequestInfo *info = NULL;
     if (!pFilter->ctx) {
+        boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
+        if (!reqInfo || !reqInfo->get()) {
+            // Unique request id
+            std::string uid = CommonModule::getOrSetUniqueID(pRequest);
+            info = new RequestInfo(uid);
 
-        // Unique request id
-        std::string uid = CommonModule::getOrSetUniqueID(pRequest);
-        info = new RequestInfo(uid);
-
-        // Allocation on a shared pointer on the request pool
-        // We guarantee that whatever happens, the RequestInfo will be deleted
-        void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
-        new (space) boost::shared_ptr<RequestInfo>(info);
-        // Registering of the shared pointer destructor on the pool
-        apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
-                                  apr_pool_cleanup_null);
-        // Backup in request context
-        ap_set_module_config(pRequest->request_config, &dup_module, (void *)space);
-        // Backup in filter context
-        pFilter->ctx = info;
-
-        info->mConfPath = conf->dirName;
-        info->mArgs = pRequest->args ? pRequest->args : "";
+            // Allocation on a shared pointer on the request pool
+            // We guarantee that whatever happens, the RequestInfo will be deleted
+            void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
+            reqInfo = new (space) boost::shared_ptr<RequestInfo>(info);
+            // Registering of the shared pointer destructor on the pool
+            apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
+                                    apr_pool_cleanup_null);
+            // Backup in request context
+            ap_set_module_config(pRequest->request_config, &dup_module, (void *)space);
+            // Backup in filter context
+ 
+            info->mConfPath = conf->dirName;
+            info->mArgs = pRequest->args ? pRequest->args : "";
+        }
+        // if we didn't go in the code above, it means
+        // outputFilter was called first (cf comment below in outputfilter)
+        
+        pFilter->ctx = reqInfo->get();
     }
     if (pFilter->ctx != (void *) -1) {
         // Request not read yet
@@ -149,14 +154,46 @@ outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return rv;
     }
 
+    RequestInfo * ri = NULL;
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
     if (!reqInfo || !reqInfo->get()) {
-        pFilter->ctx = (void *) -1;
-        rv = ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
-        return rv;
+        if (!pFilter->ctx) {
+            // When the body of the response is large, and there is no request body (i.e. GET)
+            // for some unknown reason
+            // apache calls the output filter before the input filter
+            // so we need to handle this gracefully
+            // by creating the RequestInfo
+            
+            // Unique request id
+            std::string uid = CommonModule::getOrSetUniqueID(pRequest);
+            ri = new RequestInfo(uid);
+
+            // Allocation on a shared pointer on the request pool
+            // We guarantee that whatever happens, the RequestInfo will be deleted
+            void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
+            reqInfo = new (space) boost::shared_ptr<RequestInfo>(ri);
+            // Registering of the shared pointer destructor on the pool
+            apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
+                                    apr_pool_cleanup_null);
+            // Backup in request context
+            ap_set_module_config(pRequest->request_config, &dup_module, (void *)space);
+            // Backup in filter context
+
+            pFilter->ctx = ri;
+            
+            ri->mConfPath = tConf->dirName;
+            ri->mArgs = pRequest->args ? pRequest->args : "";
+
+        } else {
+            // Should not happen
+            pFilter->ctx = (void *) -1;
+            rv = ap_pass_brigade(pFilter->next, pBrigade);
+            apr_brigade_cleanup(pBrigade);
+            return rv;
+        }
+    } else {
+        ri = reqInfo->get();
     }
-    RequestInfo * ri = reqInfo->get();
 
     // Write the response body to the RequestInfo if found
     apr_bucket *currentBucket;
@@ -225,16 +262,40 @@ outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         return rv;
     }
 
+    RequestInfo * ri = NULL;
     boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
-
     if (!reqInfo || !reqInfo->get()) {
-        pFilter->ctx = (void *) -1;
-        rv = ap_pass_brigade(pFilter->next, pBrigade);
-        apr_brigade_cleanup(pBrigade);
-        return rv;
+        if (!pFilter->ctx) {   
+            // Unique request id
+            std::string uid = CommonModule::getOrSetUniqueID(pRequest);
+            ri = new RequestInfo(uid);
+            
+            // Allocation on a shared pointer on the request pool
+            // We guarantee that whatever happens, the RequestInfo will be deleted
+            void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<RequestInfo>));
+            reqInfo = new (space) boost::shared_ptr<RequestInfo>(ri);
+            // Registering of the shared pointer destructor on the pool
+            apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<RequestInfo> >,
+                                      apr_pool_cleanup_null);
+            // Backup in request context
+            ap_set_module_config(pRequest->request_config, &dup_module, (void *)space);
+            // Backup in filter context
+            
+            pFilter->ctx = ri;
+            
+            ri->mConfPath = tConf->dirName;
+            ri->mArgs = pRequest->args ? pRequest->args : "";
+        } else {
+            // Should not happen
+            pFilter->ctx = (void *) -1;
+            rv = ap_pass_brigade(pFilter->next, pBrigade);
+            apr_brigade_cleanup(pBrigade);
+            return rv;
+        }
+    } else {
+        ri = reqInfo->get();
     }
-    RequestInfo *ri = reqInfo->get();
-
+    
     // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
 
