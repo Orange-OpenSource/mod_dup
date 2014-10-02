@@ -21,7 +21,7 @@ Listen 8042
     ScriptAlias /get_body_size /var/www/dup_test/cgi/get_body_size.cgi
     ScriptAlias /get_body_size_direct /var/www/dup_test/cgi/get_body_size.cgi
 
-    <Location /mocked>
+    <Location /dup_test_mocked>
         SetHandler dup_mock
 	Order deny,allow
 	Allow from all
