@@ -21,7 +21,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 file(GLOB mod_dup_SOURCE_FILES
   RequestCommon.cc
-  filters.cc
+  filters_dup.cc
   mod_dup.cc
   Log.cc
   RequestProcessor.cc
@@ -38,7 +38,7 @@ file(GLOB mod_compare_SOURCE_FILES
   Log.cc
   Utils.cc
   RequestInfo.cc)
-  
+
 file(GLOB mod_migrate_SOURCE_FILES
   filters_migrate.cc
   mod_migrate.cc
