@@ -92,6 +92,10 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         apr_brigade_cleanup(pB);
         lRI->offset = 0;
         lStatus =  deserializeBody(*lRI);
+
+        // reset timer to not take deserializing computation time into account
+        info->resetStartTime();
+
         if(lStatus != APR_SUCCESS){
             return lStatus;
         }

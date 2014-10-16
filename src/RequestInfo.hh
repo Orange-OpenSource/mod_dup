@@ -200,6 +200,12 @@ struct RequestInfo {
      */
     int getElapsedTimeMS() const;
 
+
+    /**
+     * @brief Reset the startTime to NOW
+     */
+    void resetStartTime();
+
 private:
 
     /* End Of Stream marker */
