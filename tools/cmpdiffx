@@ -43,19 +43,18 @@ def timeout(block, value, inf_or_sup):
 def parseCommandLine():
 	if len(sys.argv) < 3:
 		sys.stderr.write("Usage: ./compareDiffExtractor.py <log file> <rule>\n")
-		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log match=RegexToMatch\n")
+		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'match=RegexToMatch'\n")
 		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'dtimeout(< or >)<timeoutvalue>'\n")
+		sys.stderr.write("Do not forget the quotes '' for the parameters\n")
 		exit(1)
-
 	# case where rule is match=smth
 	m = re.search('^match=(.*)$',sys.argv[2])
 	if m:
 		return lambda block: regexMatch(block,m.group(1))
-
+	# case where rule is dtimeout(< or >)value
 	m = re.search('dtimeout([\>\<])([0-9]*)',sys.argv[2])
 	if m:
 		return lambda block: timeout(block, m.group(2), True if (m.group(1) == '>') else False)
-
 	# if control arrives here, then it's an invalid rule
 	sys.stderr.write("Failed to parse rule")
 	exit(1)
