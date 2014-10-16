@@ -836,6 +836,10 @@ UNIQUE_ID: 7855441177&#xd;
                     <stringProp name="Header.name">UNIQUE_ID</stringProp>
                     <stringProp name="Header.value">1587963206</stringProp>
                   </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">ELAPSED_TIME_BY_DUP</stringProp>
+                    <stringProp name="Header.value">1000</stringProp>
+                  </elementProp>
                 </collectionProp>
                 <stringProp name="TestPlan.comments">&quot;Duplication-Type: Response&quot; in the header</stringProp>
               </HeaderManager>

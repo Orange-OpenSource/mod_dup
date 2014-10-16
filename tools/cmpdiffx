@@ -1,0 +1,83 @@
+#! /usr/bin/python
+import sys
+import re
+
+
+# utils functions
+def contains(block, s):
+	return (s in block)
+
+def regexMatch(block, regexs):
+	return (re.search(regexs,block) != None)
+
+def timeout(block, value, inf_or_sup):
+	# inf_or_sup is a boolean, if true then it's sup
+	valueDUP = int()
+	valueCOMP = int()
+
+	m = re.search('ELAPSED_TIME_BY_DUP: ([0-9]*)', block)
+	if m != None:
+		value = int(m.group(1))
+	else:
+		return False
+
+	m = re.search('ELAPSED_TIME_BY_COMP: ([0-9]*)', block)
+	if m != None:
+		value = int(m.group(1))
+	else:
+		return False
+
+	if inf_or_sup:
+		# in this case compare >
+		return True if (abs(valueDUP-valueCOMP) > value) else False
+	else:
+		# in this case compare <
+		return True if (abs(valueDUP-valueCOMP) < value) else False
+
+# parse command line, return a function handler to pass the diff block to
+def parseCommandLine():
+	if len(sys.argv) < 3:
+		sys.stderr.write("Usage: ./compareDiffExtractor.py <log file> <rule>\n")
+		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log match=RegexToMatch\n")
+		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'dtimeout(< or >)<timeoutvalue>'\n")
+		exit(1)
+
+	# case where rule is match=smth
+	m = re.search('^match=(.*)$',sys.argv[2])
+	if m:
+		return lambda block: regexMatch(block,m.group(1))
+
+	m = re.search('dtimeout([\>\<])([0-9]*)',sys.argv[2])
+	if m:
+		return lambda block: timeout(block, m.group(2), True if (m.group(1) == '>') else False)
+
+	# if control arrives here, then it's an invalid rule
+	sys.stderr.write("Failed to parse rule")
+	exit(1)
+	
+
+# main
+def main():
+	handler=parseCommandLine()
+
+	diffBlock = str()
+
+	# parse file line by line
+	with open(sys.argv[1],'r') as f:
+
+		for line in f:
+
+			if "BEGIN NEW REQUEST DIFFERENCE" in line:
+				# reset diffBlock to first line (BEGIN NEW...)
+				diffBlock = line
+			elif "END DIFFERENCE" in line:
+				# add last line (END DIFFERENCE...)
+				diffBlock += line
+				#process full block here
+				if not handler(diffBlock):
+					print(diffBlock)
+				#end processing
+			else:
+				diffBlock += line
+
+main()
