@@ -20,6 +20,7 @@ Listen 8042
     Options +ExecCGI
     ScriptAlias /get_body_size /var/www/dup_test/cgi/get_body_size.cgi
     ScriptAlias /get_body_size_direct /var/www/dup_test/cgi/get_body_size.cgi
+	ScriptAlias /delayed_response /var/www/dup_test/cgi/delayed_response.cgi
 
     <Location /dup_test_mocked>
         SetHandler dup_mock

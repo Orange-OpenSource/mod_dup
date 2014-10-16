@@ -68,6 +68,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
 #endif
     diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
+    diffLog << std::endl << "ELAPSED_TIME_BY_COMP: " << pReqInfo.getElapsedTimeMS();
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
     writeCassandraDiff( pReqInfo.mId, diffLog );
