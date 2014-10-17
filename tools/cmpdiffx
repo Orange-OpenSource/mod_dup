@@ -12,29 +12,45 @@ def contains(block, s):
 def regexMatch(block, regexs):
 	return (re.search(regexs,block) != None)
 
-def timeout(block, value, inf_or_sup):
+def respTime(block, value, inf_or_sup):
 	# inf_or_sup is a boolean, if true then it's sup
 	valueDUP = int()
 	valueCOMP = int()
-	# look for header ELAPSED_TIME_BY_DUP
-	m = re.search('ELAPSED_TIME_BY_DUP: ([0-9]*)', block)
+	m = re.search('Elapsed time for requests \(ms\): DUP ([0-9]+|N\/A) COMP ([0-9]+) DIFF', block)
 	if m != None:
-		valueDUP = int(m.group(1))
+		# if N/A is matched for DUP value
+		if m.group(1) == "N/A":
+			return False
+		valueDUP  = int(m.group(1))
+		valueCOMP = int(m.group(2))
 	else:
-		return False # header not present, discard
-	# look for header ELAPSED_TIME_BY_COMP
-	m = re.search('ELAPSED_TIME_BY_COMP: ([0-9]*)', block)
-	if m != None:
-		valueCOMP = int(m.group(1))
-	else:
-		return False # header not present, discard
+		return False # info not present
 	# test if rule is sup or inf
 	if inf_or_sup:
 		# in this case compare >
-		return True if (abs(valueDUP-valueCOMP) > value) else False
+		return True if ((valueDUP > value) or (valueCOMP > value)) else False
 	else:
 		# in this case compare <
-		return True if (abs(valueDUP-valueCOMP) < value) else False
+		return True if ((valueDUP < value) and (valueCOMP < value)) else False
+
+def respTimeDiff(block, value, inf_or_sup):
+	# inf_or_sup is a boolean, if true then it's sup
+	valueDIFF = int()
+	m = re.search('Elapsed time for requests \(ms\): DUP (?:[0-9]+|N\/A) COMP [0-9]+ DIFF (-?[0-9]+|N\/A)', block)
+	if m != None:
+		# if header ELAPSED_TIME_BY_DUP does not exist
+		if m.group(1) == "N/A":
+			return False
+		valueDIFF  = abs(int(m.group(1)))
+	else:
+		return False # info not present
+	# test if rule is sup or inf
+	if inf_or_sup:
+		# in this case compare >
+		return True if (valueDIFF > value) else False
+	else:
+		# in this case compare <
+		return True if (valueDIFF < value) else False
 
 
 #
@@ -44,17 +60,22 @@ def parseCommandLine():
 	if len(sys.argv) < 3:
 		sys.stderr.write("Usage: ./compareDiffExtractor.py <log file> <rule>\n")
 		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'match=RegexToMatch'\n")
-		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'dtimeout(< or >)<timeoutvalue>'\n")
-		sys.stderr.write("Do not forget the quotes '' for the parameters\n")
+		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'resptime(< or >)<timeout>'\n")
+		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'dresptime(< or >)<difftime>'\n")
+		sys.stderr.write("Do not forget the quotes '' for the rule\n")
 		exit(1)
 	# case where rule is match=smth
 	m = re.search('^match=(.*)$',sys.argv[2])
 	if m:
 		return lambda block: regexMatch(block,m.group(1))
-	# case where rule is dtimeout(< or >)value
-	m = re.search('dtimeout([\>\<])([0-9]*)',sys.argv[2])
+	# case where rule is resptime(< or >)value
+	m = re.search('^resptime([\>\<])([0-9]+)$',sys.argv[2])
 	if m:
-		return lambda block: timeout(block, m.group(2), True if (m.group(1) == '>') else False)
+		return lambda block: respTime(block, int(m.group(2)), True if (m.group(1) == '>') else False)
+	# case where rule is dresptime(< or >)value
+	m = re.search('^dresptime([\>\<])([0-9]+)$',sys.argv[2])
+	if m:
+		return lambda block: respTimeDiff(block, int(m.group(2)), True if (m.group(1) == '>') else False)
 	# if control arrives here, then it's an invalid rule
 	sys.stderr.write("Failed to parse rule")
 	exit(1)
