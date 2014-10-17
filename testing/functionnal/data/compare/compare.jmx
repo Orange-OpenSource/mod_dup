@@ -838,7 +838,7 @@ UNIQUE_ID: 7855441177&#xd;
                   </elementProp>
                   <elementProp name="" elementType="Header">
                     <stringProp name="Header.name">ELAPSED_TIME_BY_DUP</stringProp>
-                    <stringProp name="Header.value">1000</stringProp>
+                    <stringProp name="Header.value">123</stringProp>
                   </elementProp>
                 </collectionProp>
                 <stringProp name="TestPlan.comments">&quot;Duplication-Type: Response&quot; in the header</stringProp>
@@ -908,7 +908,7 @@ UNIQUE_ID: 7855441177&#xd;
               <hashTree/>
               <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="1592675847">ELAPSED_TIME_BY_COMP: 10[0-3][0-9]</stringProp>
+                  <stringProp name="1805288283">Elapsed time for requests \(ms\): DUP 123 COMP 10[0-3][0-9] DIFF -[0-9]{3}</stringProp>
                 </collectionProp>
                 <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>

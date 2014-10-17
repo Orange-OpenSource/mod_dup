@@ -252,11 +252,11 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if( tConf->mCompareDisabled){
         writeSerializedRequest(*req);
     }else{
-        clock_t start=clock();
+        auto start = boost::posix_time::microsec_clock::universal_time();
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
                 if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){
-                    writeDifferences(*req,diffHeader,diffBody,double(clock() - start)/CLOCKS_PER_SEC);
+                    writeDifferences(*req,diffHeader,diffBody,boost::posix_time::microsec_clock::universal_time()-start);
                 }
             }
         }

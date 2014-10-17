@@ -274,7 +274,7 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mReqBody="MyClientRequest";
     lReqInfo.mId=std::string("123");
 
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
     {
@@ -282,8 +282,8 @@ void TestModCompare::testWriteDifferences()
 		readFile.open(lPath.c_str());
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
-		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time : 0.001s\n\n\n"
-		        "ELAPSED_TIME_BY_COMP: 0\n"
+		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time for diff computation : 1ms\n"
+		        "Elapsed time for requests (ms): DUP N/A COMP 0 DIFF N/A\n\n\n\n"
 				"agent-type: myAgent\n"
 				"content-type: plain/text\n"
 				"date: TODAY\n"
@@ -302,7 +302,65 @@ void TestModCompare::testWriteDifferences()
     gWriteInFile = false;
     //open the file and truncate it
     gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",0.001);
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+
+    //check that the file content is empty
+    gFile.close();
+    // truncate the log
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    gFile.close();
+    std::ifstream infile(lPath.c_str(),std::ifstream::binary | std::ifstream::ate);
+    infile.seekg (0, infile.end);
+    int length = infile.tellg();
+    CPPUNIT_ASSERT_EQUAL(0, length);
+}
+
+void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
+{
+    gWriteInFile = true;
+    std::string lPath( getenv("PWD") );
+    lPath.append("/log_differences.txt");
+    gFile.close();
+    gFile.open(lPath.c_str());
+
+    DupModule::RequestInfo lReqInfo;
+    lReqInfo.mReqHeader["content-type"]= "plain/text";  //size = 11
+    lReqInfo.mReqHeader["agent-type"]= "myAgent";  //size = 11
+    lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
+    lReqInfo.mReqHeader["ELAPSED_TIME_BY_DUP"]= "432";  // test diff time dup/comp requests
+    lReqInfo.mReqBody="MyClientRequest";
+    lReqInfo.mId=std::string("123");
+
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
+
+    {
+        std::ifstream readFile;
+        readFile.open(lPath.c_str());
+        std::stringstream buffer;
+        buffer << readFile.rdbuf();
+        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time for diff computation : 1ms\n"
+                "Elapsed time for requests (ms): DUP 432 COMP 0 DIFF 432\n\n\n\n"
+                "ELAPSED_TIME_BY_DUP: 432\n"
+                "agent-type: myAgent\n"
+                "content-type: plain/text\n"
+                "date: TODAY\n"
+                "\n"
+                "MyClientRequest\n"
+                "-------------------\n"
+                "myHeaderDiff\n"
+                "-------------------\n"
+                "myBodyDiff\n"
+                "END DIFFERENCE n°:123\n");
+        std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
+        CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
+    }
+
+    //write diff in syslog
+    gWriteInFile = false;
+    //open the file and truncate it
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
 
     //check that the file content is empty
     gFile.close();
@@ -328,7 +386,7 @@ void TestModCompare::testGetLength()
         getLength( lString, lFirst);
     }catch(const std::out_of_range &oor){
     	hasThrownError=true;
-    }catch(boost::bad_lexical_cast){
+    }catch(boost::bad_lexical_cast&){
     	hasThrownError=true;
     }
     CPPUNIT_ASSERT(hasThrownError);

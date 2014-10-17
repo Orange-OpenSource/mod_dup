@@ -51,7 +51,7 @@ void map2string(const std::map< std::string, std::string> &pMap, std::string &pS
  * @brief write response differences in a file or in syslog
  * @param pReqInfo info of the original request
  */
-void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& headerDiff,const std::string& bodyDiff, const double time )
+void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& headerDiff,const std::string& bodyDiff, boost::posix_time::time_duration time )
 {
     std::string lReqHeader;
     map2string( pReqInfo.mReqHeader, lReqHeader );
@@ -61,14 +61,16 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog.imbue(lLocale);
 
     diffLog << "BEGIN NEW REQUEST DIFFERENCE n°: " << pReqInfo.mId ;
-    if (time > 0){
-    	diffLog << " / Elapsed time : " << time << "s";
+    if (time.total_microseconds()/1000 > 0){
+        diffLog << " / Elapsed time for diff computation : " << time.total_microseconds()/1000 << "ms";
     }
+    auto it = pReqInfo.mReqHeader.find("ELAPSED_TIME_BY_DUP");
+    std::string diffTime = it != pReqInfo.mReqHeader.end() ? std::to_string(boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS())) : "N/A";
 #ifndef UNIT_TESTING
     diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
 #endif
+    diffLog << std::endl << "Elapsed time for requests (ms): DUP " << (it != pReqInfo.mReqHeader.end() ? it->second : "N/A") << " COMP " << pReqInfo.getElapsedTimeMS() << " DIFF " << diffTime << std::endl;
     diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
-    diffLog << std::endl << "ELAPSED_TIME_BY_COMP: " << pReqInfo.getElapsedTimeMS();
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
     writeCassandraDiff( pReqInfo.mId, diffLog );
