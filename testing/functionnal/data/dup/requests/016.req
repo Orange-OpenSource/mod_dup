@@ -1,11 +1,12 @@
 ==DESC==
-/dup_test/dup RawSubstitution applied in a HEADER
-==HEADER==
+/dup_test/dup RawSubstitution applied in a URL
+==URL==
 /dup_test/dup?Pigeon=vole&tochange=Like%20a%20Hello
 ==BODY==
-==THEADER==
+==DUPURL==
 /dup_test/dup?Pigeon=vole&tochange=Lion%20a%20Hello
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 ^.*DUP$
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

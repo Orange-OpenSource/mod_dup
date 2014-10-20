@@ -1,12 +1,13 @@
 ==DESC==
-/dup_test/dup NO Substitution applied in the HEADER
-==HEADER==
+/dup_test/dup NO Substitution applied in the URL
+==URL==
 /dup_test/dup?Pigeon=vole&oiseaubody=de%20nos%20yeux%20tu%20te%20derobes
 ==BODY==
-==THEADER==
+==DUPURL==
 /dup_test/dup?Pigeon=vole&oiseaubody=de%20nos%20yeux%20tu%20te%20derobes
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 0000000.*Last-Modified.*DUP$
 
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

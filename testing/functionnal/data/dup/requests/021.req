@@ -1,10 +1,11 @@
 ==DESC==
 /dup_test/dup Duplication of soli request
-==HEADER==
+==URL==
 /dup_test/soli?
 ==BODY==
 <?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://com.francetelecom.pns.enabler.sei/PnSEnabler/V1/PnSCoreSEI" xmlns:ns2="http://com.francetelecom.pns.enabler.sei.eto/PnSEnabler/V1"><SOAP-ENV:Body><ns1:getPNS><ns1:input><ns1:Country>FR</ns1:Country><ns1:Sid>IDSOLI</ns1:Sid><ns1:UserCredential><ns2:CredentialKey>0</ns2:CredentialKey><ns2:CredentialValue>IDSOLI-100-GQ/yfcJSz3bAueV9WEZOqp/G5hl01ffSZ2S06LJZ+zw</ns2:CredentialValue></ns1:UserCredential><ns1:Version>1.0.0</ns1:Version><ns1:Infos><ns2:Info>AELUserND</ns2:Info><ns2:Info>AELUserHome</ns2:Info><ns2:Info>HomeAddress</ns2:Info><ns2:Info>TlmMode</ns2:Info><ns2:Info>TlmMobileTac</ns2:Info><ns2:Info>MobileDeviceTac</ns2:Info><ns2:Info>FullCompositeOfferSummary</ns2:Info></ns1:Infos></ns1:input></ns1:getPNS></SOAP-ENV:Body></SOAP-ENV:Envelope>
-==THEADER==
-==TBODY==
-==RBODY==
-==DEST==
+==DUPURL==
+==DUPHEADER==
+==DUPBODY==
+==RESPBODY==
+==DUPDESTPORT==

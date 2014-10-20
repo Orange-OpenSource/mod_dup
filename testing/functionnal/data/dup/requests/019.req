@@ -1,13 +1,14 @@
 ==DESC==
 /dup_test/dup Substitution applied in a BODY
-==HEADER==
+==URL==
 /dup_test/dup?Pigeon=vole
 ==BODY==
 oiseaubody=de nos yeux tu te derobes
-==THEADER==
+==DUPURL==
 /dup_test/dup?Pigeon=vole
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 ^00000049OISEAUBODY=tu%20es%20vraiment%20le%20plus%20agile.*DUP$
 
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

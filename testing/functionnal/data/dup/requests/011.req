@@ -1,11 +1,12 @@
 ==DESC==
 /dup_test/dup Duplication with Filter matching in a header
-==HEADER==
+==URL==
 /dup_test/dup?love=hate
 ==BODY==
-==THEADER==
+==DUPURL==
 /dup_test/dup?love=hate
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 ^00000000.*Content-Length: 3.*DUP$
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

@@ -1,12 +1,13 @@
 ==DESC==
 Validation mode =>> nominal case, SID to dup present in arguments
-==HEADER==
+==URL==
 /dup_test/dup?method=getBES&country=FR&Sid=IDBAR
 ==BODY==
-==THEADER==
+==DUPURL==
 /dup_test/dup?METHOD=getBES&COUNTRY=FR&SID=DUPIDBAR
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 .*
-==RBODY==
+==RESPBODY==
 DUP
-==DEST==
+==DUPDESTPORT==

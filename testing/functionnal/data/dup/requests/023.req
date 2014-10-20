@@ -1,9 +1,10 @@
 ==DESC==
 /dup_test/dup Prevent filter test
-==HEADER==
+==URL==
 /dup_test/dup?love=hate&PreventKey=true
 ==BODY==
-==THEADER==
-==TBODY==
-==RBODY==
-==DEST==
+==DUPURL==
+==DUPHEADER==
+==DUPBODY==
+==RESPBODY==
+==DUPDESTPORT==

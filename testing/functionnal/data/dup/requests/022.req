@@ -1,12 +1,13 @@
 ==DESC==
 /dup_test/header_only Duplication of the header only
-==HEADER==
+==URL==
 /dup_test/header_only?love=hate
 ==BODY==
 Must not be duplicated
-==THEADER==
+==DUPURL==
 /dup_test/header_only?love=hate
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 ^$
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==
