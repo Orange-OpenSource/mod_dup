@@ -11,3 +11,12 @@
    Move the structure to a Common namespace
 
 * Imagine a test scenario of dup + compare on 2 separated virtualhosts
+
+* Forward of the origin method
+  as a header? Change curl method?
+
+* Forward content type
+
+* Check syncro mode timeout
+
+* Http status duplication
