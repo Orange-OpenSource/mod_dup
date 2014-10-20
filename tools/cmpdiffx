@@ -58,22 +58,22 @@ def respTimeDiff(block, value, inf_or_sup):
 #
 def parseCommandLine():
 	if len(sys.argv) < 3:
-		sys.stderr.write("Usage: ./compareDiffExtractor.py <log file> <rule>\n")
-		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'match=RegexToMatch'\n")
-		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'resptime(< or >)<timeout>'\n")
-		sys.stderr.write("Example: ./compareDiffExtractor.py mylogfile.log 'dresptime(< or >)<difftime>'\n")
+		sys.stderr.write("Usage: cmpdiffx <log file> <rule>\n")
+		sys.stderr.write("Example: cmpdiffx mylogfile.log 'match=RegexToMatch'\n")
+		sys.stderr.write("Example: cmpdiffx mylogfile.log 'resptime(< or >)<timeout>'\n")
+		sys.stderr.write("Example: cmpdiffx mylogfile.log 'dresptime(< or >)<difftime>'\n")
 		sys.stderr.write("Do not forget the quotes '' for the rule\n")
 		exit(1)
 	# case where rule is match=smth
-	m = re.search('^match=(.*)$',sys.argv[2])
+	m = re.search('^match *= *(.*)$',sys.argv[2])
 	if m:
 		return lambda block: regexMatch(block,m.group(1))
 	# case where rule is resptime(< or >)value
-	m = re.search('^resptime([\>\<])([0-9]+)$',sys.argv[2])
+	m = re.search('^resptime *([\>\<]) *([0-9]+)$',sys.argv[2])
 	if m:
 		return lambda block: respTime(block, int(m.group(2)), True if (m.group(1) == '>') else False)
 	# case where rule is dresptime(< or >)value
-	m = re.search('^dresptime([\>\<])([0-9]+)$',sys.argv[2])
+	m = re.search('^dresptime *([\>\<]) *([0-9]+)$',sys.argv[2])
 	if m:
 		return lambda block: respTimeDiff(block, int(m.group(2)), True if (m.group(1) == '>') else False)
 	# if control arrives here, then it's an invalid rule
