@@ -79,10 +79,10 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     // No context? new request
     if (!pF->ctx) {
 
-        DupModule::RequestInfo *info = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
+        boost::shared_ptr<DupModule::RequestInfo> *info = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
 
         // Backup of info struct in the request context
-        pF->ctx = info;
+        pF->ctx = info->get();
 
         DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
         while (!CommonModule::extractBrigadeContent(pB, pF->next, lRI->mBody)){
@@ -94,7 +94,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         lStatus =  deserializeBody(*lRI);
 
         // reset timer to not take deserializing computation time into account
-        info->resetStartTime();
+        (*info)->resetStartTime();
 
         if(lStatus != APR_SUCCESS){
             return lStatus;

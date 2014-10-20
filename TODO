@@ -1,6 +1,22 @@
 
 ** TODO list **
 
-* HighestDuplicationType by location
- Currently the highest duplication type is virtualhost level,
-   having it location level would avoid to copy unnecessary answers
+* filters_compare
+   Check inputFilterHanfdler.
+   Usage of pF->ctx is suspect. Not sure this works with requests of
+   more than 8k.
+
+* RequestInfo
+   Clean the member duplicates (headers)
+   Move the structure to a Common namespace
+
+* Imagine a test scenario of dup + compare on 2 separated virtualhosts
+
+* Forward of the origin method
+  as a header? Change curl method?
+
+* Forward content type
+
+* Check syncro mode timeout
+
+* Http status duplication
