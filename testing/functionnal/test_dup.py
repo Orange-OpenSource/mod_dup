@@ -18,14 +18,14 @@ import urllib
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def do_GET(self):
-        post_body = ''.join(iter(self.rfile.read, ''))
-        self.server.queue.put(('POST', self.path, post_body, self.server.server_port))
+        posdup_body = ''.join(iter(self.rfile.read, ''))
+        self.server.queue.put(('POST', self.path, posdup_body, self.server.server_port))
         # FIXME: why is the pipe broken at this point?
         #self.send_response(200)
 
     def do_POST(self):
-        post_body = ''.join(iter(self.rfile.read, ''))
-        self.server.queue.put(('GET', self.path, post_body, self.server.server_port))
+        posdup_body = ''.join(iter(self.rfile.read, ''))
+        self.server.queue.put(('GET', self.path, posdup_body, self.server.server_port))
         # FIXME: why is the pipe broken at this point?
         #self.send_response(200)
 
@@ -35,7 +35,7 @@ def http_server(q, host, port):
     server.queue = q
     server.serve_forever()
 
-class TeeRequest:
+class DupRequest:
     def __init__(self, filename, host, port):
         self.filename = filename
         self.host, self.port = host, port
@@ -47,23 +47,28 @@ class TeeRequest:
         """
         f = open(self.filename, 'r')
         _ = self.consume(f, '==DESC==')
-        self.desc = self.consume(f, "==HEADER==")
+        self.desc = self.consume(f, "==URL==")
         self.path = self.consume(f, "==BODY==")
-        self.body = self.consume(f, "==THEADER==")
-        self.t_path = self.consume(f, "==TBODY==")
-        self.t_body = self.consume(f, "==RBODY==")
-        self.r_body = self.consume(f, "==DEST==")
-        self.t_dest = self.consume(f, "==EOF==")
+        self.body = self.consume(f, "==DUPURL==")
+        self.dup_path = self.consume(f, "==DUPHEADER==")
+        self.dup_header = self.consumeIntoList(f, "==DUPBODY==")
+        self.dup_body = self.consume(f, "==RESPBODY==")
+        self.resp_body = self.consume(f, "==DUPDESTPORT==")
+        self.dup_dest = self.consume(f, "==EOF==")
         f.close()
+        # actual dup HTTP headers (ones received from mod_dup)
+        self.response_dup_header = list()
+        self.response_dup_body = cStringIO.StringIO()
 
     def __str__(self):
         return '''Request\n
   desc: %s
   path: %s
   body: %s
-  t_path: %s
-  t_body: %s''' % (self.desc, self.path, self.body, self.t_path, self.t_body)
+  dup_path: %s
+  dup_body: %s''' % (self.desc, self.path, self.body, self.dup_path, self.dup_body)
 
+    ## RETURN CONCATENATION OF ALL THE LINES CONSUMED
     def consume(self, f, key=''):
         lines = []
         while 1:
@@ -78,16 +83,37 @@ class TeeRequest:
             lines.append(line)
         return ''.join(lines)
 
+    ## RETURN ALL THE LINES CONSUMED AS A LIST
+    def consumeIntoList(self, f, key=''):
+        lines = []
+        while 1:
+            line = f.readline()
+            if line == '':
+                line = '==EOF=='
+                if key != line:
+                    raise Exception('EOF while trying to consume %s' % key)
+            line = line.strip()
+            if line == key:
+                break
+            lines.append(line)
+        return lines
+
     def get_url(self):
         return "http://%s:%d%s" % (self.host, self.port, self.path)
 
-    def play_with_curl(self, curl, verbose=False):
-        buf = cStringIO.StringIO()
+    def header_handler(self, header_line):
+        header_line = header_line.decode('iso-8859-1')
+        if ':' not in header_line:
+            return
+        self.response_dup_header.append(str(header_line).rstrip())
 
+    ## EXECUTE THE CURL REQUEST
+    def execute(self, curl, verbose=False):
         if verbose:
             print "Url:", self.get_url()
         curl.setopt(curl.URL, self.get_url())
-        curl.setopt(curl.WRITEFUNCTION, buf.write)
+        curl.setopt(curl.HEADERFUNCTION, self.header_handler) # pycurl executes header_handler on each line of the http header
+        curl.setopt(curl.WRITEFUNCTION, self.response_dup_body.write) #pycurl executes write on self.response_dup_body for the body
         curl.setopt(curl.FOLLOWLOCATION, 1);
         if (len(self.body)):
             curl.setopt(curl.POST, 1)
@@ -96,47 +122,57 @@ class TeeRequest:
             curl.setopt(curl.POSTFIELDSIZE, len(self.body))
             curl.setopt(curl.POSTFIELDS, self.body)
         assert not curl.perform()
-        return buf
+        return self.response_dup_body
 
+    ## MAKE THE ASSERTIONS/COMPARISONS
     def assert_received(self, path, body, server_port):
-        # if (self.t_dest == "MULTI")
-        if (len(self.t_dest) and self.t_dest != "MULTI"):
+        # if (self.dup_dest == "MULTI")
+        if (len(self.dup_dest) and self.dup_dest != "MULTI"):
             assert server_port == 16555 ,  "########### SHOULD BE ON SECOND LOCATION  ###############"
-        elif not len(self.t_dest):
+        elif not len(self.dup_dest):
             assert  server_port != 16555 ,  "########### SHOULD BE ON FIRST LOCATION  ###############"
-        assert self.t_path, '''Unexpected request received
+        assert self.dup_path, '''Unexpected request received
                path: %s
                body: %s''' % (path, body)
-        assert self.t_path and path == self.t_path ,\
+        assert self.dup_path and path == self.dup_path ,\
                 '''Path did not match:
                    path: %s
                    body: %s''' % (path, body)
-        assert re.search(self.t_body, body, re.MULTILINE|re.DOTALL),\
+        assert re.search(self.dup_body, body, re.MULTILINE|re.DOTALL),\
                  '''Body did not match:
                  path: %s
                  body: %s''' % (path, body)
+        # check headers
+        for headerLineExpected in self.dup_header: # iterate through expected header lines (defined by ==DUPHEADER==)
+            contained = False
+            for headerLineActual in self.response_dup_header: # iterate through received header lines
+                if re.search(headerLineExpected,headerLineActual) != None:
+                    contained = True # header line is contained, OK
+                    break
+            assert contained,\
+            '''Header not found: %s''' % (headerLineExpected)
 
     def assert_not_received(self):
-        assert not self.t_path and not self.t_body, 'Request not duplicated'
+        assert not self.dup_path and not self.dup_body, 'Request not duplicated'
 
 def run_tests(request_files, queue, options):
 
     for r_fname in request_files:
         print "Test:", r_fname
         curl = pycurl.Curl()
-        request = TeeRequest(r_fname, options.host, int(options.port))
-        response = request.play_with_curl(curl, verbose=options.verbose)
+        request = DupRequest(r_fname, options.host, int(options.port))
+        request.execute(curl, verbose=options.verbose)
 
-        if (len(request.r_body)):
-            assert request.r_body == response.getvalue().rstrip(), '''Response mismatch:
+        if (len(request.resp_body)):
+            assert request.resp_body == request.response_dup_body.getvalue().rstrip(), '''Response mismatch:
    expected: %s
-   received: %s''' % (request.r_body, response.getvalue())
+   received: %s''' % (request.resp_body, request.response_dup_body.getvalue())
         if not options.curl_only:
             try:
                 try:
                     method, path, body, server_port = queue.get(timeout=3)
                     request.assert_received(path, body, server_port)
-                    if (request.t_dest == "MULTI"):
+                    if (request.dup_dest == "MULTI"):
                         # second extraction from the queue
                         method2, path2, body2, server_port2 = queue.get(timeout=3)
                         assert server_port != server_port2, "Multi sent on the same location"
@@ -156,7 +192,7 @@ def run_tests(request_files, queue, options):
 
 def display_test_content(request_files):
     for r_fname in request_files:
-        request = TeeRequest(r_fname, '', int(8000))
+        request = DupRequest(r_fname, '', int(8000))
         print ("Test: %s " % r_fname + request.desc)
 
 def main(options, args):
@@ -198,7 +234,7 @@ def main(options, args):
 
 if __name__ == '__main__':
     # By default, we use the test files in the data folder next to this script
-    default_path = os.path.join(os.getcwd(), os.path.dirname(__file__), "data")
+    defauldup_path = os.path.join(os.getcwd(), os.path.dirname(__file__), "data")
 
     # Option parsing
     arg_parser = optparse.OptionParser()
@@ -219,6 +255,6 @@ if __name__ == '__main__':
     arg_parser.add_option('--dest_port', dest='dest_port',
                         help='The destination port of mod_tee', default=8043)
     arg_parser.add_option('--path', dest='path',
-                        help='The folder containing the request files', default=default_path)
+                        help='The folder containing the request files', default=defauldup_path)
 
     main(*arg_parser.parse_args())
