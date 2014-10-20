@@ -53,7 +53,7 @@ namespace CommonModule {
      * Method that allocates on the request pool a RequestInfo object (template is needed to choose from MigrateModule::RequestInfo or DupModule::RequestInfo)
      * The second template parameter is the module address, usually &(compare|dup|migrate)_module
      */
-    template<typename T, const module * mod> inline T* makeRequestInfo(request_rec *pRequest) {
+    template<typename T, const module * mod> inline boost::shared_ptr<T> *makeRequestInfo(request_rec *pRequest) {
         // Unique request id
         std::string uid = getOrSetUniqueID(pRequest);
         T* info = new T(uid);
@@ -61,39 +61,14 @@ namespace CommonModule {
         // Allocation on a shared pointer on the request pool
         // We guarantee that whatever happens, the RequestInfo will be deleted
         void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<T>));
-        new (space) boost::shared_ptr<T>(info);
+        boost::shared_ptr<T> *wrappedInfo = new (space) boost::shared_ptr<T>(info);
         // Registering of the shared pointer destructor on the pool
         apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<T> >, apr_pool_cleanup_null);
 
         // Backup in request context
         ap_set_module_config(pRequest->request_config, mod, (void *)space);
 
-        return info;
-    }
-
-    /*
-     * Method that allocates on the request pool a RequestInfo object (template is needed to choose from MigrateModule::RequestInfo or DupModule::RequestInfo)
-     * The second template parameter is the module address, usually &(compare|dup|migrate)_module
-     * OVERLOAD TO GET THE space POINTER
-     */
-    template<typename T, const module * mod> inline T* makeRequestInfo(request_rec *pRequest, void** space_ptr) {
-        // Unique request id
-        std::string uid = getOrSetUniqueID(pRequest);
-        T* info = new T(uid);
-
-        // Allocation on a shared pointer on the request pool
-        // We guarantee that whatever happens, the RequestInfo will be deleted
-        void *space = apr_palloc(pRequest->pool, sizeof(boost::shared_ptr<T>));
-        new (space) boost::shared_ptr<T>(info);
-        // Registering of the shared pointer destructor on the pool
-        apr_pool_cleanup_register(pRequest->pool, space, cleaner<boost::shared_ptr<T> >, apr_pool_cleanup_null);
-
-        // Backup in request context
-        ap_set_module_config(pRequest->request_config, mod, (void *)space);
-
-        *space_ptr = space;
-
-        return info;
+        return wrappedInfo;
     }
 
 };

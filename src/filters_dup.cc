@@ -70,12 +70,11 @@ apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap
         return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
     }
 
-    RequestInfo *info = NULL;
     if (!pFilter->ctx) {
         boost::shared_ptr<RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<RequestInfo> *>(ap_get_module_config(pFilter->r->request_config, &dup_module)));
         if (!reqInfo || !reqInfo->get()) {
-            info = CommonModule::makeRequestInfo<RequestInfo, &dup_module>(pRequest, reinterpret_cast<void**>(&reqInfo));
-
+            reqInfo = CommonModule::makeRequestInfo<RequestInfo, &dup_module>(pRequest);
+            RequestInfo *info = reqInfo->get();
             const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
             // Copy Request ID in both headers
             if (lID == NULL) {
@@ -91,8 +90,9 @@ apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap
         pFilter->ctx = reqInfo->get();
     }
     if (pFilter->ctx != (void *) -1) {
-        // Request not read yet
-        info = reinterpret_cast<RequestInfo *>(pFilter->ctx);
+        // Request not completely read yet
+        RequestInfo *info = reinterpret_cast<RequestInfo *>(pFilter->ctx);
+        assert(info);
         apr_status_t st = ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
         if (st != APR_SUCCESS) {
             pFilter->ctx = (void *) -1;
@@ -154,8 +154,8 @@ apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *p
             // apache calls the output filter before the input filter
             // so we need to handle this gracefully
             // by creating the RequestInfo
-            ri = CommonModule::makeRequestInfo<DupModule::RequestInfo,&dup_module>(pRequest, reinterpret_cast<void**>(&reqInfo));
-
+            reqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&dup_module>(pRequest);
+			ri = reqInfo->get();
             pFilter->ctx = ri;
 
             ri->mConfPath = tConf->dirName;
@@ -246,8 +246,8 @@ apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade
             // Registering of the shared pointer destructor on the pool
             // Backup in request context
             // Backup in filter context
-            ri = CommonModule::makeRequestInfo<DupModule::RequestInfo,&dup_module>(pRequest, reinterpret_cast<void**>(&reqInfo));
-
+            reqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&dup_module>(pRequest);
+            ri = reqInfo->get();
             pFilter->ctx = ri;
 
             ri->mConfPath = tConf->dirName;

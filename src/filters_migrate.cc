@@ -120,9 +120,10 @@ int translateHook(request_rec *pRequest) {
         }
     }
 
-    RequestInfo* info = CommonModule::makeRequestInfo<RequestInfo,&migrate_module>(pRequest);
-
+    boost::shared_ptr<RequestInfo>* wrappedInfo = CommonModule::makeRequestInfo<RequestInfo,&migrate_module>(pRequest);
+    RequestInfo *info = wrappedInfo->get();
     apr_bucket_brigade *bb = apr_brigade_create(pRequest->connection->pool, pRequest->connection->bucket_alloc);
+
     if (!bb) {
         Log::error(42, "Bucket brigade allocation failed");
         return DECLINED;
