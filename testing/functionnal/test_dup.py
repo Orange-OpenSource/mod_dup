@@ -16,16 +16,18 @@ import sys
 import urllib
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-
+    ### self.path self.headers posdup_body => URL HEADERS AND BODY OF MOD_DUP RESPONSE
     def do_GET(self):
         posdup_body = ''.join(iter(self.rfile.read, ''))
-        self.server.queue.put(('POST', self.path, posdup_body, self.server.server_port))
+        # we need to rstrip the header lines to remove the trailing newline
+        self.server.queue.put((self.path, [line.rstrip() for line in self.headers.headers], posdup_body, self.server.server_port))
         # FIXME: why is the pipe broken at this point?
         #self.send_response(200)
 
     def do_POST(self):
         posdup_body = ''.join(iter(self.rfile.read, ''))
-        self.server.queue.put(('GET', self.path, posdup_body, self.server.server_port))
+        # we need to rstrip the header lines to remove the trailing newline
+        self.server.queue.put((self.path, [line.rstrip() for line in self.headers.headers], posdup_body, self.server.server_port))
         # FIXME: why is the pipe broken at this point?
         #self.send_response(200)
 
@@ -56,9 +58,9 @@ class DupRequest:
         self.resp_body = self.consume(f, "==DUPDESTPORT==")
         self.dup_dest = self.consume(f, "==EOF==")
         f.close()
-        # actual dup HTTP headers (ones received from mod_dup)
-        self.response_dup_header = list()
-        self.response_dup_body = cStringIO.StringIO()
+        # response header and body (not from mod_dup but from the web service)
+        self.response_headers = list()
+        self.response_body = cStringIO.StringIO()
 
     def __str__(self):
         return '''Request\n
@@ -105,15 +107,15 @@ class DupRequest:
         header_line = header_line.decode('iso-8859-1')
         if ':' not in header_line:
             return
-        self.response_dup_header.append(str(header_line).rstrip())
+        self.response_headers.append(str(header_line).rstrip())
 
     ## EXECUTE THE CURL REQUEST
     def execute(self, curl, verbose=False):
         if verbose:
             print "Url:", self.get_url()
         curl.setopt(curl.URL, self.get_url())
-        curl.setopt(curl.HEADERFUNCTION, self.header_handler) # pycurl executes header_handler on each line of the http header
-        curl.setopt(curl.WRITEFUNCTION, self.response_dup_body.write) #pycurl executes write on self.response_dup_body for the body
+        curl.setopt(curl.HEADERFUNCTION, self.header_handler) #pycurl executes header_handler on each line of the http header
+        curl.setopt(curl.WRITEFUNCTION, self.response_body.write) #pycurl executes write on self.response_body for the body
         curl.setopt(curl.FOLLOWLOCATION, 1);
         if (len(self.body)):
             curl.setopt(curl.POST, 1)
@@ -122,10 +124,10 @@ class DupRequest:
             curl.setopt(curl.POSTFIELDSIZE, len(self.body))
             curl.setopt(curl.POSTFIELDS, self.body)
         assert not curl.perform()
-        return self.response_dup_body
+        return self.response_body
 
     ## MAKE THE ASSERTIONS/COMPARISONS
-    def assert_received(self, path, body, server_port):
+    def assert_received(self, path, headers, body, server_port):
         # if (self.dup_dest == "MULTI")
         if (len(self.dup_dest) and self.dup_dest != "MULTI"):
             assert server_port == 16555 ,  "########### SHOULD BE ON SECOND LOCATION  ###############"
@@ -145,7 +147,7 @@ class DupRequest:
         # check headers
         for headerLineExpected in self.dup_header: # iterate through expected header lines (defined by ==DUPHEADER==)
             contained = False
-            for headerLineActual in self.response_dup_header: # iterate through received header lines
+            for headerLineActual in headers: # iterate through received header lines
                 if re.search(headerLineExpected,headerLineActual) != None:
                     contained = True # header line is contained, OK
                     break
@@ -164,19 +166,19 @@ def run_tests(request_files, queue, options):
         request.execute(curl, verbose=options.verbose)
 
         if (len(request.resp_body)):
-            assert request.resp_body == request.response_dup_body.getvalue().rstrip(), '''Response mismatch:
+            assert request.resp_body == request.response_body.getvalue().rstrip(), '''Response mismatch:
    expected: %s
-   received: %s''' % (request.resp_body, request.response_dup_body.getvalue())
+   received: %s''' % (request.resp_body, request.response_body.getvalue())
         if not options.curl_only:
             try:
                 try:
-                    method, path, body, server_port = queue.get(timeout=3)
-                    request.assert_received(path, body, server_port)
+                    path, headers, body, server_port = queue.get(timeout=3)
+                    request.assert_received(path, headers, body, server_port)
                     if (request.dup_dest == "MULTI"):
                         # second extraction from the queue
-                        method2, path2, body2, server_port2 = queue.get(timeout=3)
+                        path2, headers2, body2, server_port2 = queue.get(timeout=3)
                         assert server_port != server_port2, "Multi sent on the same location"
-                        request.assert_received(path2, body2, server_port2)
+                        request.assert_received(path2, headers2, body2, server_port2)
 
                 except Queue.Empty:
                     request.assert_not_received()

@@ -7,8 +7,9 @@ The path of the righteous man is beset on all sides by the inequities of the sel
 ==DUPURL==
 /dup_test/dup?METHOD=getBES&COUNTRY=FR&SID=DUPIDBAR
 ==DUPHEADER==
+ELAPSED_TIME_BY_DUP
 ==DUPBODY==
-^00000.*The path.*in the name.*lost children.*who attempt.*when I lay.*ELAPSED_TIME_BY_DUP:.*DUP$
+^00000.*The path.*in the name.*lost children.*who attempt.*when I lay.*DUP$
 ==RESPBODY==
 DUP
 ==DUPDESTPORT==
