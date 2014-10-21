@@ -6,9 +6,6 @@ import re
 #
 # UTILS FUNCTIONS
 #
-def contains(block, s):
-	return (s in block)
-
 def regexMatch(block, regexs):
 	return (re.search(regexs,block) != None)
 

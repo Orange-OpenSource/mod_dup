@@ -908,7 +908,7 @@ UNIQUE_ID: 7855441177&#xd;
               <hashTree/>
               <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
                 <collectionProp name="Asserion.test_strings">
-                  <stringProp name="1805288283">Elapsed time for requests \(ms\): DUP 123 COMP 10[0-3][0-9] DIFF -[0-9]{3}</stringProp>
+                  <stringProp name="1075307745">Elapsed time for requests \(ms\): DUP 123 COMP 1[0-1][0-9][0-9] DIFF -[0-9]{3}</stringProp>
                 </collectionProp>
                 <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>
@@ -1212,10 +1212,9 @@ UNIQUE_ID: 7855441177&#xd;
 &apos;Transfer-Encoding&apos; ==&gt; &apos;chunked&apos;</stringProp>
                   <stringProp name="517813910">\+COMPARE</stringProp>
                   <stringProp name="2016365415">-&lt;OOPSApplications&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris e</stringProp>
-                  <stringProp name="595620321">Key missing in src map :
+                  <stringProp name="-1560696395">Key missing in src map :
 &apos;Accept-Ranges&apos; ==&gt; &apos;bytes&apos;
-&apos;Connection&apos; ==&gt; &apos;Keep-Alive&apos;
-&apos;ETag&apos; ==&gt; &apos;&quot;40032-7-500fa41c7f240&quot;&apos;</stringProp>
+&apos;Connection&apos; ==&gt; &apos;Keep-Alive&apos;</stringProp>
                   <stringProp name="0"></stringProp>
                   <stringProp name="0"></stringProp>
                   <stringProp name="0"></stringProp>
