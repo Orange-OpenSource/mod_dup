@@ -64,8 +64,8 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     if (time.total_microseconds()/1000 > 0){
         diffLog << " / Elapsed time for diff computation : " << time.total_microseconds()/1000 << "ms";
     }
-    auto it = pReqInfo.mReqHeader.find("ELAPSED_TIME_BY_DUP");
-    std::string diffTime = it != pReqInfo.mReqHeader.end() ? std::to_string(boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS())) : "N/A";
+    std::map< std::string, std::string >::const_iterator it = pReqInfo.mReqHeader.find("ELAPSED_TIME_BY_DUP");
+    std::string diffTime = it != pReqInfo.mReqHeader.end() ? boost::lexical_cast<std::string>(boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS())) : "N/A";
 #ifndef UNIT_TESTING
     diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
 #endif
@@ -73,6 +73,11 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
+
+    it = pReqInfo.mReqHeader.find("X_DUP_HTTP_STATUS");
+    if( ( it != pReqInfo.mReqHeader.end()) && ( pReqInfo.compHttpStatus !=  boost::lexical_cast<int>(it->second)) ){
+        diffLog <<  DIFF_SEPARATOR << "Http Status Codes: DUP " <<  it->second << " COMP " << pReqInfo.compHttpStatus << std::endl;;
+    }
     writeCassandraDiff( pReqInfo.mId, diffLog );
     diffLog << DIFF_SEPARATOR << headerDiff << std::endl;
     diffLog << DIFF_SEPARATOR << bodyDiff << std::endl;

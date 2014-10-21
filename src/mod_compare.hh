@@ -169,5 +169,7 @@ const char* setLogFacility(cmd_parms* pParams, void* pCfg, const char* pValue);
 
 bool checkCassandraDiff(const std::string &pUniqueID);
 
+void changeMethod(request_rec *pRequest, std::string pMethod);
+
 }
 

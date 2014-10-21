@@ -136,6 +136,8 @@ struct RequestInfo {
 
     unsigned int offset;
 
+    int compHttpStatus;
+
     /**
      * @brief Constructs the object using the three strings.
      * @param pConfPath The location (in the conf) which matched this query

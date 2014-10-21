@@ -29,6 +29,13 @@
 #include <iomanip>
 #include <apache2/httpd.h>
 
+#define DEF_METHOD(name) static const char *g##name = #name;
+
+DEF_METHOD(GET)
+DEF_METHOD(POST)
+DEF_METHOD(PUT)
+DEF_METHOD(PATCH)
+DEF_METHOD(DELETE)
 
 
 namespace CompareModule {
@@ -40,6 +47,35 @@ printRequest(request_rec *pRequest, std::string pBody)
     Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
     Log::debug("### Uri:%s", pRequest->uri);
     Log::debug("### Request args: %s", pRequest->args);
+}
+
+void
+changeMethod(request_rec *pRequest, std::string pMethod){
+
+    if( pMethod.compare(pRequest->method)){
+        return;
+    }
+
+    if ( !pMethod.compare(gGET)){
+        pRequest->method = gGET;
+        pRequest->method_number = M_GET;
+    }
+    else if( !pMethod.compare(gPUT) ){
+        pRequest->method = gPUT;
+        pRequest->method_number = M_PUT;
+    }
+    else if( !pMethod.compare(gPATCH) ){
+        pRequest->method = gPATCH;
+        pRequest->method_number = M_PATCH;
+    }
+    else if( !pMethod.compare(gPOST) ){
+        pRequest->method = gPOST;
+        pRequest->method_number = M_POST;
+    }
+    else if( !pMethod.compare(gDELETE) ){
+        pRequest->method = gDELETE;
+        pRequest->method_number = M_DELETE;
+    }
 }
 
 
@@ -102,6 +138,15 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 #ifndef UNIT_TESTING
         apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
         apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
+        apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
+        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
+        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+        apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
+
+        std::map< std::string, std::string >::const_iterator it = lRI->mReqHeader.find("X_DUP_METHOD");
+        if( it != lRI->mReqHeader.end() ){
+            changeMethod(pRequest, it->second );
+        }
 #endif
         printRequest(pRequest, lRI->mReqBody);
     }
@@ -252,6 +297,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     if( tConf->mCompareDisabled){
         writeSerializedRequest(*req);
     }else{
+        req->compHttpStatus = pRequest->status;
         auto start = boost::posix_time::microsec_clock::universal_time();
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
