@@ -1,8 +1,8 @@
 ==DESC==
 Validation mode =>> no duplication case, SID matching filter present in body, no transmission
-==URL==
+==REQURL==
 /dup_test/dup?method=getBES&country=FR&Sid=IDZAZA
-==BODY==
+==REQBODY==
 SID=IDFOO
 ==DUPURL==
 ==DUPHEADER==

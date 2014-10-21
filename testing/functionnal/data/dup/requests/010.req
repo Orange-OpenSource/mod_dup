@@ -1,8 +1,8 @@
 ==DESC==
 /get_body_size_direct Tests that the body is correctly passed to the CGI script without any redirection
-==URL==
+==REQURL==
 /get_body_size_direct?FilterKey=FilterMe&actor=jean
-==BODY==
+==REQBODY==
 WhatABody!
 ==DUPURL==
 ==DUPHEADER==

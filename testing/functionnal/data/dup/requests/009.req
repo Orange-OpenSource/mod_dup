@@ -1,8 +1,8 @@
 ==DESC==
 /unknown path with no existing location
-==URL==
+==REQURL==
 /unknown?jemesuisperdu=true
-==BODY==
+==REQBODY==
 ==DUPURL==
 ==DUPHEADER==
 ==DUPBODY==

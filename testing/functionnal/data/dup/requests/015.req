@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup RawFilter BODY scope
-==URL==
+==REQURL==
 /dup_test/dup?
-==BODY==
+==REQBODY==
 CestarrivepresdechezvousInBody
 ==DUPURL==
 /dup_test/dup?

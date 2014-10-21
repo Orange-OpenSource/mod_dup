@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup Duplication on the second location
-==URL==
+==REQURL==
 /dup_test/dup?second=location
-==BODY==
+==REQBODY==
 ==DUPURL==
 /dup_test/dup?second=location
 ==DUPHEADER==

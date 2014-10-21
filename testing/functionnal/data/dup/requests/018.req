@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup Substitution in URL
-==URL==
+==REQURL==
 /dup_test/dup?oiseau=a%20la%20grise%20robe&Pigeon=vole
-==BODY==
+==REQBODY==
 ==DUPURL==
 /dup_test/dup?OISEAU=dans%20l'enfer%20des%20villes&PIGEON=vole
 ==DUPHEADER==

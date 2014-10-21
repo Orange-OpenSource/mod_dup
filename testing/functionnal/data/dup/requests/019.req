@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup Substitution applied in a BODY
-==URL==
+==REQURL==
 /dup_test/dup?Pigeon=vole
-==BODY==
+==REQBODY==
 oiseaubody=de nos yeux tu te derobes
 ==DUPURL==
 /dup_test/dup?Pigeon=vole

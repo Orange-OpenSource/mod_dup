@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/header_only Duplication of the header only
-==URL==
+==REQURL==
 /dup_test/header_only?love=hate
-==BODY==
+==REQBODY==
 Must not be duplicated
 ==DUPURL==
 /dup_test/header_only?love=hate

@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup RawSubstitution applied in a URL
-==URL==
+==REQURL==
 /dup_test/dup?Pigeon=vole&tochange=Like%20a%20Hello
-==BODY==
+==REQBODY==
 ==DUPURL==
 /dup_test/dup?Pigeon=vole&tochange=Lion%20a%20Hello
 ==DUPHEADER==

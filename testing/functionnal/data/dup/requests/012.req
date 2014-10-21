@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup Filter with ALL scope matching in request header
-==URL==
+==REQURL==
 /dup_test/dup?mtb=rocks
-==BODY==
+==REQBODY==
 ==DUPURL==
 /dup_test/dup?mtb=rocks
 ==DUPHEADER==

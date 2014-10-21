@@ -49,8 +49,8 @@ class DupRequest:
         """
         f = open(self.filename, 'r')
         _ = self.consume(f, '==DESC==')
-        self.desc = self.consume(f, "==URL==")
-        self.path = self.consume(f, "==BODY==")
+        self.desc = self.consume(f, "==REQURL==")
+        self.path = self.consume(f, "==REQBODY==")
         self.body = self.consume(f, "==DUPURL==")
         self.dup_path = self.consume(f, "==DUPHEADER==")
         self.dup_header = self.consumeIntoList(f, "==DUPBODY==")

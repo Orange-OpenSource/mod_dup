@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup RawFilter URL only does not match in body
-==URL==
+==REQURL==
 /dup_test/dup?
-==BODY==
+==REQBODY==
 Pigeon qui vole et qui vole
 ==DUPURL==
 ==DUPHEADER==

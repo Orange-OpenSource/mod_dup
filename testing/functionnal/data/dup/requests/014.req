@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup RawFilter with URL scope
-==URL==
+==REQURL==
 /dup_test/dup?Pigeon=vole
-==BODY==
+==REQBODY==
 ==DUPURL==
 /dup_test/dup?Pigeon=vole
 ==DUPHEADER==

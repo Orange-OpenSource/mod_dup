@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup NO Substitution applied in the URL
-==URL==
+==REQURL==
 /dup_test/dup?Pigeon=vole&oiseaubody=de%20nos%20yeux%20tu%20te%20derobes
-==BODY==
+==REQBODY==
 ==DUPURL==
 /dup_test/dup?Pigeon=vole&oiseaubody=de%20nos%20yeux%20tu%20te%20derobes
 ==DUPHEADER==

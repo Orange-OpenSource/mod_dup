@@ -1,8 +1,8 @@
 ==DESC==
 Validation mode =>> nominal case, SID to dup present in arguments. massive bodies in test
-==URL==
+==REQURL==
 /dup_test/dup?method=getBES&country=FR&Sid=IDBAR
-==BODY==
+==REQBODY==
 The Dude: Walter, what is the point? Look, we all know who is at fault here, what the fuck are you talking about?
 Walter Sobchak: Huh? No, what the fuck are you... I'm not... We're talking about unchecked aggression here, dude.
 Donny: What the fuck is he talking about?

@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup Duplication on 2 locations
-==URL==
+==REQURL==
 /dup_test/dup?second=location&LOVE=hate
-==BODY==
+==REQBODY==
 ==DUPURL==
 /dup_test/dup?second=location&LOVE=hate
 ==DUPHEADER==

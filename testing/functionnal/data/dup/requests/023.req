@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup Prevent filter test
-==URL==
+==REQURL==
 /dup_test/dup?love=hate&PreventKey=true
-==BODY==
+==REQBODY==
 ==DUPURL==
 ==DUPHEADER==
 ==DUPBODY==

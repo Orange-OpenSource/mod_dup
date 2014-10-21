@@ -1,8 +1,8 @@
 ==DESC==
 /dup_test/dup Filter URL only does not match in body
-==URL==
+==REQURL==
 /dup_test/dup?
-==BODY==
+==REQBODY==
 love=hate
 ==DUPURL==
 ==DUPHEADER==
