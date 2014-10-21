@@ -10,6 +10,7 @@ The path of the righteous man is beset on all sides by the inequities of the sel
 X_DUP_STATUS: 200
 X_DUP_METHOD: POST
 X_DUP_CONTENT_TYPE: text.*
+ELAPSED_TIME_BY_DUP: [0-9]+
 ==DUPBODY==
 The path.*in the name.*lost children.*who attempt.*when I lay.*26001.*Lorem.*$
 ==RESPBODY==
