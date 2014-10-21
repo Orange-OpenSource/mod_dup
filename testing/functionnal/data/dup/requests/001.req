@@ -6,6 +6,7 @@ Validation mode =>> nominal case, SID to dup present in arguments
 ==DUPURL==
 /dup_test/dup?METHOD=getBES&COUNTRY=FR&SID=DUPIDBAR
 ==DUPHEADER==
+X_DUP_METHOD: GET
 ==DUPBODY==
 .*
 ==RESPBODY==

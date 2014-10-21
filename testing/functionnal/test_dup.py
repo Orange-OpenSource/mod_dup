@@ -151,8 +151,7 @@ class DupRequest:
                 if re.search(headerLineExpected,headerLineActual) != None:
                     contained = True # header line is contained, OK
                     break
-            assert contained,\
-            '''Header not found: %s''' % (headerLineExpected)
+            assert contained,'''Header not found: %s\n\nHeaders sent:\n%s''' % (headerLineExpected, '\n'.join(headers))
 
     def assert_not_received(self):
         assert not self.dup_path and not self.dup_body, 'Request not duplicated'
@@ -172,11 +171,11 @@ def run_tests(request_files, queue, options):
         if not options.curl_only:
             try:
                 try:
-                    path, headers, body, server_port = queue.get(timeout=3)
+                    path, headers, body, server_port = queue.get(timeout=2)
                     request.assert_received(path, headers, body, server_port)
                     if (request.dup_dest == "MULTI"):
                         # second extraction from the queue
-                        path2, headers2, body2, server_port2 = queue.get(timeout=3)
+                        path2, headers2, body2, server_port2 = queue.get(timeout=2)
                         assert server_port != server_port2, "Multi sent on the same location"
                         request.assert_received(path2, headers2, body2, server_port2)
 
