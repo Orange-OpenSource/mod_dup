@@ -584,6 +584,8 @@ void TestModCompare::testInputFilterHandler()
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
         // Set X_DUP_METHOD header to check that the apache method changed
         apr_table_set(req->headers_in, "X_DUP_METHOD", "PUT");
+        // Set X_DUP_HTTP_STATUS in headers_in
+        apr_table_set(req->headers_in, "X_DUP_HTTP_STATUS", "204");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
@@ -592,6 +594,8 @@ void TestModCompare::testInputFilterHandler()
         // Second call, tests context backup
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
         CPPUNIT_ASSERT_EQUAL( std::string("PUT"), std::string(req->method) );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_HTTP_STATUS") );
+
     }
 
 }

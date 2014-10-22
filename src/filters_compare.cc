@@ -145,13 +145,13 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 
         apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
         apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
-        apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
-        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
-        apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
 
         printRequest(pRequest, lRI->mReqBody);
     }
     if (pF->ctx == (void *)1) {
+        apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
+        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+        apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
         // Request is already read and deserialized, sending it to the client
         boost::shared_ptr<DupModule::RequestInfo> * reqInfo(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pF->r->request_config,
                                                                                                                          &compare_module)));
