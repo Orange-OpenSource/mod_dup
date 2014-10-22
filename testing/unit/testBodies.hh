@@ -22,6 +22,8 @@
  * Body to serve for tests purposes
  */
 
+extern const char *testSerializedBody;
+
 extern const char *testBody42;
 
 extern const char *testBody43p1;

@@ -581,11 +581,10 @@ void TestModCompare::testInputFilterHandler()
         filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
         filter->next = (ap_filter_t *)(void *) 0x42;
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
         // Set X_DUP_METHOD header to check that the apache method changed
         apr_table_set(req->headers_in, "X_DUP_METHOD", "PUT");
-        // Set X_DUP_HTTP_STATUS in headers_in
-        apr_table_set(req->headers_in, "X_DUP_HTTP_STATUS", "204");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
@@ -594,7 +593,40 @@ void TestModCompare::testInputFilterHandler()
         // Second call, tests context backup
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
         CPPUNIT_ASSERT_EQUAL( std::string("PUT"), std::string(req->method) );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_METHOD") );
+
+    }
+
+    {
+        // // NOMINAL CASE REQUEST + BODY ( valid body format)
+        request_rec *req = prep_request_rec();
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, apr_brigade_write(bb, NULL, NULL, testSerializedBody, std::string(testSerializedBody).size()));
+
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        // Set X_DUP_HTTP_STATUS in headers_in
+        apr_table_set(req->headers_in, "X_DUP_HTTP_STATUS", "204");
+        apr_table_set(req->headers_in, "X_DUP_CONTENT_TYPE", "html");
+        apr_table_set(req->headers_in, "ELAPSED_TIME_BY_DUP", "1234");
+
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
+        CPPUNIT_ASSERT_EQUAL( 0, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+        // Second call, tests context backup
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
         CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_HTTP_STATUS") );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_CONTENT_TYPE") );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "ELAPSED_TIME_BY_DUP") );
 
     }
 
