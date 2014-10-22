@@ -52,7 +52,7 @@ printRequest(request_rec *pRequest, std::string pBody)
 void
 changeMethod(request_rec *pRequest, std::string pMethod){
 
-    if( pMethod.compare(pRequest->method)){
+    if( ! pMethod.compare(pRequest->method)){
         return;
     }
 
@@ -112,6 +112,13 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     if (!tConf) {
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes); // SHOULD NOT HAPPEN
     }
+
+    const char *lMethod = apr_table_get(pRequest->headers_in, "X_DUP_METHOD");
+    if(lMethod){
+        changeMethod(pRequest, std::string(lMethod) );
+        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
+    }
+
     // No context? new request
     if (!pF->ctx) {
 
@@ -135,19 +142,13 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         if(lStatus != APR_SUCCESS){
             return lStatus;
         }
-#ifndef UNIT_TESTING
+
         apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
         apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
         apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
-        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
         apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
         apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
 
-        std::map< std::string, std::string >::const_iterator it = lRI->mReqHeader.find("X_DUP_METHOD");
-        if( it != lRI->mReqHeader.end() ){
-            changeMethod(pRequest, it->second );
-        }
-#endif
         printRequest(pRequest, lRI->mReqBody);
     }
     if (pF->ctx == (void *)1) {

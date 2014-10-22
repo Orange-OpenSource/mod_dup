@@ -84,6 +84,7 @@ static request_rec *prep_request_rec() {
 
     req->headers_in = apr_table_make(req->pool, 42);
     req->headers_out = apr_table_make(req->pool, 42);
+    req->method = "GET";
     return req;
 }
 
@@ -571,7 +572,6 @@ void TestModCompare::testInputFilterHandler()
     {
         // // NOMINAL CASE REQUEST + BODY ( invalid body format)
         request_rec *req = prep_request_rec();
-
         ap_filter_t *filter = new ap_filter_t;
         memSet(filter);
         apr_pool_t *pool = NULL;
@@ -582,6 +582,8 @@ void TestModCompare::testInputFilterHandler()
         filter->next = (ap_filter_t *)(void *) 0x42;
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        // Set X_DUP_METHOD header to check that the apache method changed
+        apr_table_set(req->headers_in, "X_DUP_METHOD", "PUT");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
@@ -589,7 +591,7 @@ void TestModCompare::testInputFilterHandler()
 
         // Second call, tests context backup
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
-
+        CPPUNIT_ASSERT_EQUAL( std::string("PUT"), std::string(req->method) );
     }
 
 }
