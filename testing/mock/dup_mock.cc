@@ -14,6 +14,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <boost/algorithm/string/split.hpp>
+#include <map>
 
 extern module AP_MODULE_DECLARE_DATA dup_mock;
 
@@ -21,6 +23,18 @@ namespace dupMock {
 
 #define SETTINGS_FROM_PARMS(parms) reinterpret_cast<Conf *>(ap_get_module_config(parms->server->module_config, &dup_mock))
 #define SETTINGS_FROM_SERVER(server) reinterpret_cast<Conf *>(ap_get_module_config(server->module_config, &dup_mock))
+
+/*
+ * Callback to iterate over the headers tables
+ * Pushes a copy of key => value in a list
+ */
+int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+    std::map< std::string, std::string> *lHeader = reinterpret_cast< std::map< std::string, std::string> *>(d);
+
+    (*lHeader)[std::string(key)] = std::string(value);
+
+    return 1;
+}
 
 struct Conf {
 
@@ -54,6 +68,34 @@ static int wsmock_handler(request_rec *r) {
     ap_set_content_type(r, "text/html");
 
     std::string uri = r->unparsed_uri;
+
+    // dup_mock will be used for dynamic inquiring purposes (get the headers, the method, etc.)
+    // it will then dump the requested info in the body
+    if (uri.find("inquire?") != std::string::npos) {
+        std::string queryString = uri.substr(uri.find("?")+1,std::string::npos); // get the query string (past the ?)
+        std::vector<std::string> infos;
+        boost::split(infos, queryString, [](char c) { return c==',';});
+        for (const std::string& info : infos) {
+            if (info == "method") {
+                ap_rputs("Method: ",r);
+                ap_rputs(r->method,r);
+                ap_rputs("\n",r);
+                ap_rputs("Method number: ",r);
+                ap_rputs(std::to_string(r->method_number).c_str(),r);
+                ap_rputs("\n\n",r);
+            } else
+            if (info == "headers") {
+                std::map< std::string, std::string> headersMap;
+                apr_table_do(&iterateOverHeadersCallBack, &headersMap, r->headers_in, NULL);
+                for (const auto& pair : headersMap) {
+                    ap_rputs((pair.first+": ").c_str(),r);
+                    ap_rputs((pair.second+"\n").c_str(),r);
+                }
+                ap_rputs("\n",r);
+            }
+        }
+        return OK;
+    }
 
     std::list<std::pair<std::string, std::string> > &mocks = conf->mocks;
     std::list<std::pair<std::string, std::string> >::iterator it = mocks.begin(),
