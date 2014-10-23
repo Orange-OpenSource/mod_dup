@@ -617,8 +617,11 @@ void TestModCompare::testInputFilterHandler()
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
         // Set X_DUP_HTTP_STATUS in headers_in
         apr_table_set(req->headers_in, "X_DUP_HTTP_STATUS", "204");
-        apr_table_set(req->headers_in, "X_DUP_CONTENT_TYPE", "html");
+        apr_table_set(req->headers_in, "X_DUP_CONTENT_TYPE", "text");
         apr_table_set(req->headers_in, "ELAPSED_TIME_BY_DUP", "1234");
+
+        req->content_type = "xml";
+        apr_table_set(req->headers_in, "Content-Type", "xml");
 
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
@@ -632,7 +635,8 @@ void TestModCompare::testInputFilterHandler()
         CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_HTTP_STATUS") );
         CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_CONTENT_TYPE") );
         CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "ELAPSED_TIME_BY_DUP") );
-
+        CPPUNIT_ASSERT_EQUAL( std::string(apr_table_get(req->headers_in, "Content-Type")), std::string("text") );
+        CPPUNIT_ASSERT_EQUAL( std::string(req->content_type), std::string("text") );
     }
 
 }

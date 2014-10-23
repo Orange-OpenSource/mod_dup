@@ -112,17 +112,23 @@ int translateHook(request_rec *pRequest) {
     boost::shared_ptr<DupModule::RequestInfo>* shReqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
     DupModule::RequestInfo *info = shReqInfo->get();
 
-    // Copy headers in
-    apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
-    apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
-    apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
-    apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
-
     const char *lMethod = apr_table_get(pRequest->headers_in, "X_DUP_METHOD");
     if(lMethod){
         changeMethod(pRequest, lMethod);
         apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
     }
+
+    const char *lContentType = apr_table_get(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+    if(lContentType){
+        apr_table_set(pRequest->headers_in, "Content-Type", lContentType);
+        ap_set_content_type(pRequest, lContentType );
+        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+    }
+
+    // Copy headers in
+    apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
+    apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
+    apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
 
     return DECLINED;
 }
