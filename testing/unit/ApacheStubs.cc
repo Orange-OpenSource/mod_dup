@@ -186,3 +186,9 @@ ap_remove_input_filter(ap_filter_t *pFilter)
 apr_status_t 	ap_filter_flush (apr_bucket_brigade *bb, void *ctx) {
     return APR_SUCCESS;
 }
+
+AP_DECLARE(void)
+ap_set_content_type(request_rec *r, const char *ct)
+{
+    r->content_type = ct;
+}
