@@ -100,6 +100,8 @@ cleanUp(void *);
  */
 void registerHooks(apr_pool_t *pPool);
 
+int translateHook(request_rec *pRequest);
+
 /**
  * @brief the input filter callback
  */
@@ -169,7 +171,7 @@ const char* setLogFacility(cmd_parms* pParams, void* pCfg, const char* pValue);
 
 bool checkCassandraDiff(const std::string &pUniqueID);
 
-void changeMethod(request_rec *pRequest, std::string pMethod);
+void changeMethod(request_rec *pRequest, const std::string& pMethod);
 
 }
 

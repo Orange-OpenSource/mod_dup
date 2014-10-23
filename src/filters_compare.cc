@@ -50,7 +50,7 @@ printRequest(request_rec *pRequest, std::string pBody)
 }
 
 void
-changeMethod(request_rec *pRequest, std::string pMethod){
+changeMethod(request_rec *pRequest, const std::string& pMethod){
 
     if( ! pMethod.compare(pRequest->method)){
         return;
@@ -91,6 +91,41 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     return 1;
 }
 
+/*
+ * Translate_name level HOOK
+ * It will be called before the input filters
+ * It is used to remove the DUP headers and change the request method
+ */
+int translateHook(request_rec *pRequest) {
+    if (!pRequest->per_dir_config)
+        return DECLINED;
+    CompareConf *conf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    if (!conf) {
+        // Not a location that we treat, we decline the request
+        return DECLINED;
+    }
+    if (!pRequest->connection->pool) {
+        Log::error(42, "No connection pool associated to the request");
+        return DECLINED;
+    }
+
+    boost::shared_ptr<DupModule::RequestInfo>* shReqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
+    DupModule::RequestInfo *info = shReqInfo->get();
+
+    // Copy headers in
+    apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
+    apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
+    apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+    apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
+
+    const char *lMethod = apr_table_get(pRequest->headers_in, "X_DUP_METHOD");
+    if(lMethod){
+        changeMethod(pRequest, lMethod);
+        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
+    }
+
+    return DECLINED;
+}
 
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
@@ -113,19 +148,12 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes); // SHOULD NOT HAPPEN
     }
 
-    const char *lMethod = apr_table_get(pRequest->headers_in, "X_DUP_METHOD");
-    if(lMethod){
-        changeMethod(pRequest, std::string(lMethod) );
-        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
-    }
-
     // No context? new request
     if (!pF->ctx) {
-
-        boost::shared_ptr<DupModule::RequestInfo> *info = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
-
+        boost::shared_ptr<DupModule::RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module));
+        assert(shPtr->get());
         // Backup of info struct in the request context
-        pF->ctx = info->get();
+        pF->ctx = shPtr->get();
 
         DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
         while (!CommonModule::extractBrigadeContent(pB, pF->next, lRI->mBody)){
@@ -137,17 +165,13 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         lStatus =  deserializeBody(*lRI);
 
         // reset timer to not take deserializing computation time into account
-        (*info)->resetStartTime();
+        (*shPtr)->resetStartTime();
 
         if(lStatus != APR_SUCCESS){
             return lStatus;
         }
 
         apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
-        apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
-        apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
-        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
-        apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
 
         printRequest(pRequest, lRI->mReqBody);
     }

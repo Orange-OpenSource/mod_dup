@@ -379,6 +379,8 @@ registerHooks(apr_pool_t *pPool) {
     ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
     ap_hook_insert_filter(&insertOutputFilter2, NULL, NULL, APR_HOOK_LAST);
+
+    ap_hook_translate_name(&translateHook, NULL, NULL, APR_HOOK_MIDDLE);
 #endif
 }
 

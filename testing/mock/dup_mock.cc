@@ -17,6 +17,9 @@
 #include <boost/algorithm/string/split.hpp>
 #include <map>
 
+#define SYSLOG_NAMES
+#include <sys/syslog.h>
+
 extern module AP_MODULE_DECLARE_DATA dup_mock;
 
 namespace dupMock {
@@ -55,6 +58,7 @@ void *createServerConfig(apr_pool_t *pPool, server_rec* ) {
 
 
 static int wsmock_handler(request_rec *r) {
+    syslog(LOG_ERR, "DUP MOCK");
     std::string answer;
 
     if (!r->handler || strcmp(r->handler, "dup_mock"))

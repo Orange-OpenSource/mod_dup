@@ -565,6 +565,7 @@ void TestModCompare::testInputFilterHandler()
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
         CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
     }
@@ -588,6 +589,8 @@ void TestModCompare::testInputFilterHandler()
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
+        ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
         // Second call, tests context backup
@@ -619,7 +622,9 @@ void TestModCompare::testInputFilterHandler()
 
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( 0, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
         // Second call, tests context backup
