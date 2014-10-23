@@ -105,9 +105,7 @@ static int wsmock_handler(request_rec *r) {
     struct Conf *conf = SETTINGS_FROM_SERVER(r->server);
     assert(conf);
 
-    readBodyData(r); // read body data (needed to proper testing of compare input filters)
-
-    ap_set_content_type(r, "text/html");
+    readBodyData(r); // read body data (needed to proper testing of compare input filters
 
     std::string uri = r->unparsed_uri;
 
@@ -136,7 +134,7 @@ static int wsmock_handler(request_rec *r) {
                 ap_rputs("\n",r);
             } else
             if (info == "contenttype") {
-                ap_rputs("Content-Type: ",r);
+                ap_rputs("Content-Type2: ",r);
                 ap_rputs(r->content_type,r);
                 ap_rputs("\n",r);
             }
@@ -148,6 +146,8 @@ static int wsmock_handler(request_rec *r) {
         syslog(LOG_ERR, "END SLEEP DUP MOCK");
         return OK;
     }
+
+    ap_set_content_type(r, "text/html");
 
     std::list<std::pair<std::string, std::string> > &mocks = conf->mocks;
     std::list<std::pair<std::string, std::string> >::iterator it = mocks.begin(),

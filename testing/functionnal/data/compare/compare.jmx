@@ -1502,6 +1502,8 @@ UNIQUE_ID: 7855441177&#xd;
                 <collectionProp name="Asserion.test_strings">
                   <stringProp name="-1864206175">Method: PATCH</stringProp>
                   <stringProp name="-183720567">Method number: 7</stringProp>
+                  <stringProp name="-678410735">Content-Type2: application/json</stringProp>
+                  <stringProp name="2066544187">Content-Type: application/json</stringProp>
                 </collectionProp>
                 <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
                 <boolProp name="Assertion.assume_success">false</boolProp>
