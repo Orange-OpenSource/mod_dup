@@ -27,6 +27,8 @@ Two operating modes are possible:
  * Response Comparison
  * No Comparison
 
+WARNING: The Web Services must not be CGI based scripts.
+
 mod_migrate
 =======
 mod_migrate migrates Apache requests (POST, GET or both).
