@@ -206,7 +206,12 @@ struct RequestInfo {
     /**
      * @brief Reset the startTime to NOW
      */
-    void resetStartTime();
+    void resetStartTime() { mStartTime = boost::posix_time::microsec_clock::universal_time(); }
+
+    /**
+     * @brief Add time period to start time (used to not take into account )
+     */
+    //void addTimeToStartTime() { mStartTime = boost::posix_time::microsec_clock::universal_time(); }
 
 private:
 

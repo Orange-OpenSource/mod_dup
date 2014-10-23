@@ -60,10 +60,6 @@ void RequestInfo::eos_seen(bool valToSet) {
     mEOS = valToSet;
 }
 
-void RequestInfo::resetStartTime() {
-    mStartTime = boost::posix_time::microsec_clock::universal_time();
-}
-
 RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
                          const std::string &pArgs, const std::string *pBody)
     : mPoison(false),

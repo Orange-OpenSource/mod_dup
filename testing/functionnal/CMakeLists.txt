@@ -35,7 +35,6 @@ install(FILES
   data/dup/www/get_body_size.cgi
   data/migrate/www/print_content.cgi
   data/compare/delayed_response.cgi
-  data/compare/print_http_headers.cgi
   PERMISSIONS WORLD_EXECUTE WORLD_READ GROUP_EXECUTE GROUP_READ OWNER_EXECUTE OWNER_READ
   DESTINATION /var/www/dup_test/cgi COMPONENT mod_dup)
 

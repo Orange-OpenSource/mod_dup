@@ -56,6 +56,43 @@ void *createServerConfig(apr_pool_t *pPool, server_rec* ) {
     return new Conf();
 }
 
+const char* readBodyData(request_rec* r) {
+    int rc = ap_setup_client_block( r, REQUEST_CHUNKED_ERROR);
+
+    if( rc != OK ){
+        return NULL;
+    }
+
+    if( ap_should_client_block(r) ){
+
+        char buf[HUGE_STRING_LEN];
+        apr_off_t rpos = 0;
+        apr_off_t length = r->remaining;
+        char* result = reinterpret_cast<char*>(apr_pcalloc( r->pool, length + 1));
+
+        if( result == NULL ){
+            syslog(LOG_ERR, "Unable to allocate memory");
+            return NULL;
+        }
+
+        /*apr_hard_timeout("read_post_data", &pReq);*/
+        while( rpos < length ){
+
+            int rsize = (rpos + (int)sizeof(buf) > length) ? (length - rpos) : (int)sizeof(buf);
+
+            /*ap_reset_timeout(&pReq);*/
+            int bytes_read = ap_get_client_block(r, buf, rsize);
+            if( bytes_read <= 0 ){
+                break;
+            }
+            memcpy(result + rpos, buf, bytes_read);
+            rpos += bytes_read;
+        }
+        /*apr_kill_timeout(&pReq);*/
+        return result;
+    }
+    return NULL;
+}
 
 static int wsmock_handler(request_rec *r) {
     syslog(LOG_ERR, "DUP MOCK");
@@ -68,6 +105,7 @@ static int wsmock_handler(request_rec *r) {
     struct Conf *conf = SETTINGS_FROM_SERVER(r->server);
     assert(conf);
 
+    readBodyData(r); // read body data (needed to proper testing of compare input filters)
 
     ap_set_content_type(r, "text/html");
 
@@ -96,8 +134,18 @@ static int wsmock_handler(request_rec *r) {
                     ap_rputs((pair.second+"\n").c_str(),r);
                 }
                 ap_rputs("\n",r);
+            } else
+            if (info == "contenttype") {
+                ap_rputs("Content-Type: ",r);
+                ap_rputs(r->content_type,r);
+                ap_rputs("\n",r);
             }
         }
+        return OK;
+    } else if (uri.find("/sleep") != std::string::npos) {
+        sleep(1);
+        ap_rputs("Slept for 1 sec\n",r);
+        syslog(LOG_ERR, "END SLEEP DUP MOCK");
         return OK;
     }
 

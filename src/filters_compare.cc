@@ -97,6 +97,7 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
  * It is used to remove the DUP headers and change the request method
  */
 int translateHook(request_rec *pRequest) {
+    Log::debug("[DEBUG][COMPARE] Inside translateHook");
     if (!pRequest->per_dir_config)
         return DECLINED;
     CompareConf *conf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
@@ -109,6 +110,7 @@ int translateHook(request_rec *pRequest) {
         return DECLINED;
     }
 
+    Log::debug("[DEBUG][COMPARE] Going to makeRequestInfo inside translateHook");
     boost::shared_ptr<DupModule::RequestInfo>* shReqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
     DupModule::RequestInfo *info = shReqInfo->get();
 
@@ -129,6 +131,8 @@ int translateHook(request_rec *pRequest) {
 
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
+    Log::debug("[DEBUG][COMPARE] Inside inpuFilterHandler");
+
     apr_status_t lStatus;
     request_rec *pRequest = pF->r;
     if (!pRequest) {
@@ -150,18 +154,21 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 
     // No context? new request
     if (!pF->ctx) {
+        Log::debug("[DEBUG][COMPARE] Assigning filter ctx");
         boost::shared_ptr<DupModule::RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module));
         assert(shPtr->get());
         // Backup of info struct in the request context
         pF->ctx = shPtr->get();
 
         DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
+        Log::debug("[DEBUG][COMPARE] Starting extractBrigadeContent");
         while (!CommonModule::extractBrigadeContent(pB, pF->next, lRI->mBody)){
             apr_brigade_cleanup(pB);
         }
         pF->ctx = (void *)1;
         apr_brigade_cleanup(pB);
         lRI->offset = 0;
+        Log::debug("[DEBUG][COMPARE] Starting deserializeBody");
         lStatus =  deserializeBody(*lRI);
 
         // reset timer to not take deserializing computation time into account
@@ -202,6 +209,8 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    Log::debug("[DEBUG][COMPARE] Inside inpuFilterHandler");
+
     request_rec *pRequest = pFilter->r;
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
@@ -263,6 +272,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         apr_size_t len;
 
         if (APR_BUCKET_IS_EOS(currentBucket)) {
+            Log::debug("[DEBUG][COMPARE] in outputFilterHandler eos_seen");
             req->eos_seen(true);
             continue;
         }
@@ -323,7 +333,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         writeSerializedRequest(*req);
     }else{
         req->compHttpStatus = pRequest->status;
-        auto start = boost::posix_time::microsec_clock::universal_time();
+        boost::posix_time::ptime start = boost::posix_time::microsec_clock::universal_time();
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
                 if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){

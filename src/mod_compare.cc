@@ -40,7 +40,6 @@
 
 #include "mod_compare.hh"
 
-
 namespace alg = boost::algorithm;
 
 
