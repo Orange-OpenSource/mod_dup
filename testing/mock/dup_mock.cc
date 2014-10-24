@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <boost/algorithm/string/split.hpp>
 #include <map>
+#include <boost/lexical_cast.hpp>
 
 #define SYSLOG_NAMES
 #include <sys/syslog.h>
@@ -111,7 +112,7 @@ static int wsmock_handler(request_rec *r) {
 
     // dup_mock will be used for dynamic inquiring purposes (get the headers, the method, etc.)
     // it will then dump the requested info in the body
-    if (uri.find("inquire?") != std::string::npos) {
+    if (uri.find("/inquire?") != std::string::npos) { // /inquire?method,headers,contenttype
         std::string queryString = uri.substr(uri.find("?")+1,std::string::npos); // get the query string (past the ?)
         std::vector<std::string> infos;
         boost::split(infos, queryString, [](char c) { return c==',';});
@@ -140,9 +141,17 @@ static int wsmock_handler(request_rec *r) {
             }
         }
         return OK;
-    } else if (uri.find("/sleep") != std::string::npos) {
-        sleep(1);
-        ap_rputs("Slept for 1 sec\n",r);
+    } else if (uri.find("/sleep") != std::string::npos) { // /sleep?for=1 or just /sleep (1 sec)
+        std::string lastUriPart = uri.substr(uri.find("/sleep"),std::string::npos);
+        int duration;
+
+        if (lastUriPart.find("?for") == std::string::npos) duration = 1;
+        else sscanf(lastUriPart.c_str(),"/sleep?for=%d",&duration);
+
+        sleep(duration);
+        ap_rputs("Slept for ", r);
+        ap_rputs(boost::lexical_cast<std::string>(duration).c_str(),r);
+        ap_rputs(" sec\n",r);
         syslog(LOG_ERR, "END SLEEP DUP MOCK");
         return OK;
     }
