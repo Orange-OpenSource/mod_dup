@@ -40,6 +40,8 @@
 
 #include "mod_compare.hh"
 
+#define MOD_REWRITE_NAME "mod_rewrite.c"
+
 namespace alg = boost::algorithm;
 
 
@@ -265,8 +267,6 @@ setCompareLog(cmd_parms* pParams, void* pCfg, const char* pType, const char* pVa
         return "Missing file path or facility";
     }
 
-    CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-
     if (strcmp("FILE", pType) == 0)
     {
         gWriteInFile = true;
@@ -295,6 +295,12 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 
     lConf->mIsActive= true;
+
+#ifndef UNIT_TESTING
+        if (!ap_find_linked_module(MOD_REWRITE_NAME)) {
+            return "'mod_rewrite' is not loaded, Enable mod_rewrite to use mod_compare";
+        }
+#endif
 
     return NULL;
 }
