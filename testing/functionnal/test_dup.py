@@ -14,6 +14,7 @@ import Queue
 import re
 import sys
 import urllib
+import time
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     ### self.path self.headers posdup_body => URL HEADERS AND BODY OF MOD_DUP RESPONSE
@@ -26,6 +27,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def do_POST(self):
         posdup_body = ''.join(iter(self.rfile.read, ''))
+        if 'SID=DUPSLEEP' in self.path.upper():
+            time.sleep(2)
         # we need to rstrip the header lines to remove the trailing newline
         self.server.queue.put((self.path, [line.rstrip() for line in self.headers.headers], posdup_body, self.server.server_port))
         # FIXME: why is the pipe broken at this point?
@@ -124,7 +127,6 @@ class DupRequest:
             curl.setopt(curl.POSTFIELDSIZE, len(self.body))
             curl.setopt(curl.POSTFIELDS, self.body)
         assert not curl.perform()
-        return self.response_body
 
     ## MAKE THE ASSERTIONS/COMPARISONS
     def assert_received(self, path, headers, body, server_port):
@@ -162,7 +164,12 @@ def run_tests(request_files, queue, options):
         print "Test:", r_fname
         curl = pycurl.Curl()
         request = DupRequest(r_fname, options.host, int(options.port))
+        startReqTime = time.time()
         request.execute(curl, verbose=options.verbose)
+        elapsedTimeForOriginalRequest = int((time.time() - startReqTime)*1000) # response time in ms (should be around 1500, according to dup_test.conf)
+
+        if 'SID=SLEEP' in request.path:
+            assert elapsedTimeForOriginalRequest < 1550 and elapsedTimeForOriginalRequest > 1499, 'Timeout test failed, original request response did not respect the DupTimeout (1500 in current conf)'
 
         if (len(request.resp_body)):
             assert request.resp_body == request.response_body.getvalue().rstrip(), '''Response mismatch:
@@ -171,11 +178,11 @@ def run_tests(request_files, queue, options):
         if not options.curl_only:
             try:
                 try:
-                    path, headers, body, server_port = queue.get(timeout=2)
+                    path, headers, body, server_port = queue.get(timeout=3)
                     request.assert_received(path, headers, body, server_port)
                     if (request.dup_dest == "MULTI"):
                         # second extraction from the queue
-                        path2, headers2, body2, server_port2 = queue.get(timeout=2)
+                        path2, headers2, body2, server_port2 = queue.get(timeout=3)
                         assert server_port != server_port2, "Multi sent on the same location"
                         request.assert_received(path2, headers2, body2, server_port2)
 
