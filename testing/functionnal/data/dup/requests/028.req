@@ -11,6 +11,7 @@ X_DUP_HTTP_STATUS: 200
 X_DUP_METHOD: POST
 X_DUP_CONTENT_TYPE: text.*
 ELAPSED_TIME_BY_DUP: [0-9]+
+Content-Type: application/x-dup-serialized
 ==DUPBODY==
 The path.*in the name.*lost children.*who attempt.*when I lay.*26001.*Lorem.*$
 ==RESPBODY==
