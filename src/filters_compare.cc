@@ -127,8 +127,10 @@ int translateHook(request_rec *pRequest) {
         apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
     }
 
-    // Copy headers in
+    // Copy headers in our object
     apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
+    
+    // Remove headers so they don't trigger a diff in comparison step
     apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
     apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
 
@@ -215,7 +217,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
-    Log::debug("[DEBUG][COMPARE] Inside inpuFilterHandler");
+    Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler");
 
     request_rec *pRequest = pFilter->r;
     apr_status_t lStatus;
