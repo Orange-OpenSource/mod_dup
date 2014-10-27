@@ -136,7 +136,10 @@ struct RequestInfo {
 
     unsigned int offset;
 
-    int compHttpStatus;
+    /* @brief The HTTP status provided by X_DUP_HTTP_STATUS header */
+    int mReqHttpStatus;
+    /* @brief The HTTP status returned by the duplicated request response */
+    int mDupResponseHttpStatus;
 
     /**
      * @brief Constructs the object using the three strings.

@@ -129,6 +129,12 @@ int translateHook(request_rec *pRequest) {
 
     // Copy headers in
     apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
+
+    // We retrieve the original request HTTP status from X_DUP_HTTP_STATUS header
+    // if it does not exist, we set it to the same value as the COMP response so it does not generate diff
+    std::map<std::string,std::string>::const_iterator it = info->mReqHeader.find("X_DUP_HTTP_STATUS");
+    info->mReqHttpStatus = it != info->mReqHeader.end() ? boost::lexical_cast<int>(it->second) : -1;
+
     apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
     apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
 
@@ -335,14 +341,14 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
 
     std::string diffBody,diffHeader;
-    if( tConf->mCompareDisabled){
+    if (tConf->mCompareDisabled) {
         writeSerializedRequest(*req);
-    }else{
-        req->compHttpStatus = pRequest->status;
+    } else {
+        req->mDupResponseHttpStatus = pRequest->status;
         boost::posix_time::ptime start = boost::posix_time::microsec_clock::universal_time();
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
-                if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){
+                if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) || (req->mReqHttpStatus!=-1 && req->mReqHttpStatus != req->mDupResponseHttpStatus)){
                     writeDifferences(*req,diffHeader,diffBody,boost::posix_time::microsec_clock::universal_time()-start);
                 }
             }
