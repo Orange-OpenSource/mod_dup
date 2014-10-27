@@ -6,6 +6,7 @@
 ==DUPURL==
 /dup_test/dup?Pigeon=vole&oiseaubody=de%20nos%20yeux%20tu%20te%20derobes
 ==DUPHEADER==
+Content-Type: application/x-dup-serialized
 ==DUPBODY==
 0000000.*Last-Modified.*DUP$
 

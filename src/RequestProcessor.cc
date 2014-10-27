@@ -473,6 +473,8 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     // Setting mod-dup as the real agent for tracability
     slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
     if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
+        // set the content type to application/x-dup-serialized if we pass the REQUEST_WITH_ANSWER
+        slist = curl_slist_append(slist, "Content-Type: application/x-dup-serialized");
         content = sendDupFormat(curl, rInfo, slist);
     } else if (matchedFilter.mDuplicationType == DuplicationType::COMPLETE_REQUEST && rInfo.hasBody()) {
         sendInBody(curl, slist, rInfo.mBody);
