@@ -74,7 +74,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
 
-    if( pReqInfo.mReqHttpStatus != -1 && pReqInfo.mReqHttpStatus != pReqInfo.mDupResponseHttpStatus ){
+    if( pReqInfo.mReqHttpStatus != pReqInfo.mDupResponseHttpStatus ){
         diffLog <<  DIFF_SEPARATOR << "Http Status Codes: DUP " <<  pReqInfo.mReqHttpStatus << " COMP " << pReqInfo.mDupResponseHttpStatus << std::endl;;
     }
     writeCassandraDiff( pReqInfo.mId, diffLog );
