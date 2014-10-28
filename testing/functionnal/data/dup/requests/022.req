@@ -7,7 +7,7 @@ Must not be duplicated
 ==DUPURL==
 /dup_test/header_only?love=hate
 ==DUPHEADER==
-Content-Type: text/*
+Content-Type: application/json; charset=utf-8
 ==DUPBODY==
 ^$
 ==RESPBODY==

@@ -122,7 +122,7 @@ class DupRequest:
         curl.setopt(curl.FOLLOWLOCATION, 1);
         if (len(self.body)):
             curl.setopt(curl.POST, 1)
-            curl.setopt(curl.HTTPHEADER, ['Content-Type: text/xml; charset=utf-8',
+            curl.setopt(curl.HTTPHEADER, ['Content-Type: application/json; charset=utf-8',
                                           'Content-Length: ' + str(len(self.body))] )
             curl.setopt(curl.POSTFIELDSIZE, len(self.body))
             curl.setopt(curl.POSTFIELDS, self.body)

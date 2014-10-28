@@ -9,7 +9,7 @@ The path of the righteous man is beset on all sides by the inequities of the sel
 ==DUPHEADER==
 X_DUP_HTTP_STATUS: 200
 X_DUP_METHOD: POST
-X_DUP_CONTENT_TYPE: text.*
+X_DUP_CONTENT_TYPE: application/json;*
 ELAPSED_TIME_BY_DUP: [0-9]+
 Content-Type: application/x-dup-serialized
 ==DUPBODY==

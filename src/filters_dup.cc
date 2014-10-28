@@ -38,14 +38,14 @@ static int iterateOverHeadersCallBack(void *d, const char *key, const char *valu
 static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r)
 {
     // Add the elapsed time header
-    r.mHeadersIn.push_back(std::make_pair(std::string("ELAPSED_TIME_BY_DUP"), boost::lexical_cast<std::string>(r.getElapsedTimeMS())));
+    r.mHeadersIn.push_back(std::make_pair("ELAPSED_TIME_BY_DUP", boost::lexical_cast<std::string>(r.getElapsedTimeMS())));
     // Add the HTTP Status Code Header
-    r.mHeadersIn.push_back(std::make_pair(std::string("X_DUP_HTTP_STATUS"), boost::lexical_cast<std::string>(pRequest->status)));
+    r.mHeadersIn.push_back(std::make_pair("X_DUP_HTTP_STATUS", boost::lexical_cast<std::string>(pRequest->status)));
     // Add the HTTP Request Method
-    r.mHeadersIn.push_back(std::make_pair(std::string("X_DUP_METHOD"), std::string(pRequest->method)));
+    r.mHeadersIn.push_back(std::make_pair("X_DUP_METHOD", pRequest->method));
     // Add the HTTP Content Type
-    if (pRequest->content_type)
-        r.mHeadersIn.push_back(std::make_pair(std::string("X_DUP_CONTENT_TYPE"), std::string(pRequest->content_type)));
+    const char* contentType = apr_table_get(pRequest->headers_in,"Content-Type");
+    if (contentType) r.mHeadersIn.push_back(std::make_pair("X_DUP_CONTENT_TYPE", contentType));
 
     // Copy headers in
     apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
