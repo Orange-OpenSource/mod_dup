@@ -1,0 +1,81 @@
+@startuml
+autonumber
+actor Request
+
+participant ApacheOrchestrer
+
+
+box "translate_name" #LightGreen
+  participant "translateHook\n[mod_migrate]" as translateHook
+end box
+
+participant handler
+
+
+box "InputFilters" #LightBlue
+  participant "inputFilterHandler\n[mod_dup]" as inputFilterHandler
+  participant "inputFilterBody2Brigade\n[mod_migrate]" as inputFilterBody2Brigade
+  participant "defaultReadFromNetwork\n[Apache]" as defaultReadFromNetwork
+end box
+
+box "OutputFilters" #LightRed
+  participant "outputBodyFilter\n[mod_dup]" as outputBodyFilter
+  participant "outputHeadersFilter\n[mod_dup]" as outputHeadersFilter
+  participant "defaultWriteToNetwork\n[Apache]" as defaultWriteToNetwork
+end box
+
+Request -> ApacheOrchestrer : Request reception
+ApacheOrchestrer -> translateHook
+activate translateHook
+translateHook ->o defaultReadFromNetwork : Calls an empty filter stack to read the body
+activate defaultReadFromNetwork
+defaultReadFromNetwork -> Request : Reads from the client
+defaultReadFromNetwork --> translateHook
+deactivate defaultReadFromNetwork
+
+translateHook -> translateHook : Saves body in context\nSets Apache envVars
+translateHook --> ApacheOrchestrer
+deactivate translateHook
+
+ApacheOrchestrer -> handler : Request NOT migrated
+activate handler
+handler ->o inputFilterHandler : Last filter
+activate inputFilterHandler
+inputFilterHandler -> inputFilterBody2Brigade : Calls prev filter
+
+activate inputFilterBody2Brigade
+inputFilterBody2Brigade ->X defaultReadFromNetwork : Call stack skipped\non purpose
+
+
+inputFilterBody2Brigade --> inputFilterHandler : Serves the content\nsaved in the context
+deactivate inputFilterBody2Brigade
+
+
+inputFilterHandler --> handler
+deactivate inputFilterHandler
+
+handler -> handler : Request execution
+
+handler -> outputBodyFilter : ap_rputs => Response creation
+activate outputBodyFilter
+outputBodyFilter -> outputBodyFilter : Backup of response body
+outputBodyFilter -> outputHeadersFilter : Calls next filter
+activate outputHeadersFilter
+outputHeadersFilter -> outputHeadersFilter : Backup of response headers
+outputHeadersFilter -> defaultWriteToNetwork
+activate defaultWriteToNetwork
+defaultWriteToNetwork -> Request : sends response to the client
+defaultWriteToNetwork --> outputHeadersFilter
+outputHeadersFilter --> outputBodyFilter
+deactivate defaultWriteToNetwork
+
+deactivate outputHeadersFilter
+deactivate outputBodyFilter
+deactivate handler
+
+handler --> ApacheOrchestrer : Handler quits
+
+ApacheOrchestrer -> inputFilterHandler : Calls filter stack once
+ApacheOrchestrer -> outputFilterHandler : Calls filter stack once
+
+@enduml
