@@ -76,6 +76,6 @@ deactivate handler
 handler --> ApacheOrchestrer : Handler quits
 
 ApacheOrchestrer -> inputFilterHandler : Calls filter stack once
-ApacheOrchestrer -> outputFilterHandler : Calls filter stack once
+ApacheOrchestrer -> outputBodyFilter : Calls filter stack once
 
 @enduml
