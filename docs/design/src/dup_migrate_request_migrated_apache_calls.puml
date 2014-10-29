@@ -1,0 +1,59 @@
+@startuml
+autonumber
+actor Request
+
+participant ApacheOrchestrer
+
+
+box "translate_name" #LightGreen
+  participant "translateHook\n[mod_migrate]" as translateHook
+end box
+
+box "Request proxification" #LightYellow
+  participant mod_rewrite
+  participant mod_proxy
+end box
+
+participant handler
+
+
+box "InputFilters" #LightBlue
+  participant "inputFilterBody2Brigade\n[mod_migrate]" as inputFilterBody2Brigade
+  participant "defaultReadFromNetwork\n[Apache]" as defaultReadFromNetwork
+end box
+
+box "Remote host" #LightRed
+    participant http_server
+end box
+
+Request -> ApacheOrchestrer : Request reception
+ApacheOrchestrer -> translateHook
+activate translateHook
+translateHook ->o defaultReadFromNetwork : Calls an empty filter stack to read the body
+activate defaultReadFromNetwork
+defaultReadFromNetwork -> Request : Reads from the client
+defaultReadFromNetwork --> translateHook
+deactivate defaultReadFromNetwork
+
+translateHook -> translateHook : Saves body in context\nSets Apache envVars
+translateHook --> ApacheOrchestrer
+deactivate translateHook
+
+ApacheOrchestrer -> mod_rewrite
+activate mod_rewrite
+mod_rewrite -> mod_rewrite : Criteria are met\n request is proxified
+mod_rewrite -> mod_proxy
+mod_proxy -> http_server
+
+http_server -> mod_proxy : reads request body
+mod_proxy -> inputFilterBody2Brigade : serves the request body
+
+http_server -> mod_proxy : send the response to the client
+mod_proxy -> Request : forwards the response
+deactivate mod_rewrite
+
+ApacheOrchestrer ->X handler : The handler does not see the request
+
+
+
+@enduml
