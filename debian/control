@@ -21,7 +21,7 @@ Standards-Version: 3.7.2
 
 Package: libapache2-mod-dup
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
          libapr1,
          libaprutil1,
          apache2,
@@ -32,7 +32,7 @@ Homepage: http://sourceforge.x-echo.com/projects/pns/
 
 Package: libapache2-mod-compare
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
          libapr1,
          libaprutil1,
          apache2,
@@ -43,7 +43,7 @@ Homepage: http://sourceforge.x-echo.com/projects/pns/
 
 Package: libapache2-mod-migrate
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
          libapr1,
          libaprutil1,
          apache2,
