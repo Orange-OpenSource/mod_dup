@@ -19,7 +19,7 @@ INSTALL=install
 # removing default LDFLAGS in dpkg-buildpackage: '-Wl,-Bsymbolic-functions' => causes conflict in boost::split with mod_spp!!!
 export LDFLAGS=
 
-build: build-stamp build-test-stamp
+build: build-stamp
 
 build-stamp:
 	dh_testdir
