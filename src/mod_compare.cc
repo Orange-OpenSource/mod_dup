@@ -381,7 +381,7 @@ registerHooks(apr_pool_t *pPool) {
     ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_CONNECTION => only the response header will be read
     ap_register_output_filter(gNameOut2, outputFilterHandler2, NULL, AP_FTYPE_TRANSCODE);
-    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
+    // ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
     ap_hook_insert_filter(&insertOutputFilter2, NULL, NULL, APR_HOOK_LAST);
 
