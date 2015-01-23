@@ -153,39 +153,43 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     apr_status_t lStatus;
     request_rec *pRequest = pF->r;
     if (!pRequest) {
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler request_rec null");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) ) {
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler not a duplicated request, nothing to compare");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     if(pRequest->per_dir_config == NULL){
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler per_dir_config is null");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if (!tConf) {
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler per_dir_config is null");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes); // SHOULD NOT HAPPEN
     }
 
     // No context? new request
     if (!pF->ctx) {
-        Log::debug("[DEBUG][COMPARE] Assigning filter ctx");
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler Assigning filter ctx");
         boost::shared_ptr<DupModule::RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module));
         assert(shPtr->get());
         // Backup of info struct in the request context
         pF->ctx = shPtr->get();
 
         DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
-        Log::debug("[DEBUG][COMPARE] Starting extractBrigadeContent");
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler Starting extractBrigadeContent");
         while (!CommonModule::extractBrigadeContent(pB, pF->next, lRI->mBody)){
             apr_brigade_cleanup(pB);
         }
         pF->ctx = (void *)1;
         apr_brigade_cleanup(pB);
         lRI->offset = 0;
-        Log::debug("[DEBUG][COMPARE] Starting deserializeBody");
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler Starting deserializeBody");
         lStatus =  deserializeBody(*lRI);
 
         // reset timer to not take deserializing computation time into account
