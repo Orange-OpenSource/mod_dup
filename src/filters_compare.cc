@@ -140,6 +140,7 @@ int translateHook(request_rec *pRequest) {
         Log::warn(1, "Invalid X_DUP_HTTP_STATUS header value (not a number?)");
     }
 
+    Log::debug("XXXXXX COMPARE REMAINING: %ld", pRequest->remaining);
     apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
     apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
 
