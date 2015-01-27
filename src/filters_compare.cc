@@ -127,6 +127,8 @@ int translateHook(request_rec *pRequest) {
         apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
     }
 
+    apr_table_set(pRequest->headers_in, "X-COMPARE-TRANSLATED", "1");
+
     // Copy headers in our object
     apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
 
