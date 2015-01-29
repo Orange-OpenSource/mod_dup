@@ -25,7 +25,7 @@ build-stamp:
 	dh_testdir
 
 	mkdir -p $(BUILD) $(INSTALL)
-	cd $(BUILD) && cmake -DBUILD_UNIT_TESTS=OFF -DBUILD_COVERAGE=OFF -DDEBUG=ON $(SRCDIR)
+	cd $(BUILD) && cmake -DBUILD_UNIT_TESTS=OFF -DBUILD_COVERAGE=OFF -DDEBUG=OFF $(SRCDIR)
 	$(MAKE) -j 4 -C $(BUILD)
 
 	touch build-stamp
