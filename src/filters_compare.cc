@@ -118,6 +118,9 @@ int translateHook(request_rec *pRequest) {
     if(lMethod){
         changeMethod(pRequest, lMethod);
         apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
+
+        // set compare ..
+        apr_table_set(pRequest->headers_in, "X-COMPARE-TRANSLATED", "1");
     }
 
     const char *lContentType = apr_table_get(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
@@ -126,8 +129,6 @@ int translateHook(request_rec *pRequest) {
         ap_set_content_type(pRequest, lContentType );
         apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
     }
-
-    apr_table_set(pRequest->headers_in, "X-COMPARE-TRANSLATED", "1");
 
     // Copy headers in our object
     apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);

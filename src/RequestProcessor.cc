@@ -470,6 +470,8 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
             slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
         }
     }
+    // Setting X-DUPLICATED-REQUEST to 1 in the header
+    slist = curl_slist_append(slist, "X-DUPLICATED-REQUEST: 1");
     // Setting mod-dup as the real agent for tracability
     slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
     if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
