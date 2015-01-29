@@ -1,4 +1,4 @@
-Listen 8080
+Listen 8989
 Listen 4321
 # Vhost activation
 
@@ -19,7 +19,7 @@ Listen 4321
 	ScriptAlias /print_content /var/www/dup_test/cgi/print_content.cgi
 </VirtualHost>
 
-<VirtualHost *:8080>
+<VirtualHost *:8989>
 	DocumentRoot /var/www
     <Directory />
         Options FollowSymLinks
