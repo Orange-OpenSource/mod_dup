@@ -10,12 +10,17 @@ def regexMatch(block, regexs):
 	return (re.search(regexs,block) != None)
 
 def keepRegexMatch(block, regexs):
-	return (re.search(regexs,block) == None)
+	return not regexMatch(block, regexs)
+
+def splitBy(block, regexs):
+	m = re.search(regexs, block)
+	if m:
+		with open(m.group(1)+'.log', 'a+') as f:
+			f.write(block)
+	return True
 
 def respTime(block, value, inf_or_sup):
 	# inf_or_sup is a boolean, if true then it's sup
-	valueDUP = int()
-	valueCOMP = int()
 	m = re.search('Elapsed time for requests \(ms\): DUP ([0-9]+|N\/A) COMP ([0-9]+) DIFF', block)
 	if m != None:
 		# if N/A is matched for DUP value
@@ -35,7 +40,6 @@ def respTime(block, value, inf_or_sup):
 
 def respTimeDiff(block, value, inf_or_sup):
 	# inf_or_sup is a boolean, if true then it's sup
-	valueDIFF = int()
 	m = re.search('Elapsed time for requests \(ms\): DUP (?:[0-9]+|N\/A) COMP [0-9]+ DIFF (-?[0-9]+|N\/A)', block)
 	if m != None:
 		# if header ELAPSED_TIME_BY_DUP does not exist
@@ -65,17 +69,20 @@ def parseCommandLine():
 		sys.stderr.write("Example: cmpdiffx mylogfile.log 'dresptime(< or >)<difftime>'\n")
 		sys.stderr.write("Do not forget the quotes '' for the rule\n")
 		exit(1)
-	m = re.search('^keepmatch *= *(.*)$',sys.argv[2])
-	if m: return lambda block: keepRegexMatch(block,m.group(1))
+	m = re.search('^keepmatch *= *(.*)$', sys.argv[2])
+	if m: return lambda block: keepRegexMatch(block, m.group(1))
 	# case where rule is match=smth
-	m = re.search('^match *= *(.*)$',sys.argv[2])
-	if m: return lambda block: regexMatch(block,m.group(1))
+	m = re.search('^match *= *(.*)$', sys.argv[2])
+	if m: return lambda block: regexMatch(block, m.group(1))
 	# case where rule is resptime(< or >)value
-	m = re.search('^resptime *([\>\<]) *([0-9]+)$',sys.argv[2])
+	m = re.search('^resptime *([\>\<]) *([0-9]+)$', sys.argv[2])
 	if m: return lambda block: respTime(block, int(m.group(2)), True if (m.group(1) == '>') else False)
 	# case where rule is dresptime(< or >)value
-	m = re.search('^dresptime *([\>\<]) *([0-9]+)$',sys.argv[2])
+	m = re.search('^dresptime *([\>\<]) *([0-9]+)$', sys.argv[2])
 	if m: return lambda block: respTimeDiff(block, int(m.group(2)), True if (m.group(1) == '>') else False)
+	# case where rule is split=smth
+	m = re.search('^split *= *(.*)$', sys.argv[2])
+	if m: return lambda block: splitBy(block, m.group(1))
 	# if control arrives here, then it's an invalid rule
 	sys.stderr.write("Failed to parse rule")
 	exit(1)
