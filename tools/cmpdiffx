@@ -67,6 +67,7 @@ def parseCommandLine():
 		sys.stderr.write("Example: cmpdiffx mylogfile.log 'keepmatch=RegexToMatch'\n")
 		sys.stderr.write("Example: cmpdiffx mylogfile.log 'resptime(< or >)<timeout>'\n")
 		sys.stderr.write("Example: cmpdiffx mylogfile.log 'dresptime(< or >)<difftime>'\n")
+		sys.stderr.write("Example: cmpdiffx mylogfile.log 'split=sid\=(.{6})'\n")
 		sys.stderr.write("Do not forget the quotes '' for the rule\n")
 		exit(1)
 	m = re.search('^keepmatch *= *(.*)$', sys.argv[2])
