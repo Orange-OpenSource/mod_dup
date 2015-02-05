@@ -17,6 +17,9 @@ def splitBy(block, regexs):
 	if m:
 		with open(m.group(1)+'.log', 'a+') as f:
 			f.write(block)
+	else:
+		with open('others.log', 'a+') as f:
+			f.write(block)
 	return True
 
 def respTime(block, value, inf_or_sup):
@@ -67,7 +70,7 @@ def parseCommandLine():
 		sys.stderr.write("Example: cmpdiffx mylogfile.log 'keepmatch=RegexToMatch'\n")
 		sys.stderr.write("Example: cmpdiffx mylogfile.log 'resptime(< or >)<timeout>'\n")
 		sys.stderr.write("Example: cmpdiffx mylogfile.log 'dresptime(< or >)<difftime>'\n")
-		sys.stderr.write("Example: cmpdiffx mylogfile.log 'split=sid\=(.{6})'\n")
+		sys.stderr.write("Example: cmpdiffx mylogfile.log 'split=sid\=(.{6})'     ### do not forget to truncate/remove previous output log files before launching script\n")
 		sys.stderr.write("Do not forget the quotes '' for the rule\n")
 		exit(1)
 	m = re.search('^keepmatch *= *(.*)$', sys.argv[2])
