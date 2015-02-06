@@ -7,7 +7,7 @@ import re
 # UTILS FUNCTIONS
 #
 def regexMatch(block, regexs):
-	return (re.search(regexs,block) != None)
+	return (re.search(regexs, block, re.IGNORECASE) != None)
 
 def keepRegexMatch(block, regexs):
 	return not regexMatch(block, regexs)
@@ -15,7 +15,7 @@ def keepRegexMatch(block, regexs):
 FilenameTohandler = dict()
 def splitBy(block, regexs):
 	global FilenameTohandler
-	m = re.search(regexs, block)
+	m = re.search(regexs, block, re.IGNORECASE)
 	filename = m.group(1)+'.log' if m else 'others.log'
 	if filename not in FilenameTohandler:
 		FilenameTohandler[filename] = open(filename, 'a+')
