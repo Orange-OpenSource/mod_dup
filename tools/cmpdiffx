@@ -12,14 +12,13 @@ def regexMatch(block, regexs):
 def keepRegexMatch(block, regexs):
 	return not regexMatch(block, regexs)
 
+FilenameTohandler = dict()
 def splitBy(block, regexs):
 	m = re.search(regexs, block)
-	if m:
-		with open(m.group(1)+'.log', 'a+') as f:
-			f.write(block)
-	else:
-		with open('others.log', 'a+') as f:
-			f.write(block)
+	filename = m.group(1)+'.log' if m else 'others.log'
+	if filename not in FilenameTohandler:
+		FilenameTohandler[filename] = open(m.group(1)+'.log', 'a+')
+	FilenameTohandler[filename].write(block)
 	return True
 
 def respTime(block, value, inf_or_sup):
@@ -119,3 +118,7 @@ def main():
 				diffBlock += line
 
 main()
+
+# close file handlers opened by splitBy
+for key in FilenameTohandler:
+	FilenameTohandler[key].close()
