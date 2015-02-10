@@ -465,8 +465,8 @@ RequestProcessor:: performCurlCall(CURL *curl, const tFilter &matchedFilter, con
     struct curl_slist *slist = NULL;
     // Copy request in headers
     BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersIn) {
-        // Don't duplicate host and length
-        if ( (v.first != std::string("Host") ) && (v.first != std::string("Content-Length")) && (v.first != std::string("Expect")) ) {
+        // Don't duplicate host and length and Transfer-Encoding
+        if ( (v.first != std::string("Host") ) && (v.first != std::string("Content-Length")) && (v.first != std::string("Expect")) && (v.first != std::string("Transfer-Encoding")) ) {
             slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
         }
     }
