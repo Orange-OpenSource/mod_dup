@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <boost/algorithm/string/split.hpp>
 #include <map>
+#include <vector>
 #include <boost/lexical_cast.hpp>
 
 #define SYSLOG_NAMES
