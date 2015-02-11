@@ -19,6 +19,7 @@
 #include "mod_compare.hh"
 #include "RequestInfo.hh"
 #include "Utils.hh"
+#include "deserialize.hh"
 
 #include <http_config.h>
 #include <assert.h>

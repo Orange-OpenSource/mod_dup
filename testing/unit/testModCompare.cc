@@ -24,6 +24,7 @@
 #include <boost/thread/detail/singleton.hpp>
 #include <boost/assign.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/thread/lock_guard.hpp>
 #include <fstream>
 #include <iterator>
 #include <iostream>
@@ -275,6 +276,7 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mReqBody="MyClientRequest";
     lReqInfo.mId=std::string("123");
     lReqInfo.mReqHttpStatus = -1;
+    lReqInfo.mDupResponseHttpStatus = -1;
 
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
@@ -333,7 +335,8 @@ void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
     lReqInfo.mReqBody="MyClientRequest";
     lReqInfo.mId=std::string("123");
     lReqInfo.mReqHttpStatus = -1; // default value for non existant X_DUP_HTTP_STATUS header
-
+    lReqInfo.mDupResponseHttpStatus = -1;
+    
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
@@ -509,12 +512,12 @@ void TestModCompare::testGetLength()
     std::string lString("00000345Diego");
     size_t lFirst = 0;
 
-    CPPUNIT_ASSERT(getLength( lString, lFirst)== 345 );
+    CPPUNIT_ASSERT(CompareModule::getLength( lString, lFirst, lString.c_str() )== 345 );
 
     bool hasThrownError=false;
     try{
         lString = "toto0345Diego";
-        getLength( lString, lFirst);
+        getLength( lString, lFirst, lString.c_str());
     }catch(const std::out_of_range &oor){
     	hasThrownError=true;
     }catch(boost::bad_lexical_cast&){

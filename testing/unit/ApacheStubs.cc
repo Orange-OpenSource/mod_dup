@@ -37,7 +37,12 @@
 #include <cstring>
 #include <cassert>
 
+#if AP_SERVER_MINORVERSION_NUMBER==2
 unixd_config_rec unixd_config;
+#elif AP_SERVER_MINORVERSION_NUMBER==4
+unixd_config_rec ap_unixd_config;
+#endif
+
 
 AP_DECLARE_NONSTD(int) ap_rprintf( request_rec *r, const char *fmt, ...)
 {

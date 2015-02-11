@@ -36,6 +36,7 @@
 
 #include "Log.hh"
 #include "RequestInfo.hh"
+#include "deserialize.hh"
 
 #include <libws_diff/stringCompare.hh>
 #include <libws_diff/mapCompare.hh>
@@ -143,11 +144,6 @@ printRequest(request_rec *pRequest, std::string pBody);
 void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr);
 
 void writeSerializedRequest(const DupModule::RequestInfo& req);
-
-size_t getLength(const std::string pString, const size_t pFirst );
-
-apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo);
-apr_status_t deserializeHeader(DupModule::RequestInfo &pReqInfo,const std::string& header);
 
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 
