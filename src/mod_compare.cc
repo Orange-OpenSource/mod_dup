@@ -139,8 +139,15 @@ apr_status_t openLogFile(const char * filepath,std::ios_base::openmode mode) {
         Log::error(43,"Couldn't open correctly the file");
         return 400; // to modify
     }
+#if AP_SERVER_MINORVERSION_NUMBER==2
     if ( chown(filepath, unixd_config.user_id, unixd_config.group_id) < 0 ) {
        Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, unixd_config.user_name, errno, strerror(errno) );
+#elif AP_SERVER_MINORVERSION_NUMBER==4
+    if ( chown(filepath, ap_unixd_config.user_id, ap_unixd_config.group_id) < 0 ) {
+       Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, ap_unixd_config.user_name, errno, strerror(errno) );
+#else
+#error "Unsupported Apache Version, only 2.2 or 2.4"
+#endif
     }
     gFile.close();
     return APR_SUCCESS;
@@ -341,14 +348,14 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
     };
 
 #ifndef UNIT_TESTING
-
+/*
 static void insertInputFilter(request_rec *pRequest) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     assert(lConf);
     if (lConf->mIsActive){
         ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
     }
-}
+}*/
 
 static void insertOutputFilter(request_rec *pRequest) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));

@@ -68,7 +68,7 @@ Commands::toDuplicate() {
         return false;
     }
 
-    return ((randNum % 100) < mDuplicationPercentage);
+    return ((randNum % 100) < static_cast<int>(mDuplicationPercentage));
 }
 
 
