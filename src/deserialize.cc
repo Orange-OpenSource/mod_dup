@@ -40,9 +40,10 @@ namespace CompareModule {
  * @brief convert a substring of pString in size_t
  * @param pString the string from which to extract a substring to convert
  * @param pLength the length calculated
+ * @param msg a message to add to the error
  * @return true if the conversion gets success, false otherwise
  */
-size_t getLength(const std::string pString, const size_t pFirst)
+size_t getLength(const std::string pString, const size_t pFirst, const char * msg)
 {
 	size_t res;
     try
@@ -51,12 +52,12 @@ size_t getLength(const std::string pString, const size_t pFirst)
     }
     catch (boost::bad_lexical_cast & e)
     {
-    	Log::error(12, "Invalid size value");
+    	Log::error(12, "Invalid %s size value", msg);
     	throw e;
     }
     if( res > MAX_SECTION_SIZE)
     {
-        Log::error(12, "Value of length out of range");
+        Log::error(12, "Value of length of %s out of range", msg);
         throw std::out_of_range("Value of length out of range");
     }
     return res;
@@ -80,21 +81,23 @@ apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo)
     }
     try {
     	pos=0;
-    	lBodyReqSize = getLength( pReqInfo.mBody, pos);
+    	lBodyReqSize = getLength( pReqInfo.mBody, pos, "Request Body");
     	pos+= SECTION_SIZE_CHARS;
     	pReqInfo.mReqBody = pReqInfo.mBody.substr(pos,lBodyReqSize);
     	pos+=lBodyReqSize;
 
-    	lHeaderResSize = getLength( pReqInfo.mBody,pos);
+        lHeaderResSize = getLength( pReqInfo.mBody,pos, "Response Headers");
     	pos+= SECTION_SIZE_CHARS;
     	lResponseHeader = pReqInfo.mBody.substr(pos,lHeaderResSize);
     	pos+=lHeaderResSize;
+        // Log::debug( "Headers-BEGIN%sEND", lResponseHeader.c_str());
 
-    	lBodyResSize = getLength( pReqInfo.mBody, pos);
+        lBodyResSize = getLength( pReqInfo.mBody, pos, "Response Body");
     	pos+= SECTION_SIZE_CHARS;
     	pReqInfo.mResponseBody = pReqInfo.mBody.substr(pos, lBodyResSize);
-
-        Log::error(42, "Deserialized sizes: BodyReq:%ld Header:%ld Bodyres:%ld ", lBodyReqSize, lHeaderResSize, lBodyResSize);
+        // Log::error( 11, "ResponseBody-BEGIN%sEND", pReqInfo.mResponseBody.c_str());
+        
+        Log::info(42, "Deserialized sizes: BodyReq:%ld Header:%ld Bodyres:%ld ", lBodyReqSize, lHeaderResSize, lBodyResSize);
     	deserializeHeader(pReqInfo,lResponseHeader);
     }
     catch ( const std::out_of_range &oor)

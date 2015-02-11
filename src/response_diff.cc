@@ -65,7 +65,13 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
         diffLog << " / Elapsed time for diff computation : " << time.total_microseconds()/1000 << "ms";
     }
     std::map< std::string, std::string >::const_iterator it = pReqInfo.mReqHeader.find("ELAPSED_TIME_BY_DUP");
-    std::string diffTime = it != pReqInfo.mReqHeader.end() ? boost::lexical_cast<std::string>(boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS())) : "N/A";
+    std::string diffTime;
+    try {
+        diffTime = it != pReqInfo.mReqHeader.end() ? boost::lexical_cast<std::string>(boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS())) : "N/A";
+    } catch ( boost::bad_lexical_cast &e ) {
+        Log::error(12, "Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
+        diffTime = "N/C";
+    }
 #ifndef UNIT_TESTING
     diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
 #endif
