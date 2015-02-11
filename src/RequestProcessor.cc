@@ -481,23 +481,19 @@ void RequestProcessor::addOrigHeaders(const RequestInfo &rInfo, struct curl_slis
       curlist = curlist->next;
     }
 
-  
-      // Make sure the headers are not added twice in case of double duplication, 
-    // or apache will at some point concatenate values in a csv list
-  /*  apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
-    apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
-    apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
-    apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
-    apr_table_unset(pRequest->headers_in, "Duplication-Type");
-    apr_table_unset(pRequest->headers_in, "Content-Length");
-    apr_table_unset(pRequest->headers_in, "Host");
-    apr_table_unset(pRequest->headers_in, "Expect");
-    apr_table_unset(pRequest->headers_in, "Transfer-Encoding");
-    apr_table_unset(pRequest->headers_in, "Content-Type");
-*/
+    /* The headers potentially added by dup or others and not to be added twice are currently the following:
+      ELAPSED_TIME_BY_DUP,X_DUP_HTTP_STATUS,X_DUP_METHOD,X_DUP_CONTENT_TYPE,
+      Duplication-Type,Content-Length,Host,Expect,Transfer-Encoding,Content-Type
+    */
+    
     // Now append only if not in the set of headers already added
+    // or apache will at some point concatenate values in a csv list
+    // but also never add Transfer-Encoding chunked or a Content-Length, or Duplication-Type
+    // because we may not be adding it but a previous duplication might have put it there
     BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersIn) {
-        if ( headers.find(v.first) != headers.end() ) {
+        if ( (headers.find(v.first) != headers.end()) && (v.first != std::string("Host")) && 
+	  (v.first != std::string("Transfer-Encoding")) && 
+	  (v.first != std::string("Content-Length")) && (v.first != std::string("Duplication-Type")) ) {
 	  headers.insert(v.first);
 	  slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
 	}
