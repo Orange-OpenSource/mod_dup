@@ -33,7 +33,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/date_time/time_facet.hpp>
-#include <boost/thread/lock_guard.hpp>
+//#include <boost/thread/lock_guard.hpp>
 
 
 const std::string DIFF_SEPARATOR("-------------------\n");
