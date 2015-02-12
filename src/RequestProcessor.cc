@@ -495,9 +495,12 @@ void RequestProcessor::addOrigHeaders(const RequestInfo &rInfo, struct curl_slis
         if ( (headers.find(v.first) != headers.end()) && (v.first != std::string("Host")) && 
 	  (v.first != std::string("Transfer-Encoding")) && 
 	  (v.first != std::string("Content-Length")) && (v.first != std::string("Duplication-Type")) ) {
-	  headers.insert(v.first);
-	  slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
-	}
+            headers.insert(v.first);
+            slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
+            Log::error(11, "Adding header %s: %s", v.first.c_str(), v.second.c_str());
+      } else {
+            Log::error(11, "Skipping copy of header %s", v.first.c_str());
+        }
     }
 }
 
@@ -538,7 +541,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, cons
     } else {
         // Regular GET case
         curl_easy_setopt(curl, CURLOPT_HTTPGET, 1);
-	addOrigHeaders(rInfo, slist);
+        addOrigHeaders(rInfo, slist);
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
