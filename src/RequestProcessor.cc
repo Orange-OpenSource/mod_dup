@@ -492,7 +492,7 @@ void RequestProcessor::addOrigHeaders(const RequestInfo &rInfo, struct curl_slis
     // but also never add Transfer-Encoding chunked or a Content-Length, or Duplication-Type
     // because we may not be adding it but a previous duplication might have put it there
     BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersIn) {
-        if ( (headers.find(v.first) != headers.end()) && (v.first != std::string("Host")) && 
+        if ( (headers.find(v.first) == headers.end()) && (v.first != std::string("Host")) && 
 	  (v.first != std::string("Transfer-Encoding")) && 
 	  (v.first != std::string("Content-Length")) && (v.first != std::string("Duplication-Type")) ) {
             headers.insert(v.first);
