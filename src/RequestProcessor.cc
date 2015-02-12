@@ -24,6 +24,7 @@
 
 #include <httpd.h>
 #include <iomanip>
+#include <set>
 
 using namespace std;
 
