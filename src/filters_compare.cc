@@ -121,7 +121,7 @@ int translateHook(request_rec *pRequest) {
     }
     
     const char *lDupType = apr_table_get(pRequest->headers_in, "Content-Type");
-    if ( lDupType && ( ! strcmp(lDupType, "application/x-dup-serialized") ) ) {
+    if ( lDupType && ( ! strncmp(lDupType, "application/x-dup-serialized", 28) ) ) {
         // leave a compare header for decorator only if duplicating with response
         apr_table_set(pRequest->headers_in, "X-COMPARE-TRANSLATED", "1");
     }
