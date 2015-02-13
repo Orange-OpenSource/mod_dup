@@ -24,7 +24,7 @@
 #include <boost/thread/detail/singleton.hpp>
 #include <boost/assign.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/thread/lock_guard.hpp>
+//#include <boost/thread/lock_guard.hpp>
 #include <fstream>
 #include <iterator>
 #include <iostream>
