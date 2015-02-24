@@ -88,6 +88,7 @@ extractBrigadeContent(apr_bucket_brigade *bb, ap_filter_t *pF, std::string &cont
       }
       if (len) {
           content.append(data, len);
+          Log::debug("[DEBUG][COMPARE] extracted %zd bytes from brigade", len);
       }
     }
     return false;

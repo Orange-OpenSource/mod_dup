@@ -1,11 +1,12 @@
 ==DESC==
-/dup_test/dup RawFilter with HEADER scope
-==HEADER==
+/dup_test/dup RawFilter with URL scope
+==REQURL==
 /dup_test/dup?Pigeon=vole
-==BODY==
-==THEADER==
+==REQBODY==
+==DUPURL==
 /dup_test/dup?Pigeon=vole
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 ^.*UNIQUE_ID.*DUP$
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

@@ -57,7 +57,7 @@ void TestThreadPool::run()
 {
     apr_initialize();
 
-    Log::init(NULL);
+    Log::init();
 
 	MultiThreadQueue<int> queue;
 	ThreadPool<int> pool(&worker, POISON);

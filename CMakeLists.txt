@@ -152,10 +152,10 @@ if(BUILD_UNIT_TESTS)
 endif()
 
 if(BUILD_COVERAGE)
-  add_subdirectory(testing/functionnal)
-  add_subdirectory(testing/mock)
 endif()
 
+add_subdirectory(testing/functionnal)
+#add_subdirectory(testing/mock)
 add_subdirectory(docs)
 add_subdirectory(conf)
 

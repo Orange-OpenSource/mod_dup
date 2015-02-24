@@ -1,8 +1,8 @@
 ==DESC==
 Validation mode =>> nominal case, SID to dup present in arguments. massive bodies in test
-==HEADER==
+==REQURL==
 /dup_test/dup?method=getBES&country=FR&Sid=IDBAR
-==BODY==
+==REQBODY==
 The Dude: Walter, what is the point? Look, we all know who is at fault here, what the fuck are you talking about?
 Walter Sobchak: Huh? No, what the fuck are you... I'm not... We're talking about unchecked aggression here, dude.
 Donny: What the fuck is he talking about?
@@ -139,10 +139,11 @@ The Dude: That is he driver.
 [Nihilist hangs up]
 The Dude: Shit! Walter, you fuck... you fucked it up! You fucked it up! Her life was in our hands, man!
 Walter Sobchak: Nothing is fucked here, Dude. Come on, you're being very un-Dude. They'll call back
-==THEADER==
+==DUPURL==
 /dup_test/dup?METHOD=getBES&COUNTRY=FR&SID=DUPIDBAR
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 The Dude: Walter, what is the point\? Look, we all know who is at fault here, what the fuck are you talking about.*The Dude: Walter, he peed on my rug!.*Course I can't say I've seen London, and I ain't never been to France.* she and her boyfriend went to Honolulu.*Brandt can't watch, though, or he has to pay a hundred.*Who gives a shit! They're gonna kill that poor woman.*I'm shomer shabbos.*What the fuck are you talking about\? I converted when I married Cynthia! Come on, Dude!.* Certain things have come to light.*ike so many young men of his generation.*We know it's his fucking homework! Where's the fucking money, you little brat\?.*Come on, you're being very un-Dude. They'll call back.*
-==RBODY==
+==RESPBODY==
 DUP
-==DEST==
+==DUPDESTPORT==

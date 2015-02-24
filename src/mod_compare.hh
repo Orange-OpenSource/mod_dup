@@ -36,6 +36,7 @@
 
 #include "Log.hh"
 #include "RequestInfo.hh"
+#include "deserialize.hh"
 
 #include <libws_diff/stringCompare.hh>
 #include <libws_diff/mapCompare.hh>
@@ -100,6 +101,8 @@ cleanUp(void *);
  */
 void registerHooks(apr_pool_t *pPool);
 
+int translateHook(request_rec *pRequest);
+
 /**
  * @brief the input filter callback
  */
@@ -142,11 +145,6 @@ void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr
 
 void writeSerializedRequest(const DupModule::RequestInfo& req);
 
-size_t getLength(const std::string pString, const size_t pFirst );
-
-apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo);
-apr_status_t deserializeHeader(DupModule::RequestInfo &pReqInfo,const std::string& header);
-
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 
 void writeInFacility(std::string pDiffLog);
@@ -168,6 +166,8 @@ const char* setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pVal
 const char* setLogFacility(cmd_parms* pParams, void* pCfg, const char* pValue);
 
 bool checkCassandraDiff(const std::string &pUniqueID);
+
+void changeMethod(request_rec *pRequest, const std::string& pMethod);
 
 }
 

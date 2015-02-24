@@ -4,5 +4,6 @@ echo "Activating apache modules..."
 a2enmod dup_test
 a2enmod migrate_test
 a2enmod compare_test
+a2enmod dup_mock
 echo "Activating apache sites..."
 a2ensite dup_test_vhost migrate_test_vhost

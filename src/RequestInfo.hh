@@ -136,6 +136,11 @@ struct RequestInfo {
 
     unsigned int offset;
 
+    /* @brief The HTTP status provided by X_DUP_HTTP_STATUS header */
+    int mReqHttpStatus;
+    /* @brief The HTTP status returned by the duplicated request response */
+    int mDupResponseHttpStatus;
+
     /**
      * @brief Constructs the object using the three strings.
      * @param pConfPath The location (in the conf) which matched this query
@@ -204,7 +209,12 @@ struct RequestInfo {
     /**
      * @brief Reset the startTime to NOW
      */
-    void resetStartTime();
+    void resetStartTime() { mStartTime = boost::posix_time::microsec_clock::universal_time(); }
+
+    /**
+     * @brief Add time period to start time (used to not take into account )
+     */
+    //void addTimeToStartTime() { mStartTime = boost::posix_time::microsec_clock::universal_time(); }
 
 private:
 

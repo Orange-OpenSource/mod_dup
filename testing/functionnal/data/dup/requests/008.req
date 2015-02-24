@@ -1,11 +1,12 @@
 ==DESC==
 /dup_test/enrich NO Context enrichment, no request duplication
-==HEADER==
+==REQURL==
 /dup_test/enrich?FilterKey=FilterMe&actor=somebody
-==BODY==
+==REQBODY==
 I am the body
-==THEADER==
-==TBODY==
+==DUPURL==
+==DUPHEADER==
+==DUPBODY==
 
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

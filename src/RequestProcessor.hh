@@ -172,8 +172,11 @@ private:
     /** @brief The codec to use when encoding the url*/
     boost::scoped_ptr<const IUrlCodec>              mUrlCodec;
 
+    static void addOrigHeaders(const RequestInfo &rInfo, curl_slist *&slist);
+    static void addCommonHeaders(const RequestInfo &rInfo, curl_slist *&slist);
+
     void
-    sendInBody(CURL *curl, curl_slist *&slist, const std::string &toSend) const;
+    sendInBody(CURL *curl, const RequestInfo &rInfo, curl_slist *&slist, const std::string &toSend) const;
 
     std::string *
     sendDupFormat(CURL *curl, const RequestInfo &rInfo, curl_slist *&slist) const;

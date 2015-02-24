@@ -29,6 +29,7 @@ install(FILES
   data/dup/www/multi
   data/dup/www/rewritten
   data/dup/www/service_np1
+  data/dup/www/timeout
   DESTINATION /var/www/dup_test COMPONENT mod_dup)
 
 install(FILES

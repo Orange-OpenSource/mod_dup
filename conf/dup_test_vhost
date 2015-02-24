@@ -24,8 +24,8 @@ Listen 8042
 
     <Location /dup_test_mocked>
         SetHandler dup_mock
-	Order deny,allow
-	Allow from all
+		Order deny,allow
+		Allow from all
     </Location>
 
 </VirtualHost>

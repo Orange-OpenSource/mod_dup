@@ -1,12 +1,13 @@
 ==DESC==
 /dup_test/dup RawFilter BODY scope
-==HEADER==
+==REQURL==
 /dup_test/dup?
-==BODY==
+==REQBODY==
 CestarrivepresdechezvousInBody
-==THEADER==
+==DUPURL==
 /dup_test/dup?
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 .*CestarrivepresdechezvousInBody.*DUP$
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

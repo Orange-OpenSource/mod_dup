@@ -1,12 +1,13 @@
 ==DESC==
 /dup_test/dup Duplication on 2 locations
-==HEADER==
+==REQURL==
 /dup_test/dup?second=location&LOVE=hate
-==BODY==
-==THEADER==
+==REQBODY==
+==DUPURL==
 /dup_test/dup?second=location&LOVE=hate
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 .*
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==
 MULTI

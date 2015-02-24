@@ -40,6 +40,7 @@
 
 #include "mod_compare.hh"
 
+#define MOD_REWRITE_NAME "mod_rewrite.c"
 
 namespace alg = boost::algorithm;
 
@@ -138,8 +139,15 @@ apr_status_t openLogFile(const char * filepath,std::ios_base::openmode mode) {
         Log::error(43,"Couldn't open correctly the file");
         return 400; // to modify
     }
+#if AP_SERVER_MINORVERSION_NUMBER==2
     if ( chown(filepath, unixd_config.user_id, unixd_config.group_id) < 0 ) {
        Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, unixd_config.user_name, errno, strerror(errno) );
+#elif AP_SERVER_MINORVERSION_NUMBER==4
+    if ( chown(filepath, ap_unixd_config.user_id, ap_unixd_config.group_id) < 0 ) {
+       Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, ap_unixd_config.user_name, errno, strerror(errno) );
+#else
+#error "Unsupported Apache Version, only 2.2 or 2.4"
+#endif
     }
     gFile.close();
     return APR_SUCCESS;
@@ -266,8 +274,6 @@ setCompareLog(cmd_parms* pParams, void* pCfg, const char* pType, const char* pVa
         return "Missing file path or facility";
     }
 
-    CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-
     if (strcmp("FILE", pType) == 0)
     {
         gWriteInFile = true;
@@ -296,6 +302,12 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 
     lConf->mIsActive= true;
+
+#ifndef UNIT_TESTING
+        if (!ap_find_linked_module(MOD_REWRITE_NAME)) {
+            return "'mod_rewrite' is not loaded, Enable mod_rewrite to use mod_compare";
+        }
+#endif
 
     return NULL;
 }
@@ -336,14 +348,14 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
     };
 
 #ifndef UNIT_TESTING
-
+/*
 static void insertInputFilter(request_rec *pRequest) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     assert(lConf);
     if (lConf->mIsActive){
         ap_add_input_filter(gName, NULL, pRequest, pRequest->connection);
     }
-}
+}*/
 
 static void insertOutputFilter(request_rec *pRequest) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
@@ -376,9 +388,11 @@ registerHooks(apr_pool_t *pPool) {
     ap_register_output_filter(gNameOut, outputFilterHandler, NULL, AP_FTYPE_RESOURCE);
     // output filter of type AP_FTYPE_CONNECTION => only the response header will be read
     ap_register_output_filter(gNameOut2, outputFilterHandler2, NULL, AP_FTYPE_TRANSCODE);
-    ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
+    // ap_hook_insert_filter(&insertInputFilter, NULL, NULL, APR_HOOK_FIRST);
     ap_hook_insert_filter(&insertOutputFilter, NULL, NULL, APR_HOOK_LAST);
     ap_hook_insert_filter(&insertOutputFilter2, NULL, NULL, APR_HOOK_LAST);
+
+    ap_hook_translate_name(&translateHook, NULL, NULL, APR_HOOK_MIDDLE);
 #endif
 }
 

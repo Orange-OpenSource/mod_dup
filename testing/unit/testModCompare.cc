@@ -24,6 +24,7 @@
 #include <boost/thread/detail/singleton.hpp>
 #include <boost/assign.hpp>
 #include <boost/archive/text_iarchive.hpp>
+//#include <boost/thread/lock_guard.hpp>
 #include <fstream>
 #include <iterator>
 #include <iostream>
@@ -84,6 +85,7 @@ static request_rec *prep_request_rec() {
 
     req->headers_in = apr_table_make(req->pool, 42);
     req->headers_out = apr_table_make(req->pool, 42);
+    req->method = "GET";
     return req;
 }
 
@@ -273,6 +275,8 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
     lReqInfo.mReqBody="MyClientRequest";
     lReqInfo.mId=std::string("123");
+    lReqInfo.mReqHttpStatus = -1;
+    lReqInfo.mDupResponseHttpStatus = -1;
 
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
@@ -330,7 +334,9 @@ void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
     lReqInfo.mReqHeader["ELAPSED_TIME_BY_DUP"]= "432";  // test diff time dup/comp requests
     lReqInfo.mReqBody="MyClientRequest";
     lReqInfo.mId=std::string("123");
-
+    lReqInfo.mReqHttpStatus = -1; // default value for non existant X_DUP_HTTP_STATUS header
+    lReqInfo.mDupResponseHttpStatus = -1;
+    
     writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
@@ -373,17 +379,145 @@ void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
     CPPUNIT_ASSERT_EQUAL(0, length);
 }
 
+void TestModCompare::testWriteDifferencesWithStatusDiff()
+{
+    gWriteInFile = true;
+    std::string lPath( getenv("PWD") );
+    lPath.append("/log_differences.txt");
+    gFile.close();
+    gFile.open(lPath.c_str());
+
+    DupModule::RequestInfo lReqInfo;
+    lReqInfo.mReqHeader["content-type"]= "plain/text";  //size = 11
+    lReqInfo.mReqHeader["agent-type"]= "myAgent";  //size = 11
+    lReqInfo.mReqHeader["date"]= "TODAY";  //size = 11
+    lReqInfo.mReqHeader["ELAPSED_TIME_BY_DUP"]= "432";  // test diff time dup/comp requests
+    lReqInfo.mReqBody="MyClientRequest";
+    lReqInfo.mId=std::string("123");
+    lReqInfo.mReqHttpStatus = 456;
+    lReqInfo.mDupResponseHttpStatus = 654;
+
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
+
+    {
+        std::ifstream readFile;
+        readFile.open(lPath.c_str());
+        std::stringstream buffer;
+        buffer << readFile.rdbuf();
+        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time for diff computation : 1ms\n"
+                "Elapsed time for requests (ms): DUP 432 COMP 0 DIFF 432\n\n\n\n"
+                "ELAPSED_TIME_BY_DUP: 432\n"
+                "agent-type: myAgent\n"
+                "content-type: plain/text\n"
+                "date: TODAY\n"
+                "\n"
+                "MyClientRequest\n"
+                "-------------------\n"
+                "Http Status Codes: DUP 456 COMP 654\n"
+                "-------------------\n"
+                "myHeaderDiff\n"
+                "-------------------\n"
+                "myBodyDiff\n"
+                "END DIFFERENCE n°:123\n");
+        std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
+        CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
+    }
+
+    //write diff in syslog
+    gWriteInFile = false;
+    //open the file and truncate it
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+
+    //check that the file content is empty
+    gFile.close();
+    // truncate the log
+    gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
+    gFile.close();
+    std::ifstream infile(lPath.c_str(),std::ifstream::binary | std::ifstream::ate);
+    infile.seekg (0, infile.end);
+    int length = infile.tellg();
+    CPPUNIT_ASSERT_EQUAL(0, length);
+}
+
+void TestModCompare::testWriteDifferencesNoDiff()
+{
+    gWriteInFile = true;
+    std::string lPath( getenv("PWD") );
+    lPath.append("/log_differences.txt");
+    gFile.close();
+    gFile.open(lPath.c_str());
+
+    // NOMINAL TEST
+    request_rec *req = prep_request_rec();
+
+    ap_filter_t *filter = new ap_filter_t;
+    memSet(filter);
+    apr_pool_t *pool = NULL;
+    apr_pool_create(&pool, 0);
+    filter->r = req;
+    filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+    filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+    filter->next = (ap_filter_t *)(void *) 0x43;
+    req->uri = (char *)"";
+
+    CompareConf *conf = new CompareConf;
+    ap_set_module_config(req->per_dir_config, &compare_module, conf);
+
+    apr_table_set(req->headers_in, "Duplication-Type", "Response");
+
+    DupModule::RequestInfo *info = new DupModule::RequestInfo(std::string("42"));
+
+    // set the body and both the HTTP statuses to be compared
+    info->mResponseBody = testBody42;
+    info->mReqHttpStatus = 200;
+    req->status = 200;
+
+    void *space = apr_palloc(req->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
+    new (space) boost::shared_ptr<DupModule::RequestInfo>(info);
+    ap_set_module_config(req->request_config, &compare_module, (void *)space);
+
+    apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+    CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, apr_brigade_write(bb, NULL, NULL, testBody42, std::string(testBody42).size()));
+
+    apr_bucket_alloc_t *bA = apr_bucket_alloc_create(pool);
+    apr_bucket *e = apr_bucket_eos_create(bA);
+    CPPUNIT_ASSERT(e);
+    APR_BRIGADE_INSERT_TAIL(bb, e);
+
+    apr_table_set(req->headers_in, "UNIQUE_ID", "toto");
+
+    CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler( filter, bb ) );
+
+    req->unparsed_uri = strdup("/dans/ton/luc");
+
+    CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, outputFilterHandler2( filter, bb ) );
+
+    CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
+
+    {
+        std::ifstream readFile;
+        readFile.open(lPath.c_str());
+        std::stringstream buffer;
+        buffer << readFile.rdbuf();
+        std::string assertRes("");
+        std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
+        CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str()); // ASSERT NO DIFF LOG WAS GENERATED
+    }
+}
+
 void TestModCompare::testGetLength()
 {
     std::string lString("00000345Diego");
     size_t lFirst = 0;
 
-    CPPUNIT_ASSERT(getLength( lString, lFirst)== 345 );
+    CPPUNIT_ASSERT(CompareModule::getLength( lString, lFirst, lString.c_str() )== 345 );
 
     bool hasThrownError=false;
     try{
         lString = "toto0345Diego";
-        getLength( lString, lFirst);
+        getLength( lString, lFirst, lString.c_str());
     }catch(const std::out_of_range &oor){
     	hasThrownError=true;
     }catch(boost::bad_lexical_cast&){
@@ -474,6 +608,7 @@ void TestModCompare::testInputFilterHandler()
         filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
         req->per_dir_config = NULL;
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( 1, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
     }
 
@@ -491,6 +626,7 @@ void TestModCompare::testInputFilterHandler()
         filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
         req->per_dir_config = NULL;
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
     }
 
@@ -508,6 +644,7 @@ void TestModCompare::testInputFilterHandler()
         filter->next = (ap_filter_t *)(void *) 0x43;
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
         req->per_dir_config = NULL;
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
     }
@@ -526,6 +663,7 @@ void TestModCompare::testInputFilterHandler()
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
         req->per_dir_config = NULL;
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
     }
@@ -544,6 +682,7 @@ void TestModCompare::testInputFilterHandler()
         filter->next = (ap_filter_t *)(void *) 0x43;
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
     }
@@ -564,6 +703,8 @@ void TestModCompare::testInputFilterHandler()
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
     }
@@ -571,7 +712,6 @@ void TestModCompare::testInputFilterHandler()
     {
         // // NOMINAL CASE REQUEST + BODY ( invalid body format)
         request_rec *req = prep_request_rec();
-
         ap_filter_t *filter = new ap_filter_t;
         memSet(filter);
         apr_pool_t *pool = NULL;
@@ -581,15 +721,95 @@ void TestModCompare::testInputFilterHandler()
         filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
         filter->next = (ap_filter_t *)(void *) 0x42;
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        // Set X_DUP_METHOD header to check that the apache method changed
+        apr_table_set(req->headers_in, "X_DUP_METHOD", "PUT");
         CompareConf *conf = new CompareConf;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
+        ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
         CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
 
         // Second call, tests context backup
         CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+        CPPUNIT_ASSERT_EQUAL( std::string("PUT"), std::string(req->method) );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_METHOD") );
 
+    }
+
+    {
+        // // NOMINAL CASE REQUEST + BODY ( invalid body format) + test http status
+        request_rec *req = prep_request_rec();
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        // Set X_DUP_METHOD header to check that the apache method changed
+        apr_table_set(req->headers_in, "X_DUP_METHOD", "PUT");
+        // Set X_DUP_HTTP_STATUS header to some value
+        apr_table_set(req->headers_in, "X_DUP_HTTP_STATUS", "123");
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
+        ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
+        CPPUNIT_ASSERT_EQUAL( 400, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+        // Second call, tests context backup
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+        CPPUNIT_ASSERT_EQUAL( std::string("PUT"), std::string(req->method) );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_METHOD") );
+        boost::shared_ptr<DupModule::RequestInfo> shReqInfo = *(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo>*>(ap_get_module_config(req->request_config,&compare_module)));
+        CPPUNIT_ASSERT_EQUAL(123,shReqInfo->mReqHttpStatus);
+
+    }
+
+    {
+        // // NOMINAL CASE REQUEST + BODY ( valid body format)
+        request_rec *req = prep_request_rec();
+        ap_filter_t *filter = new ap_filter_t;
+        memSet(filter);
+        apr_pool_t *pool = NULL;
+        apr_pool_create(&pool, 0);
+        filter->r = req;
+        filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
+        filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
+        filter->next = (ap_filter_t *)(void *) 0x42;
+        apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
+        CPPUNIT_ASSERT_EQUAL(APR_SUCCESS, apr_brigade_write(bb, NULL, NULL, testSerializedBody, std::string(testSerializedBody).size()));
+
+        apr_table_set(req->headers_in, "Duplication-Type", "Response");
+        // Set X_DUP_HTTP_STATUS in headers_in
+        apr_table_set(req->headers_in, "X_DUP_HTTP_STATUS", "204");
+        apr_table_set(req->headers_in, "X_DUP_CONTENT_TYPE", "text");
+        apr_table_set(req->headers_in, "ELAPSED_TIME_BY_DUP", "1234");
+
+        req->content_type = "xml";
+        apr_table_set(req->headers_in, "Content-Type", "xml");
+
+        CompareConf *conf = new CompareConf;
+        ap_set_module_config(req->per_dir_config, &compare_module, conf);
+        ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
+        apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
+        CPPUNIT_ASSERT_EQUAL(DECLINED, translateHook(req));
+        CPPUNIT_ASSERT_EQUAL( 0, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+
+        // Second call, tests context backup
+        CPPUNIT_ASSERT_EQUAL( APR_SUCCESS, inputFilterHandler( filter, bb, AP_MODE_READBYTES, APR_BLOCK_READ, 8192 ) );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_HTTP_STATUS") );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "X_DUP_CONTENT_TYPE") );
+        CPPUNIT_ASSERT( ! apr_table_get(req->headers_in, "ELAPSED_TIME_BY_DUP") );
+        CPPUNIT_ASSERT_EQUAL( std::string(apr_table_get(req->headers_in, "Content-Type")), std::string("text") );
+        CPPUNIT_ASSERT_EQUAL( std::string(req->content_type), std::string("text") );
     }
 
 }

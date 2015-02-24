@@ -1,10 +1,11 @@
 ==DESC==
 /dup_test/dup RawPrevent filter test
-==HEADER==
+==REQURL==
 /dup_test/dup?love=hate
-==BODY==
+==REQBODY==
 RawPrevent=donotdup
-==THEADER==
-==TBODY==
-==RBODY==
-==DEST==
+==DUPURL==
+==DUPHEADER==
+==DUPBODY==
+==RESPBODY==
+==DUPDESTPORT==

@@ -29,6 +29,13 @@
 #include <iomanip>
 #include <apache2/httpd.h>
 
+#define DEF_METHOD(name) static const char *g##name = #name;
+
+DEF_METHOD(GET)
+DEF_METHOD(POST)
+DEF_METHOD(PUT)
+DEF_METHOD(PATCH)
+DEF_METHOD(DELETE)
 
 
 namespace CompareModule {
@@ -40,6 +47,35 @@ printRequest(request_rec *pRequest, std::string pBody)
     Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
     Log::debug("### Uri:%s", pRequest->uri);
     Log::debug("### Request args: %s", pRequest->args);
+}
+
+void
+changeMethod(request_rec *pRequest, const std::string& pMethod){
+
+    if( ! pMethod.compare(pRequest->method)){
+        return;
+    }
+
+    if ( !pMethod.compare(gGET)){
+        pRequest->method = gGET;
+        pRequest->method_number = M_GET;
+    }
+    else if( !pMethod.compare(gPUT) ){
+        pRequest->method = gPUT;
+        pRequest->method_number = M_PUT;
+    }
+    else if( !pMethod.compare(gPATCH) ){
+        pRequest->method = gPATCH;
+        pRequest->method_number = M_PATCH;
+    }
+    else if( !pMethod.compare(gPOST) ){
+        pRequest->method = gPOST;
+        pRequest->method_number = M_POST;
+    }
+    else if( !pMethod.compare(gDELETE) ){
+        pRequest->method = gDELETE;
+        pRequest->method_number = M_DELETE;
+    }
 }
 
 
@@ -55,54 +91,123 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     return 1;
 }
 
+/*
+ * Translate_name level HOOK
+ * It will be called before the input filters
+ * It is used to remove the DUP headers and change the request method
+ */
+int translateHook(request_rec *pRequest) {
+    Log::debug("[DEBUG][COMPARE] Inside translateHook");
+    if (!pRequest->per_dir_config)
+        return DECLINED;
+    CompareConf *conf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
+    if (!conf) {
+        // Not a location that we treat, we decline the request
+        return DECLINED;
+    }
+    if (!pRequest->connection->pool) {
+        Log::error(42, "No connection pool associated to the request");
+        return DECLINED;
+    }
+
+    Log::debug("[DEBUG][COMPARE] Going to makeRequestInfo inside translateHook");
+    boost::shared_ptr<DupModule::RequestInfo>* shReqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
+    DupModule::RequestInfo *info = shReqInfo->get();
+
+    const char *lMethod = apr_table_get(pRequest->headers_in, "X_DUP_METHOD");
+    if(lMethod){
+        changeMethod(pRequest, lMethod);
+        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
+    }
+    
+    const char *lDupType = apr_table_get(pRequest->headers_in, "Content-Type");
+    if ( lDupType && ( ! strncmp(lDupType, "application/x-dup-serialized", 28) ) ) {
+        // leave a compare header for decorator only if duplicating with response
+        apr_table_set(pRequest->headers_in, "X-COMPARE-TRANSLATED", "1");
+    }
+
+    const char *lContentType = apr_table_get(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+    if(lContentType){
+        apr_table_set(pRequest->headers_in, "Content-Type", lContentType);
+        ap_set_content_type(pRequest, lContentType );
+        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+    }
+
+    // Copy headers in our object
+    apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
+
+    // We retrieve the original request HTTP status from X_DUP_HTTP_STATUS header
+    // if it does not exist, we set it to -1
+    std::map<std::string,std::string>::const_iterator it = info->mReqHeader.find("X_DUP_HTTP_STATUS");
+    try {
+        info->mReqHttpStatus = it != info->mReqHeader.end() ? boost::lexical_cast<int>(it->second) : -1;
+    } catch (boost::bad_lexical_cast& e) {
+        info->mReqHttpStatus = -1;
+        Log::warn(1, "Invalid X_DUP_HTTP_STATUS header value (not a number?)");
+    }
+
+    Log::debug("XXXXXX COMPARE REMAINING: %ld", pRequest->remaining);
+    apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
+    apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
+
+    return DECLINED;
+}
 
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
+    Log::debug("[DEBUG][COMPARE] Inside inpuFilterHandler");
+
     apr_status_t lStatus;
     request_rec *pRequest = pF->r;
     if (!pRequest) {
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler request_rec null");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) ) {
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler not a duplicated request, nothing to compare");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
     if(pRequest->per_dir_config == NULL){
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler per_dir_config is null");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if (!tConf) {
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler per_dir_config is null");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes); // SHOULD NOT HAPPEN
     }
+
     // No context? new request
     if (!pF->ctx) {
-
-        boost::shared_ptr<DupModule::RequestInfo> *info = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
-
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler Assigning filter ctx");
+        boost::shared_ptr<DupModule::RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module));
+        assert(shPtr->get());
         // Backup of info struct in the request context
-        pF->ctx = info->get();
+        pF->ctx = shPtr->get();
 
         DupModule::RequestInfo *lRI = static_cast<DupModule::RequestInfo *>(pF->ctx);
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler Starting extractBrigadeContent");
         while (!CommonModule::extractBrigadeContent(pB, pF->next, lRI->mBody)){
             apr_brigade_cleanup(pB);
         }
         pF->ctx = (void *)1;
         apr_brigade_cleanup(pB);
         lRI->offset = 0;
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler Starting deserializeBody");
         lStatus =  deserializeBody(*lRI);
 
         // reset timer to not take deserializing computation time into account
-        (*info)->resetStartTime();
+        (*shPtr)->resetStartTime();
 
         if(lStatus != APR_SUCCESS){
             return lStatus;
         }
-#ifndef UNIT_TESTING
+
         apr_table_set(pRequest->headers_in, "Content-Length",boost::lexical_cast<std::string>(lRI->mReqBody.size()).c_str());
-        apr_table_do(&iterateOverHeadersCallBack, &(lRI->mReqHeader), pRequest->headers_in, NULL);
-#endif
+
         printRequest(pRequest, lRI->mReqBody);
     }
     if (pF->ctx == (void *)1) {
@@ -132,6 +237,8 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler");
+
     request_rec *pRequest = pFilter->r;
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
@@ -193,6 +300,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         apr_size_t len;
 
         if (APR_BUCKET_IS_EOS(currentBucket)) {
+            Log::debug("[DEBUG][COMPARE] in outputFilterHandler eos_seen");
             req->eos_seen(true);
             continue;
         }
@@ -249,13 +357,14 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
 
     std::string diffBody,diffHeader;
-    if( tConf->mCompareDisabled){
+    if (tConf->mCompareDisabled) {
         writeSerializedRequest(*req);
-    }else{
-        auto start = boost::posix_time::microsec_clock::universal_time();
+    } else {
+        req->mDupResponseHttpStatus = pRequest->status;
+        boost::posix_time::ptime start = boost::posix_time::microsec_clock::universal_time();
         if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
             if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
-                if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) ){
+                if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) || (req->mReqHttpStatus!=-1 && (req->mReqHttpStatus != req->mDupResponseHttpStatus)) ){
                     writeDifferences(*req,diffHeader,diffBody,boost::posix_time::microsec_clock::universal_time()-start);
                 }
             }

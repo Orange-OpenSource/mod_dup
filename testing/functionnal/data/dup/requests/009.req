@@ -1,10 +1,11 @@
 ==DESC==
 /unknown path with no existing location
-==HEADER==
+==REQURL==
 /unknown?jemesuisperdu=true
-==BODY==
-==THEADER==
-==TBODY==
+==REQBODY==
+==DUPURL==
+==DUPHEADER==
+==DUPBODY==
 
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

@@ -1,12 +1,13 @@
 ==DESC==
 /dup_test/dup RawSubstitution in BODY
-==HEADER==
+==REQURL==
 /dup_test/dup?Pigeon=vole
-==BODY==
+==REQBODY==
 tochange=Like%20a%20Hello
-==THEADER==
+==DUPURL==
 /dup_test/dup?Pigeon=vole
-==TBODY==
+==DUPHEADER==
+==DUPBODY==
 ^.*tochange=Like%20a%20Moto.*DUP$
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

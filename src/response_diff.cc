@@ -33,6 +33,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/date_time/time_facet.hpp>
+//#include <boost/thread/lock_guard.hpp>
 
 
 const std::string DIFF_SEPARATOR("-------------------\n");
@@ -64,8 +65,14 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     if (time.total_microseconds()/1000 > 0){
         diffLog << " / Elapsed time for diff computation : " << time.total_microseconds()/1000 << "ms";
     }
-    auto it = pReqInfo.mReqHeader.find("ELAPSED_TIME_BY_DUP");
-    std::string diffTime = it != pReqInfo.mReqHeader.end() ? std::to_string(boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS())) : "N/A";
+    std::map< std::string, std::string >::const_iterator it = pReqInfo.mReqHeader.find("ELAPSED_TIME_BY_DUP");
+    std::string diffTime;
+    try {
+        diffTime = it != pReqInfo.mReqHeader.end() ? boost::lexical_cast<std::string>(boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS())) : "N/A";
+    } catch ( boost::bad_lexical_cast &e ) {
+        Log::error(12, "Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
+        diffTime = "N/C";
+    }
 #ifndef UNIT_TESTING
     diffLog << std::endl << "Date : " << boost::posix_time::microsec_clock::local_time() <<std::endl;
 #endif
@@ -73,6 +80,10 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     diffLog << std::endl << pReqInfo.mRequest.c_str() << std::endl;
     diffLog << std::endl << lReqHeader << std::endl;
     diffLog << pReqInfo.mReqBody.c_str() << std::endl;
+
+    if( pReqInfo.mReqHttpStatus != pReqInfo.mDupResponseHttpStatus ){
+        diffLog <<  DIFF_SEPARATOR << "Http Status Codes: DUP " <<  pReqInfo.mReqHttpStatus << " COMP " << pReqInfo.mDupResponseHttpStatus << std::endl;;
+    }
     writeCassandraDiff( pReqInfo.mId, diffLog );
     diffLog << DIFF_SEPARATOR << headerDiff << std::endl;
     diffLog << DIFF_SEPARATOR << bodyDiff << std::endl;

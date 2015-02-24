@@ -1,12 +1,14 @@
 ==DESC==
 /dup_test/header_only Duplication of the header only
-==HEADER==
+==REQURL==
 /dup_test/header_only?love=hate
-==BODY==
+==REQBODY==
 Must not be duplicated
-==THEADER==
+==DUPURL==
 /dup_test/header_only?love=hate
-==TBODY==
+==DUPHEADER==
+Content-Type: application/json; charset=utf-8
+==DUPBODY==
 ^$
-==RBODY==
-==DEST==
+==RESPBODY==
+==DUPDESTPORT==

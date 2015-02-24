@@ -14,6 +14,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <boost/algorithm/string/split.hpp>
+#include <map>
+#include <vector>
+#include <boost/lexical_cast.hpp>
+
+#define SYSLOG_NAMES
+#include <sys/syslog.h>
 
 extern module AP_MODULE_DECLARE_DATA dup_mock;
 
@@ -21,6 +28,18 @@ namespace dupMock {
 
 #define SETTINGS_FROM_PARMS(parms) reinterpret_cast<Conf *>(ap_get_module_config(parms->server->module_config, &dup_mock))
 #define SETTINGS_FROM_SERVER(server) reinterpret_cast<Conf *>(ap_get_module_config(server->module_config, &dup_mock))
+
+/*
+ * Callback to iterate over the headers tables
+ * Pushes a copy of key => value in a list
+ */
+int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
+    std::map< std::string, std::string> *lHeader = reinterpret_cast< std::map< std::string, std::string> *>(d);
+
+    (*lHeader)[std::string(key)] = std::string(value);
+
+    return 1;
+}
 
 struct Conf {
 
@@ -39,8 +58,46 @@ void *createServerConfig(apr_pool_t *pPool, server_rec* ) {
     return new Conf();
 }
 
+const char* readBodyData(request_rec* r) {
+    int rc = ap_setup_client_block( r, REQUEST_CHUNKED_ERROR);
+
+    if( rc != OK ){
+        return NULL;
+    }
+
+    if( ap_should_client_block(r) ){
+
+        char buf[HUGE_STRING_LEN];
+        apr_off_t rpos = 0;
+        apr_off_t length = r->remaining;
+        char* result = reinterpret_cast<char*>(apr_pcalloc( r->pool, length + 1));
+
+        if( result == NULL ){
+            syslog(LOG_ERR, "Unable to allocate memory");
+            return NULL;
+        }
+
+        /*apr_hard_timeout("read_post_data", &pReq);*/
+        while( rpos < length ){
+
+            int rsize = (rpos + (int)sizeof(buf) > length) ? (length - rpos) : (int)sizeof(buf);
+
+            /*ap_reset_timeout(&pReq);*/
+            int bytes_read = ap_get_client_block(r, buf, rsize);
+            if( bytes_read <= 0 ){
+                break;
+            }
+            memcpy(result + rpos, buf, bytes_read);
+            rpos += bytes_read;
+        }
+        /*apr_kill_timeout(&pReq);*/
+        return result;
+    }
+    return NULL;
+}
 
 static int wsmock_handler(request_rec *r) {
+    syslog(LOG_ERR, "DUP MOCK");
     std::string answer;
 
     if (!r->handler || strcmp(r->handler, "dup_mock"))
@@ -50,10 +107,57 @@ static int wsmock_handler(request_rec *r) {
     struct Conf *conf = SETTINGS_FROM_SERVER(r->server);
     assert(conf);
 
-
-    ap_set_content_type(r, "text/html");
+    readBodyData(r); // read body data (needed to proper testing of compare input filters
 
     std::string uri = r->unparsed_uri;
+
+    // dup_mock will be used for dynamic inquiring purposes (get the headers, the method, etc.)
+    // it will then dump the requested info in the body
+    if (uri.find("/inquire?") != std::string::npos) { // /inquire?method,headers,contenttype
+        std::string queryString = uri.substr(uri.find("?")+1,std::string::npos); // get the query string (past the ?)
+        std::vector<std::string> infos;
+        boost::split(infos, queryString, [](char c) { return c==',';});
+        for (const std::string& info : infos) {
+            if (info == "method") {
+                ap_rputs("Method: ",r);
+                ap_rputs(r->method,r);
+                ap_rputs("\n",r);
+                ap_rputs("Method number: ",r);
+                ap_rputs(std::to_string(r->method_number).c_str(),r);
+                ap_rputs("\n\n",r);
+            } else
+            if (info == "headers") {
+                std::map< std::string, std::string> headersMap;
+                apr_table_do(&iterateOverHeadersCallBack, &headersMap, r->headers_in, NULL);
+                for (const auto& pair : headersMap) {
+                    ap_rputs((pair.first+": ").c_str(),r);
+                    ap_rputs((pair.second+"\n").c_str(),r);
+                }
+                ap_rputs("\n",r);
+            } else
+            if (info == "contenttype") {
+                ap_rputs("Content-Type2: ",r);
+                ap_rputs(r->content_type,r);
+                ap_rputs("\n",r);
+            }
+        }
+        return OK;
+    } else if (uri.find("/sleep") != std::string::npos) { // /sleep?for=1 or just /sleep (1 sec)
+        std::string lastUriPart = uri.substr(uri.find("/sleep"),std::string::npos);
+        int duration;
+
+        if (lastUriPart.find("?for") == std::string::npos) duration = 1;
+        else sscanf(lastUriPart.c_str(),"/sleep?for=%d",&duration);
+
+        sleep(duration);
+        ap_rputs("Slept for ", r);
+        ap_rputs(boost::lexical_cast<std::string>(duration).c_str(),r);
+        ap_rputs(" sec\n",r);
+        syslog(LOG_ERR, "END SLEEP DUP MOCK");
+        return OK;
+    }
+
+    ap_set_content_type(r, "text/html");
 
     std::list<std::pair<std::string, std::string> > &mocks = conf->mocks;
     std::list<std::pair<std::string, std::string> >::iterator it = mocks.begin(),

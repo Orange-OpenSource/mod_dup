@@ -186,7 +186,7 @@ public:
 	/**
 	 * @brief Destructs the ThreadPool object
 	 */
-	~ThreadPool() {
+	virtual ~ThreadPool() {
 		stop();
 	}
 

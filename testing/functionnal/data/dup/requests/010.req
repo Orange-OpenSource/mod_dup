@@ -1,11 +1,12 @@
 ==DESC==
 /get_body_size_direct Tests that the body is correctly passed to the CGI script without any redirection
-==HEADER==
+==REQURL==
 /get_body_size_direct?FilterKey=FilterMe&actor=jean
-==BODY==
+==REQBODY==
 WhatABody!
-==THEADER==
-==TBODY==
-==RBODY==
+==DUPURL==
+==DUPHEADER==
+==DUPBODY==
+==RESPBODY==
 10
-==DEST==
+==DUPDESTPORT==

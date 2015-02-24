@@ -1,0 +1,14 @@
+==DESC==
+Timeout test
+==REQURL==
+/dup_test_mocked/timeout?SID=SLEEP
+==REQBODY==
+==DUPURL==
+/dup_test_mocked/timeout?SID=DUPSLEEP
+==DUPHEADER==
+X_DUP_METHOD: GET
+==DUPBODY==
+.*DUP.*
+==RESPBODY==
+DUP
+==DUPDESTPORT==
