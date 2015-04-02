@@ -57,6 +57,6 @@ Description: Validation files necessary for non reg tests
 
 Package: libws-diff
 Architecture: any
-Depends: cmake, debhelper (>= 5.0.0), ${shlibs:Depends}
+Depends: cmake, debhelper (>= 5.0.0), ${shlibs:Depends}, libpns-jsoncpp-dev
 Description: C++ string diffing tool
  Homepage: https://github.com/Orange-OpenSource/mod_dup

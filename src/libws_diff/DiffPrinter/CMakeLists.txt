@@ -18,18 +18,14 @@ cmake_minimum_required(VERSION 2.8)
 
 include(${PROJECT_SOURCE_DIR}/cmake/Include.cmake)
 
-file(GLOB libws_diff_main_SOURCE_FILES
-	lib_compare.cc
-	${PROJECT_SOURCE_DIR}/build/src/libws_diff
-  )
-
-include_directories(${PROJECT_SOURCE_DIR}/extern/dtl-cpp/dtl)
-include_directories(${PROJECT_SOURCE_DIR}/src/libws_diff/DiffPrinter)
-include_directories(${PROJECT_SOURCE_DIR}/src/libws_diff)
-include_directories(${PROJECT_SOURCE_DIR}/src)
-
-# Compile as exec
-add_executable(libws_diff_main ${libws_diff_main_SOURCE_FILES})
-target_link_libraries(libws_diff_main libws_diff ${cppunit_LIBRARY})
-
-install(TARGETS libws_diff_main DESTINATION bin COMPONENT libws_diff)
+set(libws_diff_SOURCE_FILES
+   ${libws_diff_SOURCE_FILES}
+   ${CMAKE_CURRENT_SOURCE_DIR}/jsonDiffPrinter.cc
+   PARENT_SCOPE
+)
+set(libws_diff_HEADER_FILES
+   ${libws_diff_HEADER_FILES}
+   ${CMAKE_CURRENT_SOURCE_DIR}/diffPrinter.hh
+   ${CMAKE_CURRENT_SOURCE_DIR}/jsonDiffPrinter.hh
+   PARENT_SCOPE
+)
