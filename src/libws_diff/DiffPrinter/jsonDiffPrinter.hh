@@ -37,6 +37,7 @@ public:
 			const std::string& dstValue);
 
 	virtual void addFullDiff(std::vector<std::string> diffLines,
+							const int truncSize,
 							const std::string& type);
 
 	virtual bool retrieveDiff(std::string& res);

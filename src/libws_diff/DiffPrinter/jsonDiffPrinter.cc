@@ -53,6 +53,7 @@ void jsonDiffPrinter::addHeaderDiff(const std::string& key,
 }
 
 void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,
+		const int truncSize=100,
 		const std::string& type=std::string("XML")){
 	this->isADiff=true;
 	//TODO identify following ids
@@ -67,7 +68,7 @@ void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,
 		std::string truncatedDiff;
 		//Let's retrieve only the first 100 char of each line
 		for(std::vector<std::string>::iterator it=diffLines.begin();it!=diffLines.end();++it){
-			truncatedDiff+=it->substr(0,100);
+			truncatedDiff+=it->substr(0,truncSize);
 			truncatedDiff+="\n";
 		}
 		//If still too big then don't include

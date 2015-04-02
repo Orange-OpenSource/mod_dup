@@ -56,7 +56,9 @@ public:
 	 * Add the diff information concerning the full body of the request
 	 * \param[in] vector of string, 1 line per line of body
 	 */
-	virtual void addFullDiff(std::vector<std::string> diffLines,const std::string& type)=0;
+	virtual void addFullDiff(std::vector<std::string> diffLines,
+			const int truncSize,
+			const std::string& type)=0;
 
 	/***
 	 * Output the diff in the specified format

@@ -39,6 +39,24 @@ void TestJsonDiffPrinter::testNormalJsonPrint(){
 	CPPUNIT_ASSERT_EQUAL(expected,json);
 }
 
-void TestJsonDiffPrinter::TestFullTooLong(){
+void TestJsonDiffPrinter::testFullTooLong(){
+	LibWsDiff::jsonDiffPrinter test(1);
 
+	std::vector<std::string> myBody;
+	std::string grbStr("garbageString",10000);
+	for(int i=0;i<10;i++){
+		myBody.push_back(std::string("<hello>")+grbStr);
+	}
+	test.addFullDiff(myBody,20,"XML");
+
+	std::string json;
+	CPPUNIT_ASSERT(test.retrieveDiff(json));
+	std::cout << json;
+	std::string expected="{\"id\":1,\"diff\":{\"body\":{\"posDiff\":0,"
+			"\"negDiff\":0,\"posList\":0,\"negList\":0,\"full\":"
+			"\"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
+			"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
+			"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
+			"<hello>garbageString\\n\"}}}\n";
+	CPPUNIT_ASSERT_EQUAL(expected,json);
 }
