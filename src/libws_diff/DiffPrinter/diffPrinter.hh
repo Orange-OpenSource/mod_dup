@@ -12,16 +12,16 @@
 
 #include <vector>
 #include <string>
+#include <boost/optional.hpp>
 
 namespace LibWsDiff {
 
 class diffPrinter {
-protected :
+public :
 	bool isADiff; //Store the presence of diff elements
-	int id;
+	std::string id;
 
-public:
-	diffPrinter(int id):isADiff(false),id(id){}
+	diffPrinter(std::string id):isADiff(false),id(id){}
 	virtual ~diffPrinter(){}
 
 	/***
@@ -49,8 +49,8 @@ public:
 	 * specific key
 	 */
 	virtual void addHeaderDiff(const std::string& key,
-			const std::string& srcValue,
-			const std::string& dstValue)=0;
+			const boost::optional<std::string> srcValue,
+			const boost::optional<std::string> dstValue)=0;
 
 	/***
 	 * Add the diff information concerning the full body of the request

@@ -31,6 +31,7 @@ class TestWsMapDiff :
     CPPUNIT_TEST(testAddingStopRegex);
     CPPUNIT_TEST(testAddingIgnoreRegex);
     CPPUNIT_TEST(testMapDiff);
+    CPPUNIT_TEST(testMapDiffPrinter);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -38,5 +39,6 @@ public:
     void testAddingIgnoreRegex();
 
     void testMapDiff();
+    void testMapDiffPrinter();
 
 };

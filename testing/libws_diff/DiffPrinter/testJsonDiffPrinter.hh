@@ -23,10 +23,12 @@ class TestJsonDiffPrinter :
     CPPUNIT_TEST(testBasicPrint);
     CPPUNIT_TEST(testNormalJsonPrint);
     CPPUNIT_TEST(testFullTooLong);
+    CPPUNIT_TEST(testNullInHeader);
     CPPUNIT_TEST_SUITE_END();
 
 public:
     void testBasicPrint();
     void testNormalJsonPrint();
     void testFullTooLong();
+    void testNullInHeader();
 };

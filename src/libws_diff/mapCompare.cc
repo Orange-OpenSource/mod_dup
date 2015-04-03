@@ -98,5 +98,44 @@ bool MapCompare::retrieveDiff(const mapStrings& src,const mapStrings& dst,std::s
 	return true;
 }
 
+bool MapCompare::retrieveDiff(const mapStrings& src,const mapStrings& dst,LibWsDiff::diffPrinter* printer) const{
+	std::map<std::string,std::string> diffSrc,diffDst;
+	std::map<std::string,std::pair<std::string,std::string> > valueDiff;
+
+	if(checkStop(src) || checkStop(dst)){
+		return false;
+	}
+
+	mapStrings dupSrc(src),dupDst(dst);
+	applyIgnoreRegex(dupSrc);
+	applyIgnoreRegex(dupDst);
+
+	//Current problem is that differences match either key and value differences
+	std::set_difference(dupSrc.begin(),dupSrc.end(),dupDst.begin(),dupDst.end(),std::inserter(diffSrc,diffSrc.begin()));
+	std::set_difference(dupDst.begin(),dupDst.end(),dupSrc.begin(),dupSrc.end(),std::inserter(diffDst,diffDst.begin()));
+	if (diffSrc.size()>0){
+		for(std::map<std::string,std::string>::iterator it=diffSrc.begin();it!=diffSrc.end();++it){
+			std::map<std::string,std::string>::iterator itDst=diffDst.find(it->first);
+			if (itDst==  diffDst.end()){
+				printer->addHeaderDiff(std::string(it->first),std::string(it->second),NULL);
+			}else{
+				valueDiff.insert(std::pair<std::string,std::pair<std::string,std::string> >(it->first,std::pair<std::string,std::string>(it->second,itDst->second)));
+				diffDst.erase(itDst);
+			}
+		}
+	}
+	if (diffDst.size()>0){
+		for(std::map<std::string,std::string>::iterator it=diffDst.begin();it!=diffDst.end();++it){
+			printer->addHeaderDiff(std::string(it->first),NULL,std::string(it->second));
+		}
+	}
+	if (valueDiff.size()>0){
+		for(std::map<std::string,std::pair<std::string,std::string> >::iterator it=valueDiff.begin();it!=valueDiff.end();++it){
+			printer->addHeaderDiff(std::string(it->first),std::string(it->second.first),std::string(it->second.second));
+		}
+	}
+	return true;
+}
+
 };  /* namespace LibWsDiff */
 

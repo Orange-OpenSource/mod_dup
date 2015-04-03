@@ -9,7 +9,7 @@
 
 namespace LibWsDiff {
 
-jsonDiffPrinter::jsonDiffPrinter(int id):diffPrinter(id){
+jsonDiffPrinter::jsonDiffPrinter(std::string id):diffPrinter(id){
 	this->jsonRes["id"]=id;
 }
 
@@ -45,11 +45,15 @@ void jsonDiffPrinter::addStatus(const std::string& service,const int statusCode)
 }
 
 void jsonDiffPrinter::addHeaderDiff(const std::string& key,
-		const std::string& srcValue,
-		const std::string& dstValue){
+		const boost::optional<std::string> srcValue,
+		const boost::optional<std::string> dstValue){
 	this->isADiff=true;
-	this->jsonRes["diff"]["header"][key]["src"]=srcValue;
-	this->jsonRes["diff"]["header"][key]["dst"]=dstValue;
+	if(srcValue.is_initialized()){
+		this->jsonRes["diff"]["header"][key]["src"]=srcValue.get();
+	}
+	if(dstValue.is_initialized()){
+		this->jsonRes["diff"]["header"][key]["dst"]=dstValue.get();
+	}
 }
 
 void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,

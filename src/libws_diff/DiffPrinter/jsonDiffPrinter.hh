@@ -20,11 +20,11 @@
 
 namespace LibWsDiff {
 
-class jsonDiffPrinter: protected LibWsDiff::diffPrinter {
+class jsonDiffPrinter: public LibWsDiff::diffPrinter {
 private:
 	Json::Value jsonRes;
 public:
-	jsonDiffPrinter(int id);
+	jsonDiffPrinter(std::string id);
 	virtual ~jsonDiffPrinter();
 
 	virtual void addInfo(const std::string& key,const std::string& value);
@@ -33,8 +33,8 @@ public:
 	virtual void addStatus(const std::string& service,const int statusCode);
 
 	virtual void addHeaderDiff(const std::string& key,
-			const std::string& srcValue,
-			const std::string& dstValue);
+			const boost::optional<std::string> srcValue,
+			const boost::optional<std::string> dstValue);
 
 	virtual void addFullDiff(std::vector<std::string> diffLines,
 							const int truncSize,
