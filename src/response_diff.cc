@@ -52,7 +52,10 @@ void map2string(const std::map< std::string, std::string> &pMap, std::string &pS
  * @brief write response differences in a file or in syslog
  * @param pReqInfo info of the original request
  */
-void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& headerDiff,const std::string& bodyDiff, boost::posix_time::time_duration time )
+void writeDifferences(const DupModule::RequestInfo &pReqInfo,
+		const std::string& headerDiff,
+		const std::string& bodyDiff,
+		boost::posix_time::time_duration time )
 {
     std::string lReqHeader;
     map2string( pReqInfo.mReqHeader, lReqHeader );
@@ -111,12 +114,89 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& 
     }
 }
 
+void writeDifferences(const DupModule::RequestInfo &pReqInfo,
+		LibWsDiff::diffPrinter& printer,
+		boost::posix_time::time_duration time)
+{
+    std::string lReqHeader;
+    map2string( pReqInfo.mReqHeader, lReqHeader );
+
+    double t=time.total_milliseconds();
+    if (t > 0){
+    	printer.addInfo("ElapsedTime",t);
+    }
+
+    std::map< std::string, std::string >::const_iterator it = pReqInfo.mReqHeader.find("ELAPSED_TIME_BY_DUP");
+    std::string diffTime;
+    try {
+    	if(it!=pReqInfo.mReqHeader.end()){
+    		t=boost::lexical_cast<int>(it->second)-boost::lexical_cast<int>(pReqInfo.getElapsedTimeMS());
+    		printer.addRuntime("DIFF",t);
+    	}
+    } catch ( boost::bad_lexical_cast &e ) {
+        Log::error(12, "Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
+    }
+    std::stringstream today;
+    today<<boost::posix_time::microsec_clock::local_time();
+    printer.addInfo("Date",today.str());
+
+    if(it!=pReqInfo.mReqHeader.end()){
+    	printer.addRuntime("DUP",boost::lexical_cast<int>(it->second));
+    	printer.addRuntime("COMP",pReqInfo.getElapsedTimeMS());
+    }
+
+    if(pReqInfo.mRequest.find('?')==pReqInfo.mRequest.length()){
+    	printer.addRequestUri(pReqInfo.mRequest,pReqInfo.mReqBody);
+    }else{
+    	if(!pReqInfo.mReqBody.empty()){
+    		printer.addInfo("ReqBody",pReqInfo.mReqBody.length());
+    	}
+	}
+
+    std::map< std::string, std::string>::const_iterator lIter;
+    for ( lIter = pReqInfo.mReqHeader.begin(); lIter != pReqInfo.mReqHeader.end(); ++lIter )
+    {
+    	printer.addRequestHeader(it->first,it->second);
+    }
+
+    printer.addStatus("DUP",pReqInfo.mReqHttpStatus);
+    printer.addStatus("COMP",pReqInfo.mDupResponseHttpStatus);
+
+    writeCassandraDiff( pReqInfo.mId, printer );
+
+    std::string res;
+    printer.retrieveDiff(res);
+
+    if(!gWriteInFile){
+        std::string lLine;
+        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
+        std::vector<std::string> resLines;
+        boost::split(resLines,res,boost::is_any_of("\n"));
+        for(std::vector<std::string>::iterator it= resLines.begin();
+        		it!=resLines.end();it++)
+        {
+            writeInFacility(*it);
+        }
+    }
+    else {
+        if (gFile.is_open()){
+            boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
+            gFile << res;
+            gFile.flush();
+        }
+        else
+        {
+            Log::error(12, "File not correctly opened");
+        }
+    }
+}
+
 /**
  * @brief split the input string every 1024 characters and writes it in the syslog
  * @param pDiffLog string to split and to write in syslog
  */
 void writeInFacility(std::string pDiffLog){
-    int lSplitSize = 1024;
+    int lSplitSize = LOGMAXSIZE;
     int stringLength = pDiffLog.size();
     for (int i = 0; i < stringLength ; i += lSplitSize)
     {
@@ -124,7 +204,6 @@ void writeInFacility(std::string pDiffLog){
             lSplitSize = stringLength  - i;
         }
         Log::error(12, "%s", pDiffLog.substr(i, lSplitSize).c_str());
-
     }
 }
 
@@ -182,6 +261,34 @@ void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr
     }
     diffStr << DIFF_SEPARATOR;
 
+    lDiff.erase(pUniqueID);
+}
+
+/**
+ * @brief write the Cassandra differences in log file
+ * @param pUniqueID the UNIQUE_ID of the request to check
+ * @return true if there are differences, false otherwise
+ */
+void writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& printer)
+{
+    typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
+
+    CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
+    boost::lock_guard<boost::mutex>  lLock(lDiff.getMutex());
+
+    std::pair <tMultiMapDiff::iterator, tMultiMapDiff::iterator> lPairIter;
+    lPairIter = lDiff.equal_range(pUniqueID);
+    if ( lPairIter.first ==  lPairIter.second )
+    {
+        return;
+    }
+
+    for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
+    	printer.addCassandraDiff(lPairIter.first->second.mName,
+    			lPairIter.first->second.mMultivalueKey,
+    			lPairIter.first->second.mDBValue,
+    			lPairIter.first->second.mReqValue);
+    }
     lDiff.erase(pUniqueID);
 }
 

@@ -10,6 +10,7 @@
 #include <vector>
 #include <boost/regex.hpp>
 
+#include "DiffPrinter/diffPrinter.hh"
 
 typedef std::vector<boost::regex> tRegexes;
 typedef std::vector<std::string> tStrings;
@@ -46,6 +47,7 @@ protected:
 	 * @param output : resulting diff in string format
 	 */
 	bool vectDiff(const tStrings& src,const tStrings& dst, std::string& output) const;
+
 public:
 	/**
 	 * Initializes the regexs through vector of string
@@ -78,6 +80,17 @@ public:
 	 * @return : false if any stop flag has been matched, else true
 	 */
 	bool retrieveDiff(const std::string & src,const std::string& dst, std::string& output) const;
+
+	/**
+		 * Return the shortest execution sequence(SES) to obtain the destination string dst from the source src i.e. the diff
+		 * @param src : source string
+		 * @param dst : destination string
+		 * @param printer : Pointer on the dedicated printer class
+		 * @return : false if any stop flag has been matched, else true
+		 */
+	bool retrieveDiff(const std::string & src,
+			const std::string& dst,
+			LibWsDiff::diffPrinter* printer) const;
 };
 
 /**
@@ -111,6 +124,18 @@ public:
 	 * @return : false if any stop flag has been matched, else true
 	 */
 	bool retrieveDiff(const std::string& src,const std::string& dst,std::string& output) const;
+
+	bool retrieveDiff(const mapStrings& mapOrig,
+			const mapStrings& mapRes,
+			std::string& output) const;
+
+	bool retrieveDiff(const std::string& src,
+			const std::string& dst,
+			LibWsDiff::diffPrinter& printer) const;
+
+	bool retrieveDiff(const mapStrings& mapOrig,
+				const mapStrings& mapRes,
+				LibWsDiff::diffPrinter& printer) const;
 };
 
 /**
@@ -147,6 +172,21 @@ public:
 	 * @return : false if any stop flag has been matched, else true
 	 */
 	bool retrieveDiff(const tStrings& src,const tStrings& dst,std::string& output) const;
+
+	/**
+	 * Return the shortest execution sequence(SES) to obtain the destination string dst from the source src i.e. the diff
+	 * @param src : source string
+	 * @param dst : destination string
+	 * @param printer : Pointer on the dedicated printer class
+	 * @return : false if any stop flag has been matched, else true
+	 */
+	bool retrieveDiff(const std::string & src,
+			const std::string& dst,
+			LibWsDiff::diffPrinter& printer) const;
+
+	bool retrieveDiff(const tStrings & src,
+			const tStrings& dst,
+			LibWsDiff::diffPrinter& printer) const;
 };
 
 

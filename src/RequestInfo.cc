@@ -119,7 +119,7 @@ RequestInfo::Serialize(const std::string &toSerialize, std::stringstream &ss) {
 
 int
 RequestInfo::getElapsedTimeMS() const {
-    return mElapsedTime.total_microseconds() / 1000;
+    return mElapsedTime.total_milliseconds();
 }
 
 

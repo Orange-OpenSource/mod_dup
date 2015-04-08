@@ -73,9 +73,16 @@ public:
 			const mapStrings& mapRes,
 			std::string& output) const;
 
+	/**
+	 * Provide the map differences between the two provided,
+	 * @param src : the source map
+	 * @param dst : the destination map
+	 * @param printer : the display class
+	  * @return : false if any stop flag has been matched, else true
+	 */
 	bool retrieveDiff(const mapStrings& mapOrig,
 			const mapStrings& mapRes,
-			LibWsDiff::diffPrinter* printer) const;
+			LibWsDiff::diffPrinter& printer) const;
 };
 
 } /* namespace LibWsDiff */

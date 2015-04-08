@@ -13,16 +13,30 @@
 #include <vector>
 #include <string>
 #include <boost/optional.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace LibWsDiff {
 
+
+/**
+ * Abstract interface wrapping the diff printing format
+ */
 class diffPrinter {
-public :
+
+protected:
 	bool isADiff; //Store the presence of diff elements
-	std::string id;
+	std::string id; //Request id
+public:
 
 	diffPrinter(std::string id):isADiff(false),id(id){}
 	virtual ~diffPrinter(){}
+
+	bool isDiff(){return this->isADiff;}
+
+	/**
+	 * Basic factory-like constructor method
+	 */
+	static diffPrinter* createDiffPrinter(const std::string& id,const std::string& type="json");
 
 	/***
 	 * Add simple key value information
@@ -30,9 +44,14 @@ public :
 	virtual void addInfo(const std::string& key,const std::string& value)=0;
 
 	/***
+	 * Add simple key value information
+	 */
+	virtual void addInfo(const std::string& key,const double value)=0;
+
+	/***
 	 * Add the URI information
 	 */
-	virtual void addRequestUri(const std::string& uri)=0;
+	virtual void addRequestUri(const std::string& uri,const std::string& paramsBody)=0;
 
 	/***
 	 * Add the Header of the request information
@@ -43,6 +62,19 @@ public :
 	 * Add a status information about a service
 	 */
 	virtual void addStatus(const std::string& service,const int statusCode)=0;
+
+	/***
+	 * Add a status information about a service
+	 */
+	virtual void addRuntime(const std::string& service,const int milli)=0;
+
+	/***
+	 * Add a status information about a service
+	 */
+	virtual void addCassandraDiff(const std::string& fieldName,
+			const std::string& multiValue,
+			const std::string& dbValue,
+			const std::string& reqValue)=0;
 
 	/***
 	 * Add a information of diff between a source and a destination for a
@@ -59,6 +91,10 @@ public :
 	virtual void addFullDiff(std::vector<std::string> diffLines,
 			const int truncSize,
 			const std::string& type)=0;
+
+	virtual void addFullDiff(std::string& diffLines,
+			const int truncSize=100,
+			const std::string& type="XML")=0;
 
 	/***
 	 * Output the diff in the specified format

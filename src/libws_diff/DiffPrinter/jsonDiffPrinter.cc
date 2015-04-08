@@ -21,27 +21,62 @@ void jsonDiffPrinter::addInfo(const std::string& key,const std::string& value){
 	this->jsonRes[key]=value;
 }
 
-void jsonDiffPrinter::addRequestUri(const std::string& uri){
+void jsonDiffPrinter::addInfo(const std::string& key,const double value){
+	this->jsonRes[key]=value;
+}
+
+void jsonDiffPrinter::addRequestUri(const std::string& uri,
+		const std::string& paramsBody){
 	this->jsonRes["request"]["uri"]=uri;
 	int pivot=uri.find('?');
 	this->jsonRes["request"]["url"]=uri.substr(0,pivot);
-	std::string params=uri.substr(pivot+1,uri.length());
-
 	std::vector<std::string> vectParams;
-	boost::split(vectParams,params,boost::is_any_of("&"));
-	for(std::vector<std::string>::iterator it=vectParams.begin();
-			it!=vectParams.end();++it){
-		int pos=it->find('=');
-		this->jsonRes["request"]["args"][it->substr(0,pos)]=it->substr(pos+1,it->length());
-	}
+	if(pivot!=uri.length()){
+		std::string params=uri.substr(pivot+1,uri.length());
 
+		boost::split(vectParams,params,boost::is_any_of("&"));
+		for(std::vector<std::string>::iterator it=vectParams.begin();
+				it!=vectParams.end();++it){
+			int pos=it->find('=');
+			this->jsonRes["request"]["args"][it->substr(0,pos)]=it->substr(pos+1,it->length());
+		}
+	}
+	vectParams.clear();
+	if(!paramsBody.empty()){
+		boost::split(vectParams,paramsBody,boost::is_any_of("&"));
+		for(std::vector<std::string>::iterator it=vectParams.begin();
+				it!=vectParams.end();++it){
+			int pos=it->find('=');
+			this->jsonRes["request"]["args"][it->substr(0,pos)]=it->substr(pos+1,it->length());
+		}
+	}
 }
+
 void jsonDiffPrinter::addRequestHeader(const std::string& key,const std::string& value){
 	this->jsonRes["request"]["header"][key]=value;
 }
 
 void jsonDiffPrinter::addStatus(const std::string& service,const int statusCode){
 	this->jsonRes["status"][service]=statusCode;
+}
+
+void jsonDiffPrinter::addRuntime(const std::string& service,const int milli){
+	this->jsonRes["runtime"][service]=milli;
+}
+
+void jsonDiffPrinter::addCassandraDiff(const std::string& fieldName,
+				const std::string& multiValue,
+				const std::string& dbValue,
+				const std::string& reqValue){
+	this->isADiff=true;
+	std::string field=fieldName;
+	int i=1;
+	while(!this->jsonRes.isMember(field)){
+		field=fieldName + boost::lexical_cast<std::string>(i++);
+	}
+	this->jsonRes["diff"]["cassandra"][field]["mulVal"]=multiValue;
+	this->jsonRes["diff"]["cassandra"][field]["dbVal"]=dbValue;
+	this->jsonRes["diff"]["cassandra"][field]["reqVal"]=reqValue;
 }
 
 void jsonDiffPrinter::addHeaderDiff(const std::string& key,
@@ -57,8 +92,8 @@ void jsonDiffPrinter::addHeaderDiff(const std::string& key,
 }
 
 void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,
-		const int truncSize=100,
-		const std::string& type=std::string("XML")){
+		const int truncSize,
+		const std::string& type){
 	this->isADiff=true;
 	//TODO identify following ids
 	this->jsonRes["diff"]["body"]["posDiff"]=0;
@@ -82,6 +117,14 @@ void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,
 	}else{
 		this->jsonRes["diff"]["body"]["full"]=fullDiff;
 	}
+}
+
+void jsonDiffPrinter::addFullDiff(std::string& diffLines,
+		const int truncSize,
+		const std::string& type){
+	std::vector<std::string> split;
+	boost::split(split,diffLines,boost::is_any_of("\n"),boost::token_compress_on);
+	this->addFullDiff(split,truncSize,type);
 }
 
 bool jsonDiffPrinter::retrieveDiff(std::string& res){

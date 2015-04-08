@@ -20,6 +20,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/Include.cmake)
 
 set(libws_diff_SOURCE_FILES
    ${libws_diff_SOURCE_FILES}
+   ${CMAKE_CURRENT_SOURCE_DIR}/diffPrinter.cc
    ${CMAKE_CURRENT_SOURCE_DIR}/jsonDiffPrinter.cc
    ${CMAKE_CURRENT_SOURCE_DIR}/multilineDiffPrinter.cc
    PARENT_SCOPE

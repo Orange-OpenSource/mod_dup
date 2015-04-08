@@ -92,11 +92,11 @@ void TestWsMapDiff::testMapDiffPrinter(){
 
 	LibWsDiff::MapCompare a;
 
-	LibWsDiff::diffPrinter* printer = new LibWsDiff::jsonDiffPrinter("test");
+	boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter("test"));
 
 	a.addIgnoreRegex("ignore","test");
 	a.addIgnoreRegex("date",".*");
-	CPPUNIT_ASSERT(a.retrieveDiff(test,test2,printer));
+	CPPUNIT_ASSERT(a.retrieveDiff(test,test2,*printer));
 
 	std::string json;
 	printer->retrieveDiff(json);
