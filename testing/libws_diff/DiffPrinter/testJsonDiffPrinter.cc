@@ -75,12 +75,13 @@ void TestJsonDiffPrinter::testFullExtractionOfXmlTags(){
 
 	std::string json;
 	CPPUNIT_ASSERT(test.retrieveDiff(json));
-	std::string expected="{\"id\":\"4\",\"diff\":{\"body\":{\"posDiff\":0,"
-			"\"negDiff\":0,\"posList\":0,\"negList\":0,\"full\":"
-			"\"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
-			"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
-			"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
-			"<hello>garbageString\\n\"}}}\n";
+	std::string expected="{\"id\":\"4\",\"diff\":{\"body\":{\"posDiff\":2,"
+			"\"posList\":[\"<he+llo>\",\"<hello>\"],\"negDiff\":3,\"negList\":"
+			"[\"<hello>\"],\"full\":\"<hello>garbageString\\n+<hello>garbageStrin"
+			"\\n<he+llo>garbageStrin\\n+<he+llo>garbageStri\\n   -<hello>garbageSt"
+			"\\n- -<hello>garbageStr\\n - <hello>garbageStr\\n<hello>garbageString"
+			"\\n\"}}}\n";
+
 	CPPUNIT_ASSERT_EQUAL(expected,json);
 }
 
