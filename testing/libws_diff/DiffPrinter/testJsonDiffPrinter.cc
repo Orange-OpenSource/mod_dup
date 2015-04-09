@@ -50,7 +50,32 @@ void TestJsonDiffPrinter::testFullTooLong(){
 
 	std::string json;
 	CPPUNIT_ASSERT(test.retrieveDiff(json));
-	std::string expected="{\"id\":\"3\",\"diff\":{\"body\":{\"posDiff\":0,"
+	std::string expected="{\"id\":\"3\",\"diff\":{\"body\":{\"full\":"
+			"\"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
+			"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
+			"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
+			"<hello>garbageString\\n\"}}}\n";
+	CPPUNIT_ASSERT_EQUAL(expected,json);
+}
+
+void TestJsonDiffPrinter::testFullExtractionOfXmlTags(){
+	LibWsDiff::jsonDiffPrinter test("4");
+
+	std::vector<std::string> myBody;
+	std::string grbStr("garbageString",10000);
+	myBody.push_back(std::string("<hello>")+grbStr);
+	myBody.push_back(std::string("+<hello>")+grbStr);
+	myBody.push_back(std::string("<he+llo>")+grbStr);
+	myBody.push_back(std::string("+<he+llo>")+grbStr);
+	myBody.push_back(std::string("   -<hello>")+grbStr);
+	myBody.push_back(std::string("- -<hello>")+grbStr);
+	myBody.push_back(std::string(" - <hello>")+grbStr);
+	myBody.push_back(std::string("<hello>")+grbStr);
+	test.addFullDiff(myBody,20,"XML");
+
+	std::string json;
+	CPPUNIT_ASSERT(test.retrieveDiff(json));
+	std::string expected="{\"id\":\"4\",\"diff\":{\"body\":{\"posDiff\":0,"
 			"\"negDiff\":0,\"posList\":0,\"negList\":0,\"full\":"
 			"\"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"
 			"<hello>garbageString\\n<hello>garbageString\\n<hello>garbageString\\n"

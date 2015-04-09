@@ -7,7 +7,8 @@
 
 #include "jsonDiffPrinter.hh"
 #include<string>
-#include<regex>
+#include<set>
+#include<boost/regex.hpp>
 
 namespace LibWsDiff {
 
@@ -98,32 +99,53 @@ void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,
 		const std::string& type){
 
 	//TODO identify following ids
-	if(type=="XML"){
 
-	}
 	int posDiff=0,negDiff=0;
-	std::set<std::string> negList,posList;
-
-	std::string fullDiff= boost::algorithm::join(diffLines,"\n");
+	std::set<std::string> negList;
+	std::set<std::string> posList;
 
 	//Analyze and retrieve counter and list of diff
-	std::regex xmlFirstTag("(<.*?>.*)");
-	std::smatch base_match;
+	boost::regex tagToIdentify;
+	std::string firstChar;
+	if(type=="XML"){
+		tagToIdentify=boost::regex("<.*?>");
+		firstChar='<';
+	}else{
+		tagToIdentify=boost::regex("\".*?\"");
+		firstChar='"';
+	}
+	boost::smatch what;
 	for(std::vector<std::string>::iterator it=diffLines.begin();it!=diffLines.end();++it){
-		if(std::regex_match(*it,base_match,xmlFirstTag)){
-			if(it->find('+') < it->find('<')){
+		if(boost::regex_search(*it,what,tagToIdentify)){
+			if((*(it)).find('+') < (*(it)).find(firstChar)){
 				posDiff+=1;
-				if(base_match.size()>=1){
-					posList.insert(base_match[0].str());
+				if(what.size()>=1){
+					posList.insert(what[0]);
 				}
-			}else if(it->find('-') < it->find('<')){
+			}else if((*(it)).find('-') < (*(it)).find(firstChar)){
 				negDiff+=1;
-				if(base_match.size()>=1){
-					negList.insert(base_match[0].str());
+				if(what.size()>=1){
+					negList.insert(what[0]);
 				}
 			}
 		}
 	}
+	if(posDiff){
+		this->jsonRes["diff"]["body"]["posDiff"]=posDiff;
+		Json::Value l(Json::arrayValue);
+		for(std::set<std::string>::iterator it=posList.begin();it!=posList.end();it++)
+			l.append(*it);
+		this->jsonRes["diff"]["body"]["posList"]=l;
+	}
+	if(negDiff){
+		this->jsonRes["diff"]["body"]["negDiff"]=negDiff;
+		Json::Value l(Json::arrayValue);
+		for(std::set<std::string>::iterator it=negList.begin();it!=negList.end();it++)
+			l.append(*it);
+		this->jsonRes["diff"]["body"]["negList"]=l;
+	}
+
+	std::string fullDiff= boost::algorithm::join(diffLines,"\n");
 
 	if(fullDiff.length()>=JSONMAXSIZE){
 		this->isADiff=true;
