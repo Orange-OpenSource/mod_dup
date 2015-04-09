@@ -82,7 +82,7 @@ void TestWsMapDiff::testMapDiff(){
 			"'agent-type' ==> 'superAgent'/'superAgent2'\n")==diff);
 }
 
-void TestWsMapDiff::testMapDiffPrinter(){
+void TestWsMapDiff::testMapDiffPrinterJson(){
 	std::vector<std::string> stopRe = boost::assign::list_of("duplicate=False")("stopregex");
 	std::vector<std::string> igRe = boost::assign::list_of("test");
 	std::string diff;
@@ -104,5 +104,31 @@ void TestWsMapDiff::testMapDiffPrinter(){
 			"{\"sexyAttribute\":{\"src\":\"Sexy\"},\"newSexyAttribute\":"
 			"{\"dst\":\"Sexy\"},\"agent-type\":{\"src\":\"superAgent\","
 			"\"dst\":\"superAgent2\"}}}}\n";
+	CPPUNIT_ASSERT_EQUAL(expected,json);
+}
+
+void TestWsMapDiff::testMapDiffPrinterMultiline(){
+	std::vector<std::string> stopRe = boost::assign::list_of("duplicate=False")("stopregex");
+	std::vector<std::string> igRe = boost::assign::list_of("test");
+	std::string diff;
+
+	std::map<std::string,std::string> test = boost::assign::map_list_of("date","today")("agent-type","superAgent")("sexyAttribute","Sexy")("ignore","ignoretest");
+	std::map<std::string,std::string> test2 = boost::assign::map_list_of("date","20140211T13141516")("agent-type","superAgent2")("newSexyAttribute","Sexy")("ignore","ignore");
+
+	LibWsDiff::MapCompare a;
+
+	boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter("myMultilineTest","multiline"));
+
+	a.addIgnoreRegex("ignore","test");
+	a.addIgnoreRegex("date",".*");
+	CPPUNIT_ASSERT(a.retrieveDiff(test,test2,*printer));
+
+	std::string json;
+	printer->retrieveDiff(json);
+	std::string expected="BEGIN NEW REQUEST DIFFERENCE n: myMultilineTest\n"
+			"-------------------\nsexyAttribute ==> Sexy/\n"
+			"newSexyAttribute ==> /Sexy\nagent-type ==> superAgent/superAgent2\n"
+			"-------------------\n"
+			"END DIFFERENCE : myMultilineTest\n";
 	CPPUNIT_ASSERT_EQUAL(expected,json);
 }

@@ -117,7 +117,7 @@ bool MapCompare::retrieveDiff(const mapStrings& src,const mapStrings& dst,LibWsD
 		for(std::map<std::string,std::string>::iterator it=diffSrc.begin();it!=diffSrc.end();++it){
 			std::map<std::string,std::string>::iterator itDst=diffDst.find(it->first);
 			if (itDst==  diffDst.end()){
-				printer.addHeaderDiff(std::string(it->first),std::string(it->second),NULL);
+				printer.addHeaderDiff(std::string(it->first),std::string(it->second),boost::none);
 			}else{
 				valueDiff.insert(std::pair<std::string,std::pair<std::string,std::string> >(it->first,std::pair<std::string,std::string>(it->second,itDst->second)));
 				diffDst.erase(itDst);
@@ -126,7 +126,7 @@ bool MapCompare::retrieveDiff(const mapStrings& src,const mapStrings& dst,LibWsD
 	}
 	if (diffDst.size()>0){
 		for(std::map<std::string,std::string>::iterator it=diffDst.begin();it!=diffDst.end();++it){
-			printer.addHeaderDiff(std::string(it->first),NULL,std::string(it->second));
+			printer.addHeaderDiff(std::string(it->first),boost::none,std::string(it->second));
 		}
 	}
 	if (valueDiff.size()>0){

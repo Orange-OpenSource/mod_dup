@@ -83,10 +83,10 @@ void jsonDiffPrinter::addHeaderDiff(const std::string& key,
 		const boost::optional<std::string> srcValue,
 		const boost::optional<std::string> dstValue){
 	this->isADiff=true;
-	if(srcValue.is_initialized()){
+	if(srcValue){
 		this->jsonRes["diff"]["header"][key]["src"]=srcValue.get();
 	}
-	if(dstValue.is_initialized()){
+	if(dstValue){
 		this->jsonRes["diff"]["header"][key]["dst"]=dstValue.get();
 	}
 }

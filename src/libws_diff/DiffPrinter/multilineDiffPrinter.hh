@@ -40,12 +40,23 @@ END DIFFERENCE n°:123
  */
 class multilineDiffPrinter: public LibWsDiff::diffPrinter {
 
-	typedef std::map<std::string,std::string*> stringmap;
-
 private:
+	enum diffPartitionning{
+			BEGIN,
+			RUNTIME,
+			STATUS,
+			URI,
+			HEADER,
+			CASSDIFF,
+			HEADERDIFF,
+			BODYDIFF
+		};
+
+	typedef std::map<diffPartitionning,std::string*> stringmap;
+
 	stringmap streams;
 
-	std::string getStream(const std::string& part);
+	std::string* getStream(const diffPartitionning part);
 
 public:
 	multilineDiffPrinter(std::string id);

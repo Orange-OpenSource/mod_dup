@@ -13,7 +13,7 @@ namespace LibWsDiff {
 
 diffPrinter* diffPrinter::createDiffPrinter(const std::string& id,
 		const std::string& type){
-	if(std::strcmp("json",type.c_str())){
+	if(std::string("json")==type){
 		return new jsonDiffPrinter(id);
 	}else{
 		return new multilineDiffPrinter(id);
