@@ -6,6 +6,8 @@
  */
 
 #include "jsonDiffPrinter.hh"
+#include<string>
+#include<regex>
 
 namespace LibWsDiff {
 
@@ -94,16 +96,37 @@ void jsonDiffPrinter::addHeaderDiff(const std::string& key,
 void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,
 		const int truncSize,
 		const std::string& type){
-	this->isADiff=true;
+
 	//TODO identify following ids
-	this->jsonRes["diff"]["body"]["posDiff"]=0;
-	this->jsonRes["diff"]["body"]["negDiff"]=0;
-	this->jsonRes["diff"]["body"]["posList"]=0;
-	this->jsonRes["diff"]["body"]["negList"]=0;
+	if(type=="XML"){
+
+	}
+	int posDiff=0,negDiff=0;
+	std::set<std::string> negList,posList;
 
 	std::string fullDiff= boost::algorithm::join(diffLines,"\n");
 
+	//Analyze and retrieve counter and list of diff
+	std::regex xmlFirstTag("(<.*?>.*)");
+	std::smatch base_match;
+	for(std::vector<std::string>::iterator it=diffLines.begin();it!=diffLines.end();++it){
+		if(std::regex_match(*it,base_match,xmlFirstTag)){
+			if(it->find('+') < it->find('<')){
+				posDiff+=1;
+				if(base_match.size()>=1){
+					posList.insert(base_match[0].str());
+				}
+			}else if(it->find('-') < it->find('<')){
+				negDiff+=1;
+				if(base_match.size()>=1){
+					negList.insert(base_match[0].str());
+				}
+			}
+		}
+	}
+
 	if(fullDiff.length()>=JSONMAXSIZE){
+		this->isADiff=true;
 		std::string truncatedDiff;
 		//Let's retrieve only the first 100 char of each line
 		for(std::vector<std::string>::iterator it=diffLines.begin();it!=diffLines.end();++it){
@@ -115,7 +138,10 @@ void jsonDiffPrinter::addFullDiff(std::vector<std::string> diffLines,
 			this->jsonRes["diff"]["body"]["full"]=truncatedDiff;
 		}
 	}else{
-		this->jsonRes["diff"]["body"]["full"]=fullDiff;
+		if(!fullDiff.empty()){
+			this->isADiff=true;
+			this->jsonRes["diff"]["body"]["full"]=fullDiff;
+		}
 	}
 }
 
