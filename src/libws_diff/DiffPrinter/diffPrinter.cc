@@ -12,11 +12,15 @@
 namespace LibWsDiff {
 
 diffPrinter* diffPrinter::createDiffPrinter(const std::string& id,
-		const std::string& type){
-	if(std::string("json")==type){
-		return new jsonDiffPrinter(id);
-	}else{
-		return new multilineDiffPrinter(id);
+		const diffTypeAvailable type){
+	switch (type) {
+		case diffTypeAvailable::MULTILINE:
+			return new multilineDiffPrinter(id);
+			break;
+		default:
+			//Default Case is the json case
+			return new jsonDiffPrinter(id);
+			break;
 	}
 }
 

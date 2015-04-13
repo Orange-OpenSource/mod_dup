@@ -117,7 +117,7 @@ void TestWsMapDiff::testMapDiffPrinterMultiline(){
 
 	LibWsDiff::MapCompare a;
 
-	boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter("myMultilineTest","multiline"));
+	boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter("myMultilineTest",LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE));
 
 	a.addIgnoreRegex("ignore","test");
 	a.addIgnoreRegex("date",".*");

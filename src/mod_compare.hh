@@ -71,6 +71,7 @@ public:
 
     LibWsDiff::StringCompareBody mCompBody;
     LibWsDiff::MapCompare mCompHeader;
+    LibWsDiff::diffPrinter::diffTypeAvailable mLogType;
     bool mCompareDisabled;
     bool mIsActive;
 
@@ -142,6 +143,8 @@ const char* setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType,
  * @return NULL if parameters are valid, otherwise a string describing the error
  */
 const char* setBodyList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
+
+const char* setDiffLogType(cmd_parms* pParams, void* pCfg, const char* pValue);
 
 void
 printRequest(request_rec *pRequest, std::string pBody);

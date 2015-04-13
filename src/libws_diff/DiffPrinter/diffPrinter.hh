@@ -28,6 +28,11 @@ protected:
 	std::string id; //Request id
 public:
 
+	enum diffTypeAvailable {
+		JSON,
+		MULTILINE
+	};
+
 	diffPrinter(std::string id):isADiff(false),id(id){}
 	virtual ~diffPrinter(){}
 
@@ -36,7 +41,8 @@ public:
 	/**
 	 * Basic factory-like constructor method
 	 */
-	static diffPrinter* createDiffPrinter(const std::string& id,const std::string& type="json");
+	static diffPrinter* createDiffPrinter(const std::string& id,
+			const diffTypeAvailable type=diffTypeAvailable::JSON);
 
 	/***
 	 * Add simple key value information

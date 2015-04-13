@@ -366,7 +366,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     std::string diffBody,diffHeader;
 
 	//Check if output is json or not
-    boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(req->mId));
+    boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(req->mId,tConf->mLogType));
 
     if (tConf->mCompareDisabled) {
         writeSerializedRequest(*req);
