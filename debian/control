@@ -14,6 +14,7 @@ Build-Depends: cmake, debhelper (>= 5.0.0),
                 python-pycurl,
                 gcc (>= 4.4.3),
                 libcppunit-dev,
+				libpns-jsoncpp-dev (>=1.1.0),
                 lcov
 Maintainer: Clarens Caraccio <ccaraccio.ext@orange.com>
 Standards-Version: 3.7.2
