@@ -149,8 +149,6 @@ const char* setDiffLogType(cmd_parms* pParams, void* pCfg, const char* pValue);
 void
 printRequest(request_rec *pRequest, std::string pBody);
 
-void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr);
-
 void writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& printer);
 
 void writeSerializedRequest(const DupModule::RequestInfo& req);
@@ -158,8 +156,6 @@ void writeSerializedRequest(const DupModule::RequestInfo& req);
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 
 void writeInFacility(std::string pDiffLog);
-
-void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& myDiffHeader , const std::string& myDiffBody, boost::posix_time::time_duration time);
 
 void writeDifferences(const DupModule::RequestInfo &pReqInfo,
 		LibWsDiff::diffPrinter& printer,

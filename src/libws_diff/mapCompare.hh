@@ -22,6 +22,7 @@ namespace LibWsDiff {
  * Interface providing tools for maps comparaison and handling ignore/stop key cases
  */
 class MapCompare {
+private:
 
 	typedef std::map<std::string,std::string> mapStrings;
 	typedef std::map<std::string,boost::regex> mapKeyRegex;

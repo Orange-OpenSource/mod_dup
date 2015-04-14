@@ -25,12 +25,14 @@
 #include <boost/assign.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/thread/locks.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <fstream>
 #include <iterator>
 #include <iostream>
 
 #include <libws_diff/stringCompare.hh>
 #include <libws_diff/mapCompare.hh>
+#include <libws_diff/DiffPrinter/diffPrinter.hh>
 
 #include <apr_pools.h>
 #include <apr_hooks.h>
@@ -166,22 +168,24 @@ void TestModCompare::testWriteCassandraDiff()
 
     CassandraDiff::Differences & lDiff = boost::detail::thread::singleton<CassandraDiff::Differences>::instance();
     std::string lID("IDtoto"),DiffCase("noDiffID");
-    std::stringstream lSS;
-    CompareModule::writeCassandraDiff(lID, lSS);
+    boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(lID,LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE));
+    CompareModule::writeCassandraDiff(lID, *printer);
 
     CassandraDiff::FieldInfo lFieldInfo1("myName", "myMultiValueKey", "myDbValue", "myReqValue");
     CassandraDiff::FieldInfo lFieldInfo2("myOtherData", "myOtherMultiValueKey", "myOtherDbValue", "myOtherReqValue");
     lDiff.insert(std::pair<std::string, CassandraDiff::FieldInfo>(DiffCase,lFieldInfo1));
     lDiff.insert(std::pair<std::string, CassandraDiff::FieldInfo>(DiffCase,lFieldInfo2));
-    CompareModule::writeCassandraDiff(DiffCase, lSS);
+    CompareModule::writeCassandraDiff(DiffCase, *printer);
 
     CassandraDiff::FieldInfo lFieldInfo("toto", "pippo", "pepita", "maradona");
     lDiff.insert( std::pair<std::string, CassandraDiff::FieldInfo>(lID, lFieldInfo) );
 
-    CompareModule::writeCassandraDiff(lID, lSS);
+    CompareModule::writeCassandraDiff(lID, *printer);
     if (gFile.is_open()){
         boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
-        gFile << lSS.str();
+        std::string result;
+        CPPUNIT_ASSERT(printer->retrieveDiff(result));
+        gFile << result;
         gFile.flush();
     }
 
@@ -278,7 +282,10 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mReqHttpStatus = -1;
     lReqInfo.mDupResponseHttpStatus = -1;
 
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(lReqInfo.mId,LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE));
+
+
+    writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
     {
@@ -306,7 +313,7 @@ void TestModCompare::testWriteDifferences()
     gWriteInFile = false;
     //open the file and truncate it
     gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
 
     //check that the file content is empty
     gFile.close();
@@ -336,8 +343,8 @@ void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
     lReqInfo.mId=std::string("123");
     lReqInfo.mReqHttpStatus = -1; // default value for non existant X_DUP_HTTP_STATUS header
     lReqInfo.mDupResponseHttpStatus = -1;
-    
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(lReqInfo.mId,LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE));
+    writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
     {
@@ -366,7 +373,7 @@ void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
     gWriteInFile = false;
     //open the file and truncate it
     gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
 
     //check that the file content is empty
     gFile.close();
@@ -397,7 +404,9 @@ void TestModCompare::testWriteDifferencesWithStatusDiff()
     lReqInfo.mReqHttpStatus = 456;
     lReqInfo.mDupResponseHttpStatus = 654;
 
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(lReqInfo.mId,LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE));
+
+    writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
 
     {
@@ -428,7 +437,7 @@ void TestModCompare::testWriteDifferencesWithStatusDiff()
     gWriteInFile = false;
     //open the file and truncate it
     gFile.open(lPath.c_str(), std::ofstream::out | std::ofstream::trunc );
-    writeDifferences(lReqInfo,"myHeaderDiff","myBodyDiff",boost::posix_time::time_duration(0,0,0,1000));
+    writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
 
     //check that the file content is empty
     gFile.close();

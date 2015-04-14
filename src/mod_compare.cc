@@ -266,13 +266,10 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 const char* setDiffLogType(cmd_parms* pParams,
 		void* pCfg,
 		const char* pValue) {
-
 	Log::init();
 	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 
-	std::string lower(pValue);
-	std::transform(lower.begin(),lower.end(),lower.begin(),tolower);
-	if(strcmp(lower.c_str(), "multiline")==0){
+	if(strcasecmp(pValue,"multiline")==0){
     	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE;
     }else{
     	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::JSON;
