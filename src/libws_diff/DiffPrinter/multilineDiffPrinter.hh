@@ -41,8 +41,12 @@ END DIFFERENCE n°:123
 class multilineDiffPrinter: public LibWsDiff::diffPrinter {
 
 private:
+
+	static const std::string SEPARATOR;
+	bool hadPreviousCassDiff; //Allow us to not print a separator on the first cass diff
 	enum diffPartitionning{
 			BEGIN,
+			INFO,
 			RUNTIME,
 			STATUS,
 			URI,
@@ -51,6 +55,9 @@ private:
 			HEADERDIFF,
 			BODYDIFF
 		};
+
+	static const std::map<diffPartitionning,std::string> prettyfyStartLine;
+	static const std::map<diffPartitionning,std::string> prettyfyEndLine;
 
 	typedef std::map<diffPartitionning,std::string*> stringmap;
 
@@ -79,12 +86,12 @@ public:
 					const std::string& reqValue);
 
 	virtual void addFullDiff(std::vector<std::string> diffLines,
-							const int truncSize,
-							const std::string& type);
+							const int truncSize=100,
+							const std::string& type="XML");
 
 	virtual void addFullDiff(std::string& diffLines,
-							const int truncSize,
-							const std::string& type);
+							const int truncSize=100,
+							const std::string& type="XML");
 
 	virtual bool retrieveDiff(std::string& res);
 

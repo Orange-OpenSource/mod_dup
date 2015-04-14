@@ -57,7 +57,7 @@ public:
 	/***
 	 * Add the URI information
 	 */
-	virtual void addRequestUri(const std::string& uri,const std::string& paramsBody)=0;
+	virtual void addRequestUri(const std::string& uri,const std::string& paramsBody="")=0;
 
 	/***
 	 * Add the Header of the request information
@@ -95,8 +95,8 @@ public:
 	 * \param[in] vector of string, 1 line per line of body
 	 */
 	virtual void addFullDiff(std::vector<std::string> diffLines,
-			const int truncSize,
-			const std::string& type)=0;
+			const int truncSize=100,
+			const std::string& type="XML")=0;
 
 	virtual void addFullDiff(std::string& diffLines,
 			const int truncSize=100,

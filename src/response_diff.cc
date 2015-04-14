@@ -65,20 +65,26 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     } catch ( boost::bad_lexical_cast &e ) {
         Log::error(12, "Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
     }
+
+#ifdef UNIT_TESTING
+    printer.addInfo("Date","UNITTEST_TODAY_VALUE");
+#else
     std::stringstream today;
-    today<<boost::posix_time::microsec_clock::local_time();
-    printer.addInfo("Date",today.str());
+	today<<boost::posix_time::microsec_clock::local_time();
+	printer.addInfo("Date",today.str());
+#endif
 
     if(it!=pReqInfo.mReqHeader.end()){
     	printer.addRuntime("DUP",boost::lexical_cast<int>(it->second));
-    	printer.addRuntime("COMP",pReqInfo.getElapsedTimeMS());
     }
+  	printer.addRuntime("COMP",pReqInfo.getElapsedTimeMS());
 
-    if(pReqInfo.mRequest.find('?')==pReqInfo.mRequest.length()){
+    if(pReqInfo.mRequest.back()=='?'){
     	printer.addRequestUri(pReqInfo.mRequest,pReqInfo.mReqBody);
     }else{
+    	printer.addRequestUri(pReqInfo.mRequest);
     	if(!pReqInfo.mReqBody.empty()){
-    		printer.addInfo("ReqBody",pReqInfo.mReqBody.length());
+    		printer.addInfo("ReqBody",pReqInfo.mReqBody);
     	}
 	}
 

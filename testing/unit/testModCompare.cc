@@ -197,23 +197,25 @@ void TestModCompare::testWriteCassandraDiff()
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
 
-		std::string assertRes("\nFieldInfo from Cassandra Driver :\n"
+		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: IDtoto\n"
+"-------------------\n"
 "Field name in the db : 'myName'\n"
 "Multivalue/Collection index/key : 'myMultiValueKey'\n"
 "Value retrieved in Database : 'myDbValue'\n"
 "Value about to be set from Request : 'myReqValue'\n"
+"-------------------\n"
 "Field name in the db : 'myOtherData'\n"
 "Multivalue/Collection index/key : 'myOtherMultiValueKey'\n"
 "Value retrieved in Database : 'myOtherDbValue'\n"
 "Value about to be set from Request : 'myOtherReqValue'\n"
 "-------------------\n"
-"\nFieldInfo from Cassandra Driver :\n"
 "Field name in the db : 'toto'\n"
 "Multivalue/Collection index/key : 'pippo'\n"
 "Value retrieved in Database : 'pepita'\n"
 "Value about to be set from Request : 'maradona'\n"
-"-------------------\n");
-		CPPUNIT_ASSERT_EQUAL(buffer.str(), assertRes);
+"-------------------\n"
+"END DIFFERENCE : IDtoto\n");
+		CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
     }
 }
 
@@ -283,7 +285,10 @@ void TestModCompare::testWriteDifferences()
     lReqInfo.mDupResponseHttpStatus = -1;
 
     boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(lReqInfo.mId,LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE));
-
+    std::string bodyStr("myBodyDiff");
+	std::string headerStr("ImpossibruDiff");
+	printer->addFullDiff(bodyStr);
+	printer->addHeaderDiff("myHeaderDiff",boost::none,headerStr);
 
     writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
@@ -293,18 +298,27 @@ void TestModCompare::testWriteDifferences()
 		readFile.open(lPath.c_str());
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
-		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time for diff computation : 1ms\n"
-		        "Elapsed time for requests (ms): DUP N/A COMP 0 DIFF N/A\n\n\n\n"
-				"agent-type: myAgent\n"
-				"content-type: plain/text\n"
-				"date: TODAY\n"
-				"\n"
-				"MyClientRequest\n"
-				"-------------------\n"
-				"myHeaderDiff\n"
-				"-------------------\n"
-				"myBodyDiff\n"
-				"END DIFFERENCE n°:123\n");
+		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: 123\n"
+"-------------------\n"
+"ElapsedTime : 1\n"
+"Date : UNITTEST_TODAY_VALUE\n"
+"ReqBody : MyClientRequest\n"
+"-------------------\n"
+"Elapsed time for requests (ms): COMP 0\n"
+"-------------------\n"
+"Http Status Codes: DUP -1 COMP -1\n"
+"-------------------\n"
+"URI : \n"
+"-------------------\n"
+"agent-type : myAgent\n"
+"content-type : plain/text\n"
+"date : TODAY\n"
+"-------------------\n"
+"myHeaderDiff ==> /ImpossibruDiff\n"
+"-------------------\n"
+"myBodyDiff\n"
+"-------------------\n"
+"END DIFFERENCE : 123\n");
 		std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
 		CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
     }
@@ -352,19 +366,24 @@ void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
         readFile.open(lPath.c_str());
         std::stringstream buffer;
         buffer << readFile.rdbuf();
-        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time for diff computation : 1ms\n"
-                "Elapsed time for requests (ms): DUP 432 COMP 0 DIFF 432\n\n\n\n"
-                "ELAPSED_TIME_BY_DUP: 432\n"
-                "agent-type: myAgent\n"
-                "content-type: plain/text\n"
-                "date: TODAY\n"
-                "\n"
-                "MyClientRequest\n"
-                "-------------------\n"
-                "myHeaderDiff\n"
-                "-------------------\n"
-                "myBodyDiff\n"
-                "END DIFFERENCE n°:123\n");
+        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: 123\n"
+"-------------------\n"
+"ElapsedTime : 1\n"
+"Date : UNITTEST_TODAY_VALUE\n"
+"ReqBody : MyClientRequest\n"
+"-------------------\n"
+"Elapsed time for requests (ms): DIFF 432 DUP 432 COMP 0\n"
+"-------------------\n"
+"Http Status Codes: DUP -1 COMP -1\n"
+"-------------------\n"
+"URI : \n"
+"-------------------\n"
+"ELAPSED_TIME_BY_DUP : 432\n"
+"agent-type : myAgent\n"
+"content-type : plain/text\n"
+"date : TODAY\n"
+"-------------------\n"
+"END DIFFERENCE : 123\n");
         std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
         CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
     }
@@ -403,8 +422,13 @@ void TestModCompare::testWriteDifferencesWithStatusDiff()
     lReqInfo.mId=std::string("123");
     lReqInfo.mReqHttpStatus = 456;
     lReqInfo.mDupResponseHttpStatus = 654;
+    lReqInfo.mRequest="/spp/main.php?";
 
     boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(lReqInfo.mId,LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE));
+    std::string bodyStr("myBodyDiff");
+    std::string headerStr("ImpossibruDiff");
+    printer->addFullDiff(bodyStr);
+    printer->addHeaderDiff("myHeaderDiff",headerStr,boost::none);
 
     writeDifferences(lReqInfo,*printer,boost::posix_time::time_duration(0,0,0,1000));
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);
@@ -414,21 +438,27 @@ void TestModCompare::testWriteDifferencesWithStatusDiff()
         readFile.open(lPath.c_str());
         std::stringstream buffer;
         buffer << readFile.rdbuf();
-        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n°: 123 / Elapsed time for diff computation : 1ms\n"
-                "Elapsed time for requests (ms): DUP 432 COMP 0 DIFF 432\n\n\n\n"
-                "ELAPSED_TIME_BY_DUP: 432\n"
-                "agent-type: myAgent\n"
-                "content-type: plain/text\n"
-                "date: TODAY\n"
-                "\n"
-                "MyClientRequest\n"
-                "-------------------\n"
-                "Http Status Codes: DUP 456 COMP 654\n"
-                "-------------------\n"
-                "myHeaderDiff\n"
-                "-------------------\n"
-                "myBodyDiff\n"
-                "END DIFFERENCE n°:123\n");
+        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: 123\n"
+"-------------------\n"
+"ElapsedTime : 1\n"
+"Date : UNITTEST_TODAY_VALUE\n"
+"-------------------\n"
+"Elapsed time for requests (ms): DIFF 432 DUP 432 COMP 0\n"
+"-------------------\n"
+"Http Status Codes: DUP 456 COMP 654\n"
+"-------------------\n"
+"URI : /spp/main.php?MyClientRequest\n"
+"-------------------\n"
+"ELAPSED_TIME_BY_DUP : 432\n"
+"agent-type : myAgent\n"
+"content-type : plain/text\n"
+"date : TODAY\n"
+"-------------------\n"
+"myHeaderDiff ==> ImpossibruDiff/\n"
+"-------------------\n"
+"myBodyDiff\n"
+"-------------------\n"
+"END DIFFERENCE : 123\n");
         std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
         CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
     }
