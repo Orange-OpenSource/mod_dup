@@ -37,7 +37,7 @@ Depends: ${misc:Depends}, ${shlibs:Depends},
          libaprutil1,
          apache2,
          apache2.2-bin,
-         libws-diff
+         libws-diff (>= ${binary:Version})
 Description: Apache module which compares responses of the duplicated requests
 Homepage: http://sourceforge.x-echo.com/projects/pns/
 
