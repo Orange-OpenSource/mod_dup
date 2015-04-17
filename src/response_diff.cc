@@ -116,6 +116,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
         }
     }
     else {
+		Log::error(12, res);    
         if (gFile.is_open()){
             boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
             gFile << res;
@@ -132,7 +133,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
  * @brief split the input string every 1024 characters and writes it in the syslog
  * @param pDiffLog string to split and to write in syslog
  */
-void writeInFacility(std::string pDiffLog){
+void writeInFacility(const std::string& pDiffLog){
     int lSplitSize = LOGMAXSIZE;
     int stringLength = pDiffLog.size();
     for (int i = 0; i < stringLength ; i += lSplitSize)

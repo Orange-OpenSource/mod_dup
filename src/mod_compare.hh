@@ -155,7 +155,7 @@ void writeSerializedRequest(const DupModule::RequestInfo& req);
 
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 
-void writeInFacility(std::string pDiffLog);
+void writeInFacility(const std::string& pDiffLog);
 
 void writeDifferences(const DupModule::RequestInfo &pReqInfo,
 		LibWsDiff::diffPrinter& printer,
