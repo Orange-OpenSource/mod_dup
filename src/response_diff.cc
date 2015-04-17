@@ -116,7 +116,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
         }
     }
     else {
-		Log::error(12, res.c_str());
+		Log::error(12, "GROS FUCK %s" , res.c_str());
         if (gFile.is_open()){
             boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
             gFile << res;
@@ -141,6 +141,7 @@ void writeInFacility(const std::string& pDiffLog){
         if (i + lSplitSize > stringLength){
             lSplitSize = stringLength  - i;
         }
+        Log::error(12, "writeInFacility %s" , res.c_str());
         Log::error(12, "%s", pDiffLog.substr(i, lSplitSize).c_str());
     }
 }
