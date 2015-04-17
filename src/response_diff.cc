@@ -119,7 +119,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
 		Log::error(12, "GROS FUCK %s" , res.c_str());
         if (gFile.is_open()){
             boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
-            gFile << res;
+            gFile << "SMALL FUCK " << res;
             gFile.flush();
         }
         else
