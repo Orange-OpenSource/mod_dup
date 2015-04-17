@@ -69,9 +69,8 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
 #ifdef UNIT_TESTING
     printer.addInfo("Date","UNITTEST_TODAY_VALUE");
 #else
-    std::stringstream today;
-	today<<boost::posix_time::microsec_clock::local_time();
-	printer.addInfo("Date",today.str());
+    boost::posix_time::ptime today=boost::posix_time::microsec_clock::universal_time();
+	printer.addInfo("Date",boost::posix_time::to_iso_extended_string(today));
 #endif
 
     if(it!=pReqInfo.mReqHeader.end()){
