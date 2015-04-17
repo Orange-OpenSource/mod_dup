@@ -139,17 +139,18 @@ const char * Log::stringLevel(int pLevel) {
     }
 }
 
+#define LOG_LENGTH 16384
 
 #define VLOG(level, code, msg) va_list l_ap;\
-        char longmsg[1024];\
-        snprintf(longmsg, 1024,"code:%d - %s", code, msg); \
+        char longmsg[LOG_LENGTH];\
+        snprintf(longmsg, LOG_LENGTH,"code:%d - %s", code, msg); \
         va_start(l_ap, msg); \
         va_list l_ap2;\
         va_copy(l_ap2, l_ap);\
         vsyslog(level, msg, l_ap); \
-        char longmsg2[1024];\
+        char longmsg2[LOG_LENGTH];\
         if ( level <= gLogLevel ) { \
-        snprintf(longmsg2, 1024,"[%s] code:%d - %s\n", Log::stringLevel(level), code, msg); \
+        snprintf(longmsg2, LOG_LENGTH,"[%s] code:%d - %s\n", Log::stringLevel(level), code, msg); \
         vprintf(longmsg2, l_ap2); }\
         va_end(l_ap2);\
         va_end(l_ap);\
