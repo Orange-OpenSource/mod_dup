@@ -116,7 +116,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
         }
     }
     else {
-		Log::error(12, res);    
+		Log::error(12, res.c_str());
         if (gFile.is_open()){
             boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
             gFile << res;
