@@ -66,6 +66,9 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
         Log::error(12, "Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
     }
 
+    std::cout << "DIFF " << pReqInfo.mId << " " << boost::posix_time::microsec_clock::local_time() << " " << pReqInfo.mRequest << std::endl;
+
+
 #ifdef UNIT_TESTING
     printer.addInfo("Date","UNITTEST_TODAY_VALUE");
 #else
