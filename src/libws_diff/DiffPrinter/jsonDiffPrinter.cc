@@ -41,7 +41,7 @@ void jsonDiffPrinter::addRequestUri(const std::string& uri,
 		for(std::vector<std::string>::iterator it=vectParams.begin();
 				it!=vectParams.end();++it){
 			int pos=it->find('=');
-			this->jsonRes["request"]["args"][it->substr(0,pos)]=it->substr(pos+1,it->length());
+			this->jsonRes["request"]["args"][boost::to_upper_copy(it->substr(0,pos))]=it->substr(pos+1,it->length());
 		}
 	}
 	vectParams.clear();
@@ -50,13 +50,13 @@ void jsonDiffPrinter::addRequestUri(const std::string& uri,
 		for(std::vector<std::string>::iterator it=vectParams.begin();
 				it!=vectParams.end();++it){
 			int pos=it->find('=');
-			this->jsonRes["request"]["args"][it->substr(0,pos)]=it->substr(pos+1,it->length());
+			this->jsonRes["request"]["args"][boost::to_upper_copy(it->substr(0,pos))]=it->substr(pos+1,it->length());
 		}
 	}
 }
 
 void jsonDiffPrinter::addRequestHeader(const std::string& key,const std::string& value){
-	this->jsonRes["request"]["header"][key]=value;
+	this->jsonRes["request"]["header"][boost::to_upper_copy(key)]=value;
 }
 
 void jsonDiffPrinter::addStatus(const std::string& service,const int statusCode){

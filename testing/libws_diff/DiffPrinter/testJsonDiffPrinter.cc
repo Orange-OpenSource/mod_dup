@@ -21,8 +21,9 @@ void TestJsonDiffPrinter::testBasicPrint(){
 void TestJsonDiffPrinter::testNormalJsonPrint(){
 	LibWsDiff::jsonDiffPrinter test("2");
 	test.addHeaderDiff("myHeaderKey",std::string("srcValue"),std::string("dstValue"));
-	test.addRequestUri("/spp/main?version=1.0.0&country=FR&sid=ADVNEC&request=getPNS&infos=AdviseCapping");
+	test.addRequestUri("/spp/main?version=1.0.0&country=FR&sid=ADVNEC&request=getPNS&infoS=AdviseCapping");
 	test.addRequestHeader("X-ACCEPTED","Hello");
+	test.addRequestHeader("X-Nawak","Bouh");
 	test.addStatus("DUP",400);
 	test.addStatus("COMP",200);
 
@@ -30,11 +31,12 @@ void TestJsonDiffPrinter::testNormalJsonPrint(){
 	CPPUNIT_ASSERT(test.retrieveDiff(json));
 	std::string expected="{\"id\":\"2\",\"diff\":{\"header\":{\"myHeaderKey\":"
 			"{\"src\":\"srcValue\",\"dst\":\"dstValue\"}}},\"request\":"
-			"{\"uri\":\"/spp/main?version=1.0.0&country=FR&sid=ADVNEC&request="
-			"getPNS&infos=AdviseCapping\",\"url\":\"/spp/main\",\"args\":"
-			"{\"version\":\"1.0.0\",\"country\":\"FR\",\"sid\":\"ADVNEC\","
-			"\"request\":\"getPNS\",\"infos\":\"AdviseCapping\"},\"header\":"
-			"{\"X-ACCEPTED\":\"Hello\"}},\"status\":{\"DUP\":400,\"COMP\":200}}\n";
+			"{\"uri\":\"/spp/main?version=1.0.0&country=FR&sid=ADVNEC&"
+			"request=getPNS&infoS=AdviseCapping\",\"url\":\"/spp/main\","
+			"\"args\":{\"VERSION\":\"1.0.0\",\"COUNTRY\":\"FR\",\"SID\":"
+			"\"ADVNEC\",\"REQUEST\":\"getPNS\",\"INFOS\":\"AdviseCapping\"},"
+			"\"header\":{\"X-ACCEPTED\":\"Hello\",\"X-NAWAK\":\"Bouh\"}},"
+			"\"status\":{\"DUP\":400,\"COMP\":200}}\n";
 	CPPUNIT_ASSERT_EQUAL(expected,json);
 }
 
