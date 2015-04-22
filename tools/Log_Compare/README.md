@@ -18,7 +18,6 @@ WARNING :
 Optionnal :
 - The geoip tool is optionnal and need the geoip file information. You can deactivate it if you can't deploy the file.
 
-
 ```wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz```
 
 # Kibana
