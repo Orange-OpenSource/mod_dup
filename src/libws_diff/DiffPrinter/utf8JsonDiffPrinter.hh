@@ -24,36 +24,9 @@ ED":"Hello"}},"status":{"DUP":400,"COMP":200}}'
  *
  */
 class utf8JsonDiffPrinter: public LibWsDiff::jsonDiffPrinter {
-private:
-	bool checkBeforeInsert(std::string& str);
 public:
 	utf8JsonDiffPrinter(std::string id);
 	virtual ~utf8JsonDiffPrinter();
-
-	virtual void addInfo(const std::string& key,const std::string& value);
-	virtual void addInfo(const std::string& key,const double value);
-	virtual void addRequestUri(const std::string& uri,
-			const std::string& paramsBody=std::string());
-	virtual void addRequestHeader(const std::string& key,const std::string& value);
-	virtual void addStatus(const std::string& service,const int statusCode);
-	virtual void addRuntime(const std::string& service,const int milli);
-
-	virtual void addCassandraDiff(const std::string& fieldName,
-				const std::string& multiValue,
-				const std::string& dbValue,
-				const std::string& reqValue);
-
-	virtual void addHeaderDiff(const std::string& key,
-			const boost::optional<std::string> srcValue,
-			const boost::optional<std::string> dstValue);
-
-	virtual void addFullDiff(std::vector<std::string> diffLines,
-							const int truncSize=100,
-							const std::string& type="XML");
-
-	virtual void addFullDiff(std::string& diffLines,
-				const int truncSize=100,
-				const std::string& type="XML");
 
 	virtual bool retrieveDiff(std::string& res);
 };

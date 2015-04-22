@@ -8,6 +8,7 @@
 #include "diffPrinter.hh"
 #include "jsonDiffPrinter.hh"
 #include "multilineDiffPrinter.hh"
+#include "utf8JsonDiffPrinter.hh"
 
 namespace LibWsDiff {
 
@@ -17,9 +18,12 @@ diffPrinter* diffPrinter::createDiffPrinter(const std::string& id,
 		case diffTypeAvailable::MULTILINE:
 			return new multilineDiffPrinter(id);
 			break;
+		case diffTypeAvailable::JSON:
+			return new jsonDiffPrinter(id);
+			break;
 		default:
 			//Default Case is the json case
-			return new jsonDiffPrinter(id);
+			return new utf8JsonDiffPrinter(id);
 			break;
 	}
 }
