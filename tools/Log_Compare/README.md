@@ -1,9 +1,10 @@
 Description
 ===========
 
-This repository contains configuration files for ELK usage.
+This repository contains configuration files for ELK usage :
 	*	cpp_json_log.conf : a logstash conf file
 	*	Log_Compare_kibana_dashboard.json : a predefined kibana3 dashboard
+	
 Those provide easy visualization of the Log_Compare json logs.
 
 LogStash
@@ -17,8 +18,9 @@ WARNING :
 	- In syslog usage, Worry about the MaxMessageLength parameter which might truncate json (a threshold of 16000 is set in the code)
 	
 Optionnal :
-	- The geoip tool is optionnal and need the geoip file information ( wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz).
-	You can deactivate it if you can't deploy the file.
+	- The geoip tool is optionnal and need the geoip file information. You can deactivate it if you can't deploy the file.
+	
+	wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
 
 Kibana
 ===========
