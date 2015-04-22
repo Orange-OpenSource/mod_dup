@@ -1,8 +1,8 @@
 # Description
 
 This repository contains configuration files for ELK usage :
-*	cpp_json_log.conf : a logstash conf file
-*	Log_Compare_kibana_dashboard.json : a predefined kibana3 dashboard
+*	*cpp_json_log.conf* : a logstash conf file
+*	*Log_Compare_kibana_dashboard.json* : a predefined kibana3 dashboard
 	
 Those provide easy visualization of the Log_Compare json logs.
 
@@ -17,13 +17,13 @@ WARNING :
 	
 Optionnal :
 - The geoip tool is optionnal and need the geoip file information. You can deactivate it if you can't deploy the file.
-	
-	wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
+
+
+```wget -N http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz```
 
 # Kibana
-
 
 This dashboard provide a quick view of the log_compare data and is dedicated to kibana neophytes.
 Push it into a new ElasticSearch cluster if needed.
 
-	curl -XPUT "http://${elasticSearchIP}:${port}/kibana-int/Log_Compare" -d Log_Compare_kibana_dashboard.json
+```curl -XPUT "http://${elasticSearchIP}:${port}/kibana-int/Log_Compare" -d Log_Compare_kibana_dashboard.json```
