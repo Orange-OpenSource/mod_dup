@@ -14,7 +14,7 @@ Build-Depends: cmake, debhelper (>= 5.0.0),
                 python-pycurl,
                 gcc (>= 4.4.3),
                 libcppunit-dev,
-				libpns-jsoncpp-dev (>=1.1.0),
+		libpns-jsoncpp-dev (>=1.1.0) | libjsoncpp-dev,
                 lcov
 Maintainer: Clarens Caraccio <ccaraccio.ext@orange.com>
 Standards-Version: 3.7.2
@@ -58,6 +58,6 @@ Description: Validation files necessary for non reg tests
 
 Package: libws-diff
 Architecture: any
-Depends: cmake, debhelper (>= 5.0.0), ${shlibs:Depends}, libpns-jsoncpp-dev
+Depends: cmake, debhelper (>= 5.0.0), ${shlibs:Depends}
 Description: C++ string diffing tool
  Homepage: https://github.com/Orange-OpenSource/mod_dup
