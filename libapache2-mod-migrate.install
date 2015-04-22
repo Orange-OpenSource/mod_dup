@@ -1,2 +1,0 @@
-debian/tmp/etc/apache2/mods-available/mod_migrate.* /etc/apache2/mods-available
-debian/tmp/usr/lib/apache2/modules/mod_migrate.so /usr/lib/apache2/modules
