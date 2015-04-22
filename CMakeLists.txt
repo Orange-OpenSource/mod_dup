@@ -159,13 +159,14 @@ add_subdirectory(testing/functionnal)
 add_subdirectory(docs)
 add_subdirectory(conf)
 
+
+#Adding logstash and kibana examples
+add_subdirectory(tools/Log_Compare)
+
 ##mod_dup tools building
 if(BUILD_TOOLS)
 	add_subdirectory(tools/libws_diff)
 endif()
-
-#Adding logstash and kibana examples
-add_subdirectory(tools/Log_Compare)
 
 file(GLOB mod_keyring_metrics src/*.cc src/*.hh)
 
