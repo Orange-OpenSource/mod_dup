@@ -1,3 +1,10 @@
+pns-mod-dup (2.1.0) precise; urgency=low
+
+  * New standard output for mod_compare : json format
+  * Adding example of logstash and kibana files
+
+ -- Cedric Vallee <cvallee.ext@orange.com>  Wed, 22 Apr 2015 16:03:50 +0200
+
 pns-mod-dup (2.0.0) precise; urgency=low
 
   * Achieved separation of the different modules
