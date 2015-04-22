@@ -19,21 +19,29 @@ cmake_minimum_required(VERSION 2.8)
 include(${PROJECT_SOURCE_DIR}/cmake/Include.cmake)
 
 file(GLOB libws_diff_SOURCE_FILES
-	stringCompare.cc
-	mapCompare.cc
+	${CMAKE_CURRENT_SOURCE_DIR}/stringCompare.cc
+	${CMAKE_CURRENT_SOURCE_DIR}/mapCompare.cc
   )
   
+file(GLOB libws_diff_HEADER_FILES
+	${CMAKE_CURRENT_SOURCE_DIR}/stringCompare.hh
+	${CMAKE_CURRENT_SOURCE_DIR}/mapCompare.hh
+  )  
+
+#Include file from Diff Printer and its dependancy on extern tool utf8
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/DiffPrinter)
+include_directories(${PROJECT_SOURCE_DIR}/extern/utf8/source)
+include_directories(${PROJECT_SOURCE_DIR}/extern/utf8/source/utf8)
+
+include_directories(${PROJECT_SOURCE_DIR}/testing/libws_diff/DiffPrinter)
 include_directories(${PROJECT_SOURCE_DIR}/extern/dtl-cpp/dtl)
+
+
 
 # Compile as library
 add_library(libws_diff SHARED ${libws_diff_SOURCE_FILES})
 set_target_properties(libws_diff PROPERTIES PREFIX "")
-target_link_libraries(libws_diff ${Boost_LIBRARIES})
-
-file(GLOB libws_diff_HEADER_FILES
-	stringCompare.hh
-	mapCompare.hh
-  )
+target_link_libraries(libws_diff pns_jsoncpp ${Boost_LIBRARIES})
 
 install(TARGETS libws_diff LIBRARY DESTINATION lib COMPONENT libws_diff)
 install(FILES ${libws_diff_HEADER_FILES} DESTINATION include/libws_diff COMPONENT libws_diff)

@@ -19,6 +19,10 @@
 #include "mod_compare.hh"
 #include "RequestInfo.hh"
 #include "Utils.hh"
+#include "libws_diff/DiffPrinter/diffPrinter.hh"
+#include "libws_diff/DiffPrinter/multilineDiffPrinter.hh"
+#include "libws_diff/DiffPrinter/jsonDiffPrinter.hh"
+
 
 #include <http_config.h>
 #include <assert.h>
@@ -26,8 +30,11 @@
 #include <boost/thread/detail/singleton.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/smart_ptr.hpp>
 #include <iomanip>
 #include <apache2/httpd.h>
+
+
 
 #define DEF_METHOD(name) static const char *g##name = #name;
 
@@ -357,15 +364,19 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     apr_table_do(&iterateOverHeadersCallBack, &(req->mDupResponseHeader), pRequest->headers_out, NULL);
 
     std::string diffBody,diffHeader;
+
+	//Check if output is json or not
+    boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(req->mId,tConf->mLogType));
+
     if (tConf->mCompareDisabled) {
         writeSerializedRequest(*req);
     } else {
         req->mDupResponseHttpStatus = pRequest->status;
         boost::posix_time::ptime start = boost::posix_time::microsec_clock::universal_time();
-        if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,diffHeader)){
-            if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,diffBody)){
-                if(diffHeader.length()!=0 || diffBody.length()!=0 || checkCassandraDiff(req->mId) || (req->mReqHttpStatus!=-1 && (req->mReqHttpStatus != req->mDupResponseHttpStatus)) ){
-                    writeDifferences(*req,diffHeader,diffBody,boost::posix_time::microsec_clock::universal_time()-start);
+        if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,*printer)){
+            if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,*printer)){
+                if(printer->isDiff() || checkCassandraDiff(req->mId) || (req->mReqHttpStatus!=-1 && (req->mReqHttpStatus != req->mDupResponseHttpStatus)) ){
+                    writeDifferences(*req,*printer,boost::posix_time::microsec_clock::universal_time()-start);
                 }
             }
         }

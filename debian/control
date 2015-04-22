@@ -15,6 +15,7 @@ Build-Depends: cmake, debhelper (>= 5.0.0),
                 python-pycurl,
                 gcc (>= 4.4.3),
                 libcppunit-dev,
+		libpns-jsoncpp-dev (>=1.1.0) | libjsoncpp-dev,
                 lcov
 Maintainer: Clarens Caraccio <ccaraccio.ext@orange.com>
 Standards-Version: 3.7.2
@@ -37,7 +38,7 @@ Depends: ${misc:Depends}, ${shlibs:Depends},
          libaprutil1,
          apache2,
          apache2.2-bin,
-         libws-diff
+         libws-diff (>= ${binary:Version})
 Description: Apache module which compares responses of the duplicated requests
 Homepage: http://sourceforge.x-echo.com/projects/pns/
 

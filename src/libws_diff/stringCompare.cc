@@ -110,6 +110,13 @@ bool StringCompareHeader::retrieveDiff(const std::string& src,const std::string&
 	return vectDiff(linesSrc,linesDst,output);
 }
 
+bool StringCompareHeader::retrieveDiff(const std::string& src,const std::string& dst,LibWsDiff::diffPrinter& printer) const{
+	std::string out;
+	bool res = this->retrieveDiff(src,dst,out);
+	printer.addFullDiff(out);
+	return res;
+}
+
 bool StringCompareBody::retrieveDiff(const std::string& src,const std::string& dst,std::string& output) const{
 	tStrings linesSrc,linesDst;
 	if (checkStopRegex(src) || checkStopRegex(dst)){
@@ -146,6 +153,24 @@ bool StringCompareBody::retrieveDiff(const tStrings& src,const tStrings& dst,std
 		}
 	}
 	return vectDiff(srcCopy,dstCopy,output);
+}
+
+bool StringCompareBody::retrieveDiff(const tStrings& src,
+		const tStrings& dst,
+		LibWsDiff::diffPrinter& printer) const{
+	std::string out;
+	bool res = this->retrieveDiff(src,dst,out);
+	printer.addFullDiff(out);
+	return res;
+}
+
+bool StringCompareBody::retrieveDiff(const std::string& src,
+		const std::string& dst,
+		LibWsDiff::diffPrinter& printer) const{
+	std::string out;
+	bool res = this->retrieveDiff(src,dst,out);
+	printer.addFullDiff(out);
+	return res;
 }
 
 } /* namespace LibWsDiff */

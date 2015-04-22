@@ -263,6 +263,20 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
     return NULL;
 }
 
+const char* setDiffLogType(cmd_parms* pParams,
+		void* pCfg,
+		const char* pValue) {
+	Log::init();
+	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
+
+	if(strcasecmp(pValue,"multiline")==0){
+    	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE;
+    }else{
+    	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::JSON;
+    }
+    return NULL;
+}
+
 const char*
 setCompareLog(cmd_parms* pParams, void* pCfg, const char* pType, const char* pValue) {
 
@@ -339,6 +353,11 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
                       0,
                       OR_ALL,
                       "Log to a facility instead of a file."),
+		AP_INIT_TAKE1("DiffLogType",
+					reinterpret_cast<const char *(*)()>(&setDiffLogType),
+					0,
+					OR_ALL,
+					"Specify the output log type for differences (<json>,multiline)"),
         AP_INIT_TAKE1("DisableLibwsdiff",
                       reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
                       0,

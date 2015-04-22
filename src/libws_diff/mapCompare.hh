@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <boost/regex.hpp>
+#include "DiffPrinter/diffPrinter.hh"
 
 
 typedef std::vector<boost::regex> tRegexes;
@@ -21,6 +22,7 @@ namespace LibWsDiff {
  * Interface providing tools for maps comparaison and handling ignore/stop key cases
  */
 class MapCompare {
+private:
 
 	typedef std::map<std::string,std::string> mapStrings;
 	typedef std::map<std::string,boost::regex> mapKeyRegex;
@@ -68,7 +70,20 @@ public:
 	 * @param output : the resulting diff in string format
 	  * @return : false if any stop flag has been matched, else true
 	 */
-	bool retrieveDiff(const mapStrings& mapOrig,const mapStrings& mapRes,std::string& output) const;
+	bool retrieveDiff(const mapStrings& mapOrig,
+			const mapStrings& mapRes,
+			std::string& output) const;
+
+	/**
+	 * Provide the map differences between the two provided,
+	 * @param src : the source map
+	 * @param dst : the destination map
+	 * @param printer : the display class
+	  * @return : false if any stop flag has been matched, else true
+	 */
+	bool retrieveDiff(const mapStrings& mapOrig,
+			const mapStrings& mapRes,
+			LibWsDiff::diffPrinter& printer) const;
 };
 
 } /* namespace LibWsDiff */

@@ -33,6 +33,8 @@
 #include <fstream>
 #include <ios>
 #include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/date_time.hpp>
+#include "libws_diff/DiffPrinter/diffPrinter.hh"
 
 #include "Log.hh"
 #include "RequestInfo.hh"
@@ -40,6 +42,9 @@
 
 #include <libws_diff/stringCompare.hh>
 #include <libws_diff/mapCompare.hh>
+#include <libws_diff/DiffPrinter/diffPrinter.hh>
+
+#define LOGMAXSIZE 65536
 
 extern module AP_DECLARE_DATA compare_module;
 
@@ -66,6 +71,7 @@ public:
 
     LibWsDiff::StringCompareBody mCompBody;
     LibWsDiff::MapCompare mCompHeader;
+    LibWsDiff::diffPrinter::diffTypeAvailable mLogType;
     bool mCompareDisabled;
     bool mIsActive;
 
@@ -138,18 +144,22 @@ const char* setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType,
  */
 const char* setBodyList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* pValue);
 
+const char* setDiffLogType(cmd_parms* pParams, void* pCfg, const char* pValue);
+
 void
 printRequest(request_rec *pRequest, std::string pBody);
 
-void writeCassandraDiff(const std::string &pUniqueID, std::stringstream &diffStr);
+void writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& printer);
 
 void writeSerializedRequest(const DupModule::RequestInfo& req);
 
 void childInit(apr_pool_t *pPool, server_rec *pServer);
 
-void writeInFacility(std::string pDiffLog);
+void writeInFacility(const std::string& pDiffLog);
 
-void writeDifferences(const DupModule::RequestInfo &pReqInfo,const std::string& myDiffHeader , const std::string& myDiffBody, boost::posix_time::time_duration time);
+void writeDifferences(const DupModule::RequestInfo &pReqInfo,
+		LibWsDiff::diffPrinter& printer,
+		boost::posix_time::time_duration time);
 
 void map2string(const std::map< std::string, std::string> &pMap, std::string &pString);
 
