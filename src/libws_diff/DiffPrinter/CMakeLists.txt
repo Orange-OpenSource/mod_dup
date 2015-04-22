@@ -22,13 +22,17 @@ set(libws_diff_SOURCE_FILES
    ${libws_diff_SOURCE_FILES}
    ${CMAKE_CURRENT_SOURCE_DIR}/diffPrinter.cc
    ${CMAKE_CURRENT_SOURCE_DIR}/jsonDiffPrinter.cc
+   ${CMAKE_CURRENT_SOURCE_DIR}/utf8JsonDiffPrinter.cc
    ${CMAKE_CURRENT_SOURCE_DIR}/multilineDiffPrinter.cc
    PARENT_SCOPE
 )
+
 set(libws_diff_HEADER_FILES
    ${libws_diff_HEADER_FILES}
    ${CMAKE_CURRENT_SOURCE_DIR}/diffPrinter.hh
    ${CMAKE_CURRENT_SOURCE_DIR}/jsonDiffPrinter.hh
+   ${CMAKE_CURRENT_SOURCE_DIR}/utf8JsonDiffPrinter.hh
    ${CMAKE_CURRENT_SOURCE_DIR}/multilineDiffPrinter.hh
+   ${PROJECT_SOURCE_DIR}/extern/utf8/source/utf8.h
    PARENT_SCOPE
 )

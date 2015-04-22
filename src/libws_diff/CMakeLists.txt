@@ -28,10 +28,15 @@ file(GLOB libws_diff_HEADER_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/mapCompare.hh
   )  
 
+#Include file from Diff Printer and its dependancy on extern tool utf8
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/DiffPrinter)
+include_directories(${PROJECT_SOURCE_DIR}/extern/utf8/source)
+include_directories(${PROJECT_SOURCE_DIR}/extern/utf8/source/utf8)
 
 include_directories(${PROJECT_SOURCE_DIR}/testing/libws_diff/DiffPrinter)
 include_directories(${PROJECT_SOURCE_DIR}/extern/dtl-cpp/dtl)
+
+
 
 # Compile as library
 add_library(libws_diff SHARED ${libws_diff_SOURCE_FILES})

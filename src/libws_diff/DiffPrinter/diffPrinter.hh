@@ -30,6 +30,7 @@ public:
 
 	enum diffTypeAvailable {
 		JSON,
+		UTF8JSON,
 		MULTILINE
 	};
 
