@@ -22,7 +22,7 @@ This concerns only the output of the mod_compare in their json format.
 
 Launch the insertion through :
 
-```/opt/logstash/bin/logstash agent -f Log_Compare_json.conf```
+```/opt/logstash/bin/logstash agent -f Logstash_example_Log_Compare_json.conf```
 
 # Kibana
 

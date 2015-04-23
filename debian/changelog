@@ -1,3 +1,9 @@
+pns-mod-dup (2.1.1) precise; urgency=low
+
+  * UTF8 validation before json printing of diff
+
+ -- Cedric Vallee <cvallee.ext@orange.com>  Thu, 23 Apr 2015 10:03:50 +0200
+
 pns-mod-dup (2.1.0) precise; urgency=low
 
   * New standard output for mod_compare : json format
