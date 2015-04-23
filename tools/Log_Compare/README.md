@@ -29,4 +29,4 @@ Launch the insertion through :
 This dashboard provide a quick view of the log_compare data and is dedicated to kibana neophytes.
 Push it into a new ElasticSearch cluster if needed.
 
-```curl -XPUT "http://${elasticSearchIP}:${port}/kibana-int/Log_Compare" -d Log_Compare_kibana_dashboard.json```
+```curl -XPUT "http://${elasticSearchIP}:${port}/kibana-int/dashboard/Log_Compare" -d @Log_Compare_kibana_dashboard.json```
