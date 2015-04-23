@@ -23,4 +23,4 @@ file(GLOB log_compare_CONF_FILE
 	Log_Compare_kibana_dashboard.json
   )
 
-install(FILES Log_Compare_json.conf Log_Compare_kibana_dashboard.json DESTINATION /etc/log_compare)
+install(FILES Logstash_example_Log_Compare_json.conf Log_Compare_kibana_dashboard.json DESTINATION /etc/log_compare)
