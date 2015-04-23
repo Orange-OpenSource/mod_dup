@@ -1,6 +1,0 @@
-#!/bin/sh
-
-chmod 777 /etc/kibana
-chmod 777 /etc/logstash
-
-exit 0
