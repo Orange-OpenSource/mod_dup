@@ -1,3 +1,3 @@
 usr/local/lib/libws_diff.so usr/lib
-etc/log_compare/Logstash_example_Log_Compare_json.conf etc/logstash
-etc/log_compare/Log_Compare_kibana_dashboard.json etc/kibana
+etc/log_compare/Logstash_example_Log_Compare_json.conf /etc/logstash
+etc/log_compare/Log_Compare_kibana_dashboard.json /etc/kibana
