@@ -87,12 +87,12 @@ RequestInfo::RequestInfo(const mapStr &reqHeader, const std::string &reqBody, co
         mElapsedTime() {
 }
 
-RequestInfo::RequestInfo(const std::string &id)
+RequestInfo::RequestInfo(const std::string &id, int64_t startTime)
     : mPoison(false),
       mId(id),
-      mEOS(false),
-      mStartTime(boost::posix_time::microsec_clock::universal_time()),
-      mElapsedTime() {
+      mEOS(false){
+          namespace pt = boost::posix_time;
+          mStartTime = pt::from_time_t(time_t(startTime / 1000000)) + pt::microseconds(startTime % 1000000);
 }
 
 RequestInfo::RequestInfo() :

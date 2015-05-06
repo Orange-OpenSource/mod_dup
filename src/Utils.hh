@@ -56,7 +56,7 @@ namespace CommonModule {
     template<typename T, const module * mod> inline boost::shared_ptr<T> *makeRequestInfo(request_rec *pRequest) {
         // Unique request id
         std::string uid = getOrSetUniqueID(pRequest);
-        T* info = new T(uid);
+        T* info = new T(uid, pRequest->request_time);
 
         // Allocation on a shared pointer on the request pool
         // We guarantee that whatever happens, the RequestInfo will be deleted

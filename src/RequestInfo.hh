@@ -38,7 +38,7 @@ struct apr_bucket_brigade;
 
 namespace MigrateModule {
 struct RequestInfo {
-    RequestInfo(std::string pId) : mId(pId) {}
+    RequestInfo(std::string pId, int64_t startTime) : mId(pId) {}
     /** @brief The query unique ID. */
     std::string mId;
     /** @brief The body part of the query */
@@ -157,9 +157,11 @@ struct RequestInfo {
                 const std::string &respBody, const mapStr &dupHeader, const std::string &dupBody);
 
     /**
-     * @brief Constructs a request initialising it's id
+     * @brief Constructs a request initialising it's id and start time
+     * @param id unique Id
+     * @param startTime WebServer Request Start Time in microseconds
      */
-    RequestInfo(const std::string &id);
+    RequestInfo(const std::string &id, int64_t startTime);
 
     /**
      * @brief Constructs a poisonous object causing the processor to stop when read
