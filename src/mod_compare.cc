@@ -271,8 +271,10 @@ const char* setDiffLogType(cmd_parms* pParams,
 
 	if(strcasecmp(pValue,"multiline")==0){
     	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE;
-    }else{
+	}else if(strcasecmp(pValue,"simplejson")==0){
     	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::JSON;
+    }else{
+    	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::UTF8JSON;
     }
     return NULL;
 }

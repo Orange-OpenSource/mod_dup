@@ -7,6 +7,7 @@
 
 #include "../../src/libws_diff/DiffPrinter/jsonDiffPrinter.hh"
 #include "testJsonDiffPrinter.hh"
+#include<boost/scoped_ptr.hpp>
 
 CPPUNIT_TEST_SUITE_REGISTRATION( TestJsonDiffPrinter );
 
@@ -98,3 +99,14 @@ void TestJsonDiffPrinter::testNullInHeader(){
 			"{\"src\":\"srcValue\"},\"nullSrc\":{\"dst\":\"dstValue\"}}}}\n";
 	CPPUNIT_ASSERT_EQUAL(expected,json);
 }
+
+void TestJsonDiffPrinter::testUTF_8_OK(){
+	boost::scoped_ptr<LibWsDiff::diffPrinter> test(LibWsDiff::diffPrinter::createDiffPrinter("5\xe6",LibWsDiff::diffPrinter::UTF8JSON));
+	test->addHeaderDiff(std::string("\xe6\x97\xa5\xd1\x88\xfa"),std::string("\xe6\x97\xa5\xd1\x88\xfa"),NULL);
+
+	std::string json;
+	CPPUNIT_ASSERT(test->retrieveDiff(json));
+	std::string expected="{\"id\":\"5�\",\"diff\":{\"header\":{\"日ш�\":{\"src\":\"日ш�\"}}}}\n";
+	CPPUNIT_ASSERT_EQUAL(expected,json);
+}
+

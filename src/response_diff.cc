@@ -137,7 +137,6 @@ void writeInFacility(const std::string& pDiffLog){
         if (i + lSplitSize > stringLength){
             lSplitSize = stringLength  - i;
         }
-        Log::error(12, "writeInFacility %s" , pDiffLog.substr(i, lSplitSize).c_str());
         Log::error(12, "%s", pDiffLog.substr(i, lSplitSize).c_str());
     }
 }

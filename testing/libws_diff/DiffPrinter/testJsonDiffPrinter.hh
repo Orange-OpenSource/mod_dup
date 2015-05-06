@@ -25,6 +25,7 @@ class TestJsonDiffPrinter :
     CPPUNIT_TEST(testFullTooLong);
     CPPUNIT_TEST(testNullInHeader);
     CPPUNIT_TEST(testFullExtractionOfXmlTags);
+    CPPUNIT_TEST(testUTF_8_OK);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -33,4 +34,5 @@ public:
     void testFullTooLong();
     void testNullInHeader();
     void testFullExtractionOfXmlTags();
+    void testUTF_8_OK();
 };

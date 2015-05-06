@@ -22,11 +22,11 @@ This concerns only the output of the mod_compare in their json format.
 
 Launch the insertion through :
 
-```/opt/logstash/bin/logstash agent -f Log_Compare_json.conf```
+```/opt/logstash/bin/logstash agent -f Logstash_example_Log_Compare_json.conf```
 
 # Kibana
 
 This dashboard provide a quick view of the log_compare data and is dedicated to kibana neophytes.
 Push it into a new ElasticSearch cluster if needed.
 
-```curl -XPUT "http://${elasticSearchIP}:${port}/kibana-int/Log_Compare" -d Log_Compare_kibana_dashboard.json```
+```curl -XPUT "http://${elasticSearchIP}:${port}/kibana-int/dashboard/Log_Compare" -d @Log_Compare_kibana_dashboard.json```
