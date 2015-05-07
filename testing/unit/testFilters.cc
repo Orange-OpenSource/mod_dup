@@ -177,7 +177,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::HEADER_ONLY);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(std::string("42"));
+    RequestInfo *info = new RequestInfo(std::string("42"), 1000000 * time(NULL) );
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -204,7 +204,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::REQUEST_WITH_ANSWER);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(std::string("42"));
+    RequestInfo *info = new RequestInfo(std::string("42"), 1000000 * time(NULL));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 
@@ -247,7 +247,7 @@ void TestFilters::outputFilterHandlerTest() {
     conf->setCurrentDuplicationType(DuplicationType::REQUEST_WITH_ANSWER);
     ap_set_module_config(req->per_dir_config, &dup_module, conf);
 
-    RequestInfo *info = new RequestInfo(std::string("42"));
+    RequestInfo *info = new RequestInfo(std::string("42"), 1000000 * time(NULL));
     boost::shared_ptr<RequestInfo> shPtr(info);
     ap_set_module_config(req->request_config, &dup_module, (void *)&shPtr);
 

@@ -98,13 +98,62 @@ int iterateOverHeadersCallBack(void *d, const char *key, const char *value) {
     return 1;
 }
 
-/*
- * Translate_name level HOOK
+/** @brief initializes the RequestInfo and input headers
+ * Called in translateHook or inputFilter, which ever is called first
+ * It is used to remove the DUP headers and change the request method
+ */
+boost::shared_ptr<DupModule::RequestInfo>* initRequest(request_rec *pRequest)
+{
+    boost::shared_ptr<DupModule::RequestInfo>* shReqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
+    DupModule::RequestInfo *info = shReqInfo->get();
+    
+    const char *lMethod = apr_table_get(pRequest->headers_in, "X_DUP_METHOD");
+    if(lMethod){
+        changeMethod(pRequest, lMethod);
+        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
+    }
+    
+    const char *lDupType = apr_table_get(pRequest->headers_in, "Content-Type");
+    if ( lDupType && ( ! strncmp(lDupType, "application/x-dup-serialized", 28) ) ) {
+        // leave a compare header for decorator only if duplicating with response
+        apr_table_set(pRequest->headers_in, "X-COMPARE-TRANSLATED", "1");
+    }
+    
+    const char *lContentType = apr_table_get(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+    if(lContentType){
+        apr_table_set(pRequest->headers_in, "Content-Type", lContentType);
+        ap_set_content_type(pRequest, lContentType );
+        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
+    }
+    
+    // Copy headers in our object
+    apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
+    
+    // We retrieve the original request HTTP status from X_DUP_HTTP_STATUS header
+    // if it does not exist, we set it to -1
+    std::map<std::string,std::string>::const_iterator it = info->mReqHeader.find("X_DUP_HTTP_STATUS");
+    try {
+        info->mReqHttpStatus = it != info->mReqHeader.end() ? boost::lexical_cast<int>(it->second) : -1;
+    } catch (boost::bad_lexical_cast& e) {
+        info->mReqHttpStatus = -1;
+        Log::warn(1, "Invalid X_DUP_HTTP_STATUS header value (not a number?)");
+    }
+    
+    Log::debug("[DEBUG][COMPARE] REMAINING: %ld", pRequest->remaining);
+    apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
+    apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
+    
+    return shReqInfo;
+}
+
+/** @brief Translate_name level HOOK
  * It will be called before the input filters
+ * It is only called if there is no Alias on this path
  * It is used to remove the DUP headers and change the request method
  */
 int translateHook(request_rec *pRequest) {
     Log::debug("[DEBUG][COMPARE] Inside translateHook");
+    Log::error(42, "translateHook %p", pRequest);
     if (!pRequest->per_dir_config)
         return DECLINED;
     CompareConf *conf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
@@ -117,52 +166,20 @@ int translateHook(request_rec *pRequest) {
         return DECLINED;
     }
 
-    Log::debug("[DEBUG][COMPARE] Going to makeRequestInfo inside translateHook");
-    boost::shared_ptr<DupModule::RequestInfo>* shReqInfo = CommonModule::makeRequestInfo<DupModule::RequestInfo,&compare_module>(pRequest);
-    DupModule::RequestInfo *info = shReqInfo->get();
-
-    const char *lMethod = apr_table_get(pRequest->headers_in, "X_DUP_METHOD");
-    if(lMethod){
-        changeMethod(pRequest, lMethod);
-        apr_table_unset(pRequest->headers_in, "X_DUP_METHOD");
-    }
-    
-    const char *lDupType = apr_table_get(pRequest->headers_in, "Content-Type");
-    if ( lDupType && ( ! strncmp(lDupType, "application/x-dup-serialized", 28) ) ) {
-        // leave a compare header for decorator only if duplicating with response
-        apr_table_set(pRequest->headers_in, "X-COMPARE-TRANSLATED", "1");
-    }
-
-    const char *lContentType = apr_table_get(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
-    if(lContentType){
-        apr_table_set(pRequest->headers_in, "Content-Type", lContentType);
-        ap_set_content_type(pRequest, lContentType );
-        apr_table_unset(pRequest->headers_in, "X_DUP_CONTENT_TYPE");
-    }
-
-    // Copy headers in our object
-    apr_table_do(&iterateOverHeadersCallBack, &(info->mReqHeader), pRequest->headers_in, NULL);
-
-    // We retrieve the original request HTTP status from X_DUP_HTTP_STATUS header
-    // if it does not exist, we set it to -1
-    std::map<std::string,std::string>::const_iterator it = info->mReqHeader.find("X_DUP_HTTP_STATUS");
-    try {
-        info->mReqHttpStatus = it != info->mReqHeader.end() ? boost::lexical_cast<int>(it->second) : -1;
-    } catch (boost::bad_lexical_cast& e) {
-        info->mReqHttpStatus = -1;
-        Log::warn(1, "Invalid X_DUP_HTTP_STATUS header value (not a number?)");
-    }
-
-    Log::debug("XXXXXX COMPARE REMAINING: %ld", pRequest->remaining);
-    apr_table_unset(pRequest->headers_in, "ELAPSED_TIME_BY_DUP");
-    apr_table_unset(pRequest->headers_in, "X_DUP_HTTP_STATUS");
+    initRequest(pRequest);
 
     return DECLINED;
 }
 
+
+/**
+ * @brief deserializes the body, stores it in RequestInfo, and reinjects the actual body if needed
+ * If the request handler does not read body bytes, this will never be called and compare cannot work
+ * This is called first and translateHook is never called if the path is an Alias
+ */
 apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
-    Log::debug("[DEBUG][COMPARE] Inside inpuFilterHandler");
+    Log::debug("[DEBUG][COMPARE] Inside inputFilterHandler");
 
     apr_status_t lStatus;
     request_rec *pRequest = pF->r;
@@ -170,7 +187,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         Log::debug("[DEBUG][COMPARE] inputFilterHandler request_rec null");
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
-
+    
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) ) {
         Log::debug("[DEBUG][COMPARE] inputFilterHandler not a duplicated request, nothing to compare");
@@ -187,10 +204,14 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes); // SHOULD NOT HAPPEN
     }
 
-    // No context? new request
+    // No context? new request or request called with an alias, translateHook was not called
     if (!pF->ctx) {
         Log::debug("[DEBUG][COMPARE] inputFilterHandler Assigning filter ctx");
         boost::shared_ptr<DupModule::RequestInfo> *shPtr = reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module));
+        if ( ! shPtr ) {
+            shPtr = initRequest(pRequest);
+            Log::debug("[DEBUG][COMPARE] Translate hook was not called, request created directly in the input filter");
+        }
         assert(shPtr->get());
         // Backup of info struct in the request context
         pF->ctx = shPtr->get();
@@ -242,6 +263,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
 }
 
 
+/// @brief first output filter, stores the response in RequestInfo
 apr_status_t
 outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler");
@@ -325,6 +347,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 }
 
 
+/// @brief second output filter, performs the actual comparison
 apr_status_t
 outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 

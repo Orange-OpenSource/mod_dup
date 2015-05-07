@@ -61,7 +61,7 @@ target_link_libraries(mod_dup ${APR_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARI
 
 add_library(mod_compare MODULE ${mod_compare_SOURCE_FILES})
 set_target_properties(mod_compare PROPERTIES PREFIX "")
-target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} boost_serialization libws_diff rt)
+target_link_libraries(mod_compare ${APR_LIBRARIES} ${Boost_LIBRARIES} boost_serialization libws_diff rt boost_date_time)
 
 add_library(mod_migrate MODULE ${mod_migrate_SOURCE_FILES})
 set_target_properties(mod_migrate PROPERTIES PREFIX "")

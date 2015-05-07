@@ -70,7 +70,7 @@ void TestModMigrate::testEnrichContext()
     ap_set_module_config(req->per_dir_config,&migrate_module,&conf);
     CPPUNIT_ASSERT(reinterpret_cast<MigrateConf *>(ap_get_module_config(req->per_dir_config, &migrate_module)));
 
-    RequestInfo info("123456");
+    RequestInfo info("123456",  1000000 * time(NULL));
     info.mConfPath = std::string("location1");
 
     // in URL
@@ -235,7 +235,7 @@ void TestModMigrate::testInputFilterBody2Brigade() {
         filter->c = (conn_rec *)apr_pcalloc(pool, sizeof(*(filter->c)));
         filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
-        RequestInfo *info = new RequestInfo(std::string("42"));
+        RequestInfo *info = new RequestInfo(std::string("42"), 1000000 * time(NULL));
         boost::shared_ptr<RequestInfo> shPtr(info);
         ap_set_module_config(req->request_config, &migrate_module, (void *)&shPtr);
 
@@ -263,7 +263,7 @@ void TestModMigrate::testInputFilterBody2Brigade() {
         filter->c->bucket_alloc = apr_bucket_alloc_create(pool);
         apr_bucket_brigade *bb = apr_brigade_create(req->connection->pool, req->connection->bucket_alloc);
 
-        RequestInfo *info = new RequestInfo(std::string("42"));
+        RequestInfo *info = new RequestInfo(std::string("42"), 1000000 * time(NULL));
         boost::shared_ptr<RequestInfo> shPtr(info);
         ap_set_module_config(req->request_config, &migrate_module, (void *)&shPtr);
 

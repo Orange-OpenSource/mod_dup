@@ -506,7 +506,7 @@ void TestModCompare::testWriteDifferencesNoDiff()
 
     apr_table_set(req->headers_in, "Duplication-Type", "Response");
 
-    DupModule::RequestInfo *info = new DupModule::RequestInfo(std::string("42"));
+    DupModule::RequestInfo *info = new DupModule::RequestInfo(std::string("42"), 1000000 * time(NULL) );
 
     // set the body and both the HTTP statuses to be compared
     info->mResponseBody = testBody42;
@@ -968,7 +968,7 @@ void TestModCompare::testOutputFilterHandler()
 
         apr_table_set(req->headers_in, "Duplication-Type", "Response");
 
-        DupModule::RequestInfo *info = new DupModule::RequestInfo(std::string("42"));
+        DupModule::RequestInfo *info = new DupModule::RequestInfo(std::string("42"), 1000000 * time(NULL) );
         void *space = apr_palloc(req->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
         new (space) boost::shared_ptr<DupModule::RequestInfo>(info);
         ap_set_module_config(req->request_config, &compare_module, (void *)space);
@@ -981,7 +981,7 @@ void TestModCompare::testOutputFilterHandler()
         // Adding eos to bb
 
         //recreating and resetting the requestInfo since boost:scoped pointer has deleted it
-        DupModule::RequestInfo *info2 = new DupModule::RequestInfo(std::string("42"));
+        DupModule::RequestInfo *info2 = new DupModule::RequestInfo(std::string("42"), 1000000 * time(NULL));
         void *space2 = apr_palloc(req->pool, sizeof(boost::shared_ptr<DupModule::RequestInfo>));
         new (space2) boost::shared_ptr<DupModule::RequestInfo>(info2);
         ap_set_module_config(req->request_config, &compare_module, (void *)space2);
