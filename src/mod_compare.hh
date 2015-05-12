@@ -149,7 +149,7 @@ const char* setDiffLogType(cmd_parms* pParams, void* pCfg, const char* pValue);
 void
 printRequest(request_rec *pRequest, std::string pBody);
 
-void writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& printer);
+bool writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& printer);
 
 void writeSerializedRequest(const DupModule::RequestInfo& req);
 

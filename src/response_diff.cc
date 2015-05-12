@@ -96,9 +96,10 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     printer.addStatus("DUP",pReqInfo.mReqHttpStatus);
     printer.addStatus("COMP",pReqInfo.mDupResponseHttpStatus);
 
-    bool cassDiff = writeCassandraDiff( pReqInfo.mId, printer );
-    bool diff = printer.retrieveDiff(res)
     std::string res;
+    bool cassDiff = writeCassandraDiff( pReqInfo.mId, printer );
+    bool diff = printer.retrieveDiff(res);
+
     if ( ( !cassDiff ) && ( !diff ) ){
         return;
     }
@@ -176,7 +177,7 @@ void writeSerializedRequest(const DupModule::RequestInfo& req)
  * @param pUniqueID the UNIQUE_ID of the request to check
  * @return true if there are differences, false otherwise
  */
-void writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& printer)
+bool writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& printer)
 {
     typedef std::multimap<std::string, CassandraDiff::FieldInfo> tMultiMapDiff;
 
@@ -187,7 +188,7 @@ void writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& pr
     lPairIter = lDiff.equal_range(pUniqueID);
     if ( lPairIter.first ==  lPairIter.second )
     {
-        return;
+        return false;
     }
 
     for(;lPairIter.first!=lPairIter.second;++lPairIter.first){
@@ -197,6 +198,7 @@ void writeCassandraDiff(const std::string &pUniqueID, LibWsDiff::diffPrinter& pr
     			lPairIter.first->second.mReqValue);
     }
     lDiff.erase(pUniqueID);
+    return true;
 }
 
 /**
