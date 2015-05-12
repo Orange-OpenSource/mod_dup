@@ -59,6 +59,10 @@ bool StringCompare::vectDiff(const tStrings& src,const tStrings& dst, std::strin
 
 	//return the diff representation
 	output = stream.str();
+	if (output.empty())
+	{
+	    return false;
+	}
 	return true;
 }
 
@@ -113,7 +117,9 @@ bool StringCompareHeader::retrieveDiff(const std::string& src,const std::string&
 bool StringCompareHeader::retrieveDiff(const std::string& src,const std::string& dst,LibWsDiff::diffPrinter& printer) const{
 	std::string out;
 	bool res = this->retrieveDiff(src,dst,out);
-	printer.addFullDiff(out);
+	if (! out.empty() ){
+	    printer.addFullDiff(out);
+	}
 	return res;
 }
 
@@ -160,7 +166,9 @@ bool StringCompareBody::retrieveDiff(const tStrings& src,
 		LibWsDiff::diffPrinter& printer) const{
 	std::string out;
 	bool res = this->retrieveDiff(src,dst,out);
-	printer.addFullDiff(out);
+    if (! out.empty() ){
+        printer.addFullDiff(out);
+    }
 	return res;
 }
 
@@ -169,7 +177,9 @@ bool StringCompareBody::retrieveDiff(const std::string& src,
 		LibWsDiff::diffPrinter& printer) const{
 	std::string out;
 	bool res = this->retrieveDiff(src,dst,out);
-	printer.addFullDiff(out);
+    if (! out.empty() ){
+        printer.addFullDiff(out);
+    }
 	return res;
 }
 
