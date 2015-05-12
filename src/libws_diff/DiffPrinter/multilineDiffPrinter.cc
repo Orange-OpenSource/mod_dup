@@ -105,7 +105,7 @@ void multilineDiffPrinter::addFullDiff(std::string& diffLines,
 }
 
 bool multilineDiffPrinter::retrieveDiff(std::string& res){
-	if(this-isADiff){
+	if(this->isADiff){
 		for(stringmap::iterator it=this->streams.begin();it!=this->streams.end();it++){
 			if(!it->second->empty()){
 				//Adding header for the current part

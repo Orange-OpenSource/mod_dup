@@ -44,7 +44,7 @@ class TestModCompare :
     CPPUNIT_TEST(testOutputFilterHandler);
     CPPUNIT_TEST(testWriteCassandraDiff);
     CPPUNIT_TEST(testWriteSerializedRequests);
-    CPPUNIT_TEST(testWriteDifferencesWithElapsedTimeByDup);
+    CPPUNIT_TEST(testNoDifferences);
     CPPUNIT_TEST(testWriteDifferencesWithStatusDiff);
     CPPUNIT_TEST(testWriteDifferencesNoDiff);
     CPPUNIT_TEST_SUITE_END();
@@ -64,7 +64,7 @@ public:
     void testWriteDifferences();
     void testOutputFilterHandler();
     void testWriteSerializedRequests();
-    void testWriteDifferencesWithElapsedTimeByDup();
+    void testNoDifferences();
     void testWriteDifferencesWithStatusDiff();
     void testWriteDifferencesNoDiff();
 };

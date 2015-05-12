@@ -340,7 +340,7 @@ void TestModCompare::testWriteDifferences()
     CPPUNIT_ASSERT_EQUAL(0, length);
 }
 
-void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
+void TestModCompare::testNoDifferences()
 {
     gWriteInFile = true;
     std::string lPath( getenv("PWD") );
@@ -366,26 +366,7 @@ void TestModCompare::testWriteDifferencesWithElapsedTimeByDup()
         readFile.open(lPath.c_str());
         std::stringstream buffer;
         buffer << readFile.rdbuf();
-        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: 123\n"
-"-------------------\n"
-"ElapsedTime : 1\n"
-"Date : UNITTEST_TODAY_VALUE\n"
-"ReqBody : MyClientRequest\n"
-"-------------------\n"
-"Elapsed time for requests (ms): DIFF 432 DUP 432 COMP 0\n"
-"-------------------\n"
-"Http Status Codes: DUP -1 COMP -1\n"
-"-------------------\n"
-"URI : \n"
-"-------------------\n"
-"ELAPSED_TIME_BY_DUP : 432\n"
-"agent-type : myAgent\n"
-"content-type : plain/text\n"
-"date : TODAY\n"
-"-------------------\n"
-"END DIFFERENCE : 123\n");
-        std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
-        CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
+        CPPUNIT_ASSERT(buffer.str().empty());
     }
 
     //write diff in syslog
