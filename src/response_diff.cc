@@ -96,10 +96,12 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     printer.addStatus("DUP",pReqInfo.mReqHttpStatus);
     printer.addStatus("COMP",pReqInfo.mDupResponseHttpStatus);
 
-    writeCassandraDiff( pReqInfo.mId, printer );
-
+    bool cassDiff = writeCassandraDiff( pReqInfo.mId, printer );
+    bool diff = printer.retrieveDiff(res)
     std::string res;
-    printer.retrieveDiff(res);
+    if ( ( !cassDiff ) && ( !diff ) ){
+        return;
+    }
 
     if(!gWriteInFile){
         std::string lLine;
