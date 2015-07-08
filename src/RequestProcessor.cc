@@ -155,6 +155,15 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
     }
 }
 
+void
+RequestProcessor::addHeadersIn(std::list<tKeyVal> &pParsedArgs, const std::list<std::pair<std::string, std::string>> &pHeadersIn) {
+    std::list<std::pair<std::string, std::string>>::const_iterator it;
+    for(it = pHeadersIn.begin(); it != pHeadersIn.end(); it++) {
+      std::string lKey = boost::to_upper_copy(it->first);
+      pParsedArgs.push_back(tKeyVal(lKey, it->second));
+    }
+}
+
 const tFilter *
 RequestProcessor::keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
         ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes fType){
@@ -213,7 +222,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
 
     // Prevent Filtering check on HEADER
     if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::PREVENT_DUPLICATION))) {
-        Log::debug("PREVENT Filter on HEADER match");
+        Log::info(0, "PREVENT Filter on HEADER match");
         return NULL;
     }
 
@@ -223,7 +232,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
     if (keyFilterOnBody){
         parseArgs(lParsedArgs, pRequest.mBody);
         if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY, tFilter::PREVENT_DUPLICATION))) {
-            Log::debug("PREVENT Filter on BODY match");
+            Log::info(0, "PREVENT Filter on BODY match");
             return NULL;
         }
     }
@@ -231,17 +240,17 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
     // Raw filters prevent analyse
     BOOST_FOREACH (tFilter &raw, pCommands.mRawFilters) {
         if (raw.mFilterType == tFilter::PREVENT_DUPLICATION) {
-            // Header application
+            // Header applications
             if (raw.mScope & ApplicationScope::HEADER) {
                 if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-                    Log::debug("Prevent Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "Prevent Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
             // Body application
             if (raw.mScope & ApplicationScope::BODY) {
                 if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-                    Log::debug("Prevent Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "Prevent Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
@@ -250,14 +259,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
 
     // Key filters on header
     if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::REGULAR))){
-        Log::debug("Filter on HEADER match");
+        Log::info(0, "Filter on HEADER match");
         return matched;
     }
 
     // Key filters on body
     if (keyFilterOnBody){
         if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY, tFilter::REGULAR))) {
-            Log::debug("Filter on BODY match");
+            Log::info(0, "Filter on BODY match");
             return matched;
         }
     }
@@ -268,14 +277,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
             // Header application
             if (raw.mScope & ApplicationScope::HEADER) {
                 if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-                    Log::debug("Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
                     return &raw;
                 }
             }
             // Body application
             if (raw.mScope & ApplicationScope::BODY) {
                 if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-                    Log::debug("Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
                     return &raw;
                 }
             }
@@ -296,7 +305,7 @@ RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
     bool lDidSubstitute = false;
 
     // Run through the keys
-    BOOST_FOREACH (const tKeyVal lKeyVal, pParsedArgs) {
+    BOOST_FOREACH (const tKeyVal &lKeyVal, pParsedArgs) {
         std::map<std::string, std::list<tSubstitute> >::iterator lSubstIter = pSubs.find(lKeyVal.first);
         std::string lVal = lKeyVal.second;
 
@@ -328,6 +337,32 @@ RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
 }
 
 bool
+RequestProcessor::headerSubstitute(tFieldSubstitutionMap &pSubs,
+        std::list<std::pair<std::string, std::string>> &pHeadersIn){
+
+    bool lDidSubstitute = false;
+
+    // Run through the keys
+    BOOST_FOREACH (tKeyVal &lKeyVal, pHeadersIn) {
+        std::map<std::string, std::list<tSubstitute> >::iterator lSubstIter = pSubs.find(lKeyVal.first);
+        // Key found in the subs?
+        if (lSubstIter != pSubs.end()) {
+            BOOST_FOREACH(const tSubstitute &lSubst, lSubstIter->second) {
+                Log::debug("Key substitute: %d | KeyVal:%s | lSubst:%s | Rep:%s", (int) lSubst.mScope, lKeyVal.second.c_str(),
+                        lSubst.mRegex.str().c_str(), lSubst.mReplacement.c_str());
+                if (!(ApplicationScope::HEADER & lSubst.mScope))
+                    continue;
+
+                lKeyVal.second = boost::regex_replace(lKeyVal.second, lSubst.mRegex, lSubst.mReplacement, boost::match_default | boost::format_all);
+                lDidSubstitute = true;
+            }
+            Log::debug("Header substitute %s : %s ", lKeyVal.first.c_str(), lKeyVal.second.c_str());
+        }
+    }
+    return lDidSubstitute;
+}
+
+bool
 RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
     // Ideally we would use the pool from the apache request, but it's used in another thread
 
@@ -352,6 +387,8 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
                 pHeaderParsedArgs,
                 ApplicationScope::HEADER,
                 pRequest.mArgs);
+	lDidSubstitute |= headerSubstitute(pCommands.mSubstitutions,
+                pRequest.mHeadersIn);
     }
     if (keySubOnBody) {
         // On the body
@@ -379,6 +416,9 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
 std::list<const tFilter *>
 RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std::string, std::string> > parsedArgs) {
     std::list<const tFilter *> ret;
+
+    // Add the request's headers to the parsed list
+    addHeadersIn(parsedArgs, pRequest.mHeadersIn);
 
     const std::string &pConfPath = pRequest.mConfPath;
     std::map<std::string, CommandsByDestination>::iterator it = mCommands.find(pConfPath);
@@ -563,6 +603,7 @@ void
 RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
 
     std::list<std::pair<std::string, std::string> > lParsedArgs;
+    // Parse query string args
     parseArgs(lParsedArgs, reqInfo.mArgs);
 
 

@@ -221,6 +221,7 @@ public:
      * @param pField the field on which to do the substitution
      * @param pFilter a reg exp which has to match for this request to be duplicated
      * @param pAssociatedConf the filter declaration context
+     * @param fType the filter type
      */
     void
     addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
@@ -240,7 +241,8 @@ public:
      * @brief Add a RAW filter for all requests on a given path
      * @param pPath the path of the request
      * @param pFilter a reg exp which has to match for this request to be duplicated
-     * @param Scope: the elements to match the filter with
+     * @param pAssociatedConf the filter declaration context
+     * @param fType the filter type
      */
     void
     addRawFilter(const std::string &pPath, const std::string &pFilter,
@@ -252,6 +254,7 @@ public:
      * @param pField the field on which to do the substitution
      * @param pMatch the regexp matching what should be replaced
      * @param pReplace the value which the match should be replaced with
+     * @param pAssociatedConf the filter declaration context
      */
     void
     addSubstitution(const std::string &pPath, const std::string &pField,
@@ -264,6 +267,7 @@ public:
      * @param pField the field on which to do the substitution
      * @param pMatch the regexp matching what should be replaced
      * @param pReplace the value which the match should be replaced with
+     * @param pAssociatedConf the filter declaration context
      */
     void
     addRawSubstitution(const std::string &pPath, const std::string &pMatch, const std::string &pReplace,
@@ -271,9 +275,10 @@ public:
 
     /**
      * @brief Returns wether or not the arguments match any of the filters
-     * @param pParsedArgs the list with the argument key value pairs
-     * @param pFilters the filters which should be applied
-     * @return true if there are no filters or at least one filter matches, false otherwhise
+     * @param pRequest the incoming request
+     * @param pCommands the commands to apply
+     * @param pParsedArgs the list filled with the key value pairs to be matched
+     * @return the first matched filter, null otherwise
      */
     const tFilter*
     argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, std::list<tKeyVal> &pParsedArgs);
@@ -287,8 +292,16 @@ public:
     parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &pArgs);
 
     /**
+     * @brief Adds the headers sent with the request to the parsed args from the query string.
+     * @param pParsedArgs the list which should be filled with the key value pairs
+     * @param pHeadersIn the request's header in a key value list
+     */
+    void
+    addHeadersIn(std::list<tKeyVal> &pParsedArgs, const std::list<std::pair<std::string, std::string>> &pHeadersIn);
+
+    /**
      * @brief Process a field. This includes filtering and executing substitutions
-     * @param pConfPath the path of the configuration which is applied
+     * @param pRequest the path of the configuration which is applied
      * @param pArgs the HTTP arguments/parameters of the incoming request
      * @return an empty list if the request does not need to be duplicated, a filter by duplication that matched otherwise.
      */
@@ -333,6 +346,9 @@ private:
             std::list<tKeyVal> &pParsedArgs,
             ApplicationScope::eApplicationScope scope,
             std::string &result);
+    bool
+    headerSubstitute(tFieldSubstitutionMap &pSubs,
+        std::list<std::pair<std::string, std::string>> &pHeadersIn);
 
     friend class ::TestRequestProcessor;
     friend class ::TestModDup;

@@ -143,9 +143,11 @@ struct RequestInfo {
 
     /**
      * @brief Constructs the object using the three strings.
+     * @param id The query unique ID
      * @param pConfPath The location (in the conf) which matched this query
-     * @param pPath The path part of the request
-     * @param pConfPath The parameters part of the query (without leading ?)
+     * @param pPath The path part of the requests
+     * @param pArgs The parameters part of the query (without leading ?)
+     * @param body The body part of the query
      */
     RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
             const std::string &pArgs, const std::string *body = 0);
@@ -169,7 +171,7 @@ struct RequestInfo {
     RequestInfo();
 
     /**
-     * returns true if the request has a body
+     * @brief Returns true if the request has a body
      */
     bool hasBody() const;
 
@@ -196,7 +198,7 @@ struct RequestInfo {
     }
 
     /**
-     * @brief Returns true if the EOS flag has been set
+     * @brief Sets the EOS flag
      * Computes the elapesed time on first call
      */
     void eos_seen(bool valToSet);
