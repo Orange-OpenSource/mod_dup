@@ -290,6 +290,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
             }
         }
     }
+    Log::info(0, "No Filter matched for duplication -> no duplication for %s?%s", pRequest.mPath.c_str(), pRequest.mArgs.c_str());
     return NULL;
 }
 
@@ -417,9 +418,6 @@ std::list<const tFilter *>
 RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std::string, std::string> > parsedArgs) {
     std::list<const tFilter *> ret;
 
-    // Add the request's headers to the parsed list
-    addHeadersIn(parsedArgs, pRequest.mHeadersIn);
-
     const std::string &pConfPath = pRequest.mConfPath;
     std::map<std::string, CommandsByDestination>::iterator it = mCommands.find(pConfPath);
 
@@ -432,6 +430,9 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
     // For each duplication destination
     std::map<std::string, Commands>::iterator itb = lCommands.mCommands.begin(),
         itbe = lCommands.mCommands.end();
+
+    // Add the request's headers to the parsed list
+    addHeadersIn(parsedArgs, pRequest.mHeadersIn);
     while (itb != itbe) {
         Log::debug("### Duplication tested: %s", itb->first.c_str() );
         // Tests if at least one active filter matches on this duplication location

@@ -62,9 +62,11 @@ std::string gLogFacility;
 
 boost::interprocess::named_mutex &getGlobalMutex() {
     static boost::interprocess::named_mutex *gMutex = NULL;
+    std::string lPath("/dev/shm/sem." + std::string(c_named_mutex));
     try {
         if (!gMutex) {
             gMutex = new boost::interprocess::named_mutex(boost::interprocess::open_or_create, c_named_mutex);
+            chmod(lPath.c_str(), S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH);
         }
         return *gMutex;
     } catch (boost::interprocess::interprocess_exception& e) {
