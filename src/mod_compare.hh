@@ -55,7 +55,11 @@ extern const char* gFilePath;
 extern bool gWriteInFile;
 extern std::string gLogFacility;
 
-boost::interprocess::named_mutex &getGlobalMutex();
+/**
+ * @brief Get the global mutex used to synchronize compare diffs
+ * @return a pointer to the global mutex
+ */
+pthread_mutex_t *getGlobalMutex();
 
 
 /**

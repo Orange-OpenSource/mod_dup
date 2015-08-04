@@ -36,6 +36,7 @@
 #include <boost/tokenizer.hpp>
 #include <fstream>
 #include <unixd.h>
+#include <sys/mman.h>
 
 
 #include "mod_compare.hh"
@@ -53,28 +54,76 @@ const char* gNameOut = "CompareOut";
 const char* gNameOut2 = "CompareOut2";
 const char* c_COMPONENT_VERSION = "Compare/1.0";
 const char* c_named_mutex = "mod_compare_log_mutex";
-bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
 std::ofstream gFile;
 const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
 bool gWriteInFile = true;
 std::string gLogFacility;
 
 
-boost::interprocess::named_mutex &getGlobalMutex() {
-    static boost::interprocess::named_mutex *gMutex = NULL;
-    std::string lPath("/dev/shm/sem." + std::string(c_named_mutex));
-    try {
-        if (!gMutex) {
-            gMutex = new boost::interprocess::named_mutex(boost::interprocess::open_or_create, c_named_mutex);
-            chmod(lPath.c_str(), S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH);
+pthread_mutex_t *getGlobalMutex() {
+    static pthread_mutex_t *mutex = NULL;
+    if (mutex == NULL) {
+        int fd;
+        fd = shm_open(c_named_mutex, O_RDWR, 0666);
+        if (fd < 0) {
+            Log::error(42, "Cannot open global mutex named: %s.", c_named_mutex);
+            return NULL;
         }
-        return *gMutex;
-    } catch (boost::interprocess::interprocess_exception& e) {
-        // Just in case the log has not been init yet
-        Log::init();
-        Log::error(42, "Cannot initialize global mutex named: %s. What: %s", c_named_mutex, e.what());
-        throw e;
+        mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        close(fd);
     }
+    return mutex;
+}
+
+/**
+ * @brief Create the global mutex in the shared memory
+ * @return 0 if successful, -1 when it fails
+ */
+int
+createGlobalMutex(void) {
+    pthread_mutex_t *mutex;
+    pthread_mutexattr_t mutex_attr;
+    int fd;
+    char buffer[40] = "/dev/shm/";
+    fd = shm_open(c_named_mutex, O_RDWR | O_CREAT | O_EXCL, 0666);
+    if (fd < 0) {
+        Log::error(42, "Cannot initialize global mutex named: %s. What: %s", c_named_mutex, strerror(errno));
+        return -1;
+    }
+    chmod(strncat(buffer,c_named_mutex,30),0666);
+    ftruncate(fd, sizeof(pthread_mutex_t));
+    mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+    pthread_mutexattr_init(&mutex_attr);
+    pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutexattr_setrobust(&mutex_attr, PTHREAD_MUTEX_ROBUST);
+    pthread_mutex_init(mutex, &mutex_attr);
+    pthread_mutexattr_destroy(&mutex_attr);
+    Log::debug("Mutex initialized");
+    return 0;
+}
+
+/**
+ * @brief Destroy the global mutex and unlink the shared memory
+ * @return 0 if successful, -1 when it fails
+ */
+int
+destroyGlobalMutex(void) {
+    pthread_mutex_t *mutex;
+    int fd;
+
+    fd = shm_open(c_named_mutex, O_RDWR, 0666);
+    if (fd < 0) {
+        Log::error(42, "Cannot destroy global mutex named: %s. What: %s", c_named_mutex, strerror(errno));
+        return -1;
+    }
+    mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+
+    pthread_mutex_destroy(mutex);
+    shm_unlink(c_named_mutex);
+    Log::debug("Mutex destroyed");
+    return 0;
 }
 
 
@@ -164,6 +213,7 @@ childInit(apr_pool_t *pPool, server_rec *pServer)
             Log::error(43,"Couldn't open correctly the file");
         }
     }
+    createGlobalMutex();
 }
 
 /**
