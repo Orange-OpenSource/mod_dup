@@ -98,7 +98,7 @@ apr_status_t deserializeBody(DupModule::RequestInfo &pReqInfo)
     	pReqInfo.mResponseBody = pReqInfo.mBody.substr(pos, lBodyResSize);
         // Log::error( 11, "ResponseBody-BEGIN%sEND", pReqInfo.mResponseBody.c_str());
         
-        Log::info(42, "Deserialized sizes: BodyReq:%ld Header:%ld Bodyres:%ld ", lBodyReqSize, lHeaderResSize, lBodyResSize);
+        Log::info(42, "[COMPARE] Deserialized sizes: BodyReq:%ld Header:%ld Bodyres:%ld ", lBodyReqSize, lHeaderResSize, lBodyResSize);
     	deserializeHeader(pReqInfo,lResponseHeader);
     }
     catch ( const std::out_of_range &oor)

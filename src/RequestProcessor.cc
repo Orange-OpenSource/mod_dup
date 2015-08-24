@@ -55,7 +55,7 @@ Commands::toDuplicate() {
         // init State must be different for all threads or each will answer the same sequence
         lRet = initstate_r(random(), lRSB, 8, &lRD);
         if (lRet) {
-            Log::error(523, "Failed to Initialize Random State");
+            Log::error(523, "[DUP] Failed to Initialize Random State");
         }
         lInitialized = true;
     }
@@ -64,7 +64,7 @@ Commands::toDuplicate() {
     int randNum = 1;
     lRet = random_r(&lRD, &randNum);
     if (lRet) {
-        Log::error(524, "random_r failed");
+        Log::error(524, "[DUP] random_r failed");
         // No duplication
         return false;
     }
@@ -84,7 +84,7 @@ RequestProcessor::getTimeoutCount() {
     // Works because mTimeoutCount & 0 == 0
     unsigned int lTimeoutCount = __sync_fetch_and_and(&mTimeoutCount, 0);
     if (lTimeoutCount > 0) {
-        Log::warn(303, "%u requests timed out during last cycle!", lTimeoutCount);
+        Log::warn(303, "[DUP] %u requests timed out during last cycle!", lTimeoutCount);
     }
     return lTimeoutCount;
 }
@@ -218,11 +218,11 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
     int keyFilterOnHeader, keyFilterOnBody;
     applicationOnMap(pFilters, keyFilterOnHeader, keyFilterOnBody);
 
-    Log::debug("Filters on body: %d | on header: %d", keyFilterOnBody, keyFilterOnHeader);
+    Log::debug("[DUP] Filters on body: %d | on header: %d", keyFilterOnBody, keyFilterOnHeader);
 
     // Prevent Filtering check on HEADER
     if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::PREVENT_DUPLICATION))) {
-        Log::info(0, "PREVENT Filter on HEADER match");
+        Log::info(0, "[DUP] PREVENT Filter on HEADER match");
         return NULL;
     }
 
@@ -232,7 +232,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
     if (keyFilterOnBody){
         parseArgs(lParsedArgs, pRequest.mBody);
         if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY, tFilter::PREVENT_DUPLICATION))) {
-            Log::info(0, "PREVENT Filter on BODY match");
+            Log::info(0, "[DUP] PREVENT Filter on BODY match");
             return NULL;
         }
     }
@@ -243,14 +243,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
             // Header applications
             if (raw.mScope & ApplicationScope::HEADER) {
                 if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-                    Log::info(0, "Prevent Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Prevent Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
             // Body application
             if (raw.mScope & ApplicationScope::BODY) {
                 if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-                    Log::info(0, "Prevent Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Prevent Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
@@ -259,14 +259,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
 
     // Key filters on header
     if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::REGULAR))){
-        Log::info(0, "Filter on HEADER match");
+        Log::info(0, "[DUP] Filter on HEADER match");
         return matched;
     }
 
     // Key filters on body
     if (keyFilterOnBody){
         if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY, tFilter::REGULAR))) {
-            Log::info(0, "Filter on BODY match");
+            Log::info(0, "[DUP] Filter on BODY match");
             return matched;
         }
     }
@@ -277,14 +277,14 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, st
             // Header application
             if (raw.mScope & ApplicationScope::HEADER) {
                 if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-                    Log::info(0, "Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
                     return &raw;
                 }
             }
             // Body application
             if (raw.mScope & ApplicationScope::BODY) {
                 if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-                    Log::info(0, "Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
                     return &raw;
                 }
             }
@@ -313,14 +313,14 @@ RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
         // Key found in the subs?
         if (lSubstIter != pSubs.end()) {
             BOOST_FOREACH(const tSubstitute &lSubst, lSubstIter->second) {
-                Log::debug("Key substitute: %d | lVal:%s | lSubst:%s | Rep:%s", (int) lSubst.mScope, lVal.c_str(),
+                Log::debug("[DUP] Key substitute: %d | lVal:%s | lSubst:%s | Rep:%s", (int) lSubst.mScope, lVal.c_str(),
                         lSubst.mRegex.str().c_str(), lSubst.mReplacement.c_str());
                 if (!(scope & lSubst.mScope))
                     continue;
 
                 lVal = boost::regex_replace(lVal, lSubst.mRegex, lSubst.mReplacement, boost::match_default | boost::format_all);
                 lDidSubstitute = true;
-                Log::debug("Key substitute res: lVal:%s ", lVal.c_str());
+                Log::debug("[DUP] Key substitute res: lVal:%s ", lVal.c_str());
 
             }
         }
@@ -357,7 +357,7 @@ RequestProcessor::headerSubstitute(tFieldSubstitutionMap &pSubs,
                 lKeyVal.second = boost::regex_replace(lKeyVal.second, lSubst.mRegex, lSubst.mReplacement, boost::match_default | boost::format_all);
                 lDidSubstitute = true;
             }
-            Log::debug("Header substitute %s : %s ", lKeyVal.first.c_str(), lKeyVal.second.c_str());
+            Log::debug("[DUP] Header substitute %s : %s ", lKeyVal.first.c_str(), lKeyVal.second.c_str());
         }
     }
     return lDidSubstitute;
@@ -434,7 +434,7 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
     // Add the request's headers to the parsed list
     addHeadersIn(parsedArgs, pRequest.mHeadersIn);
     while (itb != itbe) {
-        Log::debug("### Duplication tested: %s", itb->first.c_str() );
+        Log::debug("[DUP] Duplication tested: %s", itb->first.c_str() );
         // Tests if at least one active filter matches on this duplication location
         const tFilter* matchedFilter = NULL;
         if ((matchedFilter = argsMatchFilter(pRequest, itb->second, parsedArgs))) {
@@ -586,7 +586,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, cons
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
-    Log::debug(">> Duplicating: %s", uri.c_str());
+    Log::debug("[DUP] >> Duplicating: %s", uri.c_str());
 
     int err = curl_easy_perform(curl);
     if (slist)
@@ -595,7 +595,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, cons
     if (err == CURLE_OPERATION_TIMEDOUT) {
         __sync_fetch_and_add(&mTimeoutCount, 1);
     } else if (err) {
-        Log::error(403, "Sending request failed with curl error code: %d, request:%s", err, uri.c_str());
+        Log::error(403, "[DUP] Sending request failed with curl error code: %d, request:%s", err, uri.c_str());
     }
     delete content;
 }
@@ -643,7 +643,7 @@ CURL * RequestProcessor::initCurl()
 {
     CURL * lCurl = curl_easy_init();
     if (!lCurl) {
-        Log::error(402, "Could not init curl request object.");
+        Log::error(402, "[DUP] Could not init curl request object.");
         return NULL;
     }
     curl_easy_setopt(lCurl, CURLOPT_USERAGENT, gUserAgent);
@@ -674,7 +674,7 @@ RequestProcessor::run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue)
 
         if (lQueueItem->isPoison()) {
             // Master tells us to stop
-            Log::debug("Received poison pill. Exiting.");
+            Log::debug("[DUP] Received poison pill. Exiting.");
             break;
         }
         runOne(*lQueueItem, lCurl);

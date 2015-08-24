@@ -125,7 +125,7 @@ int translateHook(request_rec *pRequest) {
     apr_bucket_brigade *bb = apr_brigade_create(pRequest->connection->pool, pRequest->connection->bucket_alloc);
 
     if (!bb) {
-        Log::error(42, "Bucket brigade allocation failed");
+        Log::error(42, "[MIGRATE] Bucket brigade allocation failed");
         return DECLINED;
     }
     std::string body;
@@ -164,6 +164,7 @@ int translateHook(request_rec *pRequest) {
  */
 apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
+    Log::debug("[MIGRATE] inputFilterBody2Brigade");
     request_rec *pRequest = pF->r;
     if (!pRequest || !pRequest->per_dir_config) {
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);

@@ -63,7 +63,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     		printer.addRuntime("DIFF",t);
     	}
     } catch ( boost::bad_lexical_cast &e ) {
-        Log::error(12, "Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
+        Log::error(12, "[COMPARE] Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
     }
 
 #ifdef UNIT_TESTING
@@ -107,7 +107,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     if(!gWriteInFile){
         pthread_mutex_t *lMutex = getGlobalMutex();
         if (not lMutex) {
-            Log::error(12, "Cannot write differences ! Mutex not initialized");
+            Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
             return;
         }
         if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
@@ -126,7 +126,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
         if (gFile.is_open()){
             pthread_mutex_t *lMutex = getGlobalMutex();
             if (not lMutex) {
-                Log::error(12, "Cannot write differences ! Mutex not initialized");
+                Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
                 return;
             }
             if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
@@ -138,7 +138,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
         }
         else
         {
-            Log::error(12, "File not correctly opened");
+            Log::error(12, "[COMPARE] File not correctly opened");
         }
     }
 }
@@ -177,7 +177,7 @@ void writeSerializedRequest(const DupModule::RequestInfo& req)
         if (gFile.is_open()){
             pthread_mutex_t *lMutex = getGlobalMutex();
             if (not lMutex) {
-                Log::error(12, "Cannot write differences ! Mutex not initialized");
+                Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
                 return;
             }
             if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
@@ -189,7 +189,7 @@ void writeSerializedRequest(const DupModule::RequestInfo& req)
         }
         else
         {
-            Log::error(12, "File not correctly opened");
+            Log::error(12, "[COMPARE] File not correctly opened");
         }
     }
 

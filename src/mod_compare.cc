@@ -66,7 +66,7 @@ pthread_mutex_t *getGlobalMutex() {
         int fd;
         fd = shm_open(c_named_mutex, O_RDWR, 0666);
         if (fd < 0) {
-            Log::error(42, "Cannot open global mutex named: %s.", c_named_mutex);
+            Log::error(42, "[COMPARE] Cannot open global mutex named: %s.", c_named_mutex);
             return NULL;
         }
         mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -87,8 +87,12 @@ createGlobalMutex(void) {
     char buffer[40] = "/dev/shm/";
     fd = shm_open(c_named_mutex, O_RDWR | O_CREAT | O_EXCL, 0666);
     if (fd < 0) {
-        Log::error(42, "Cannot initialize global mutex named: %s. What: %s", c_named_mutex, strerror(errno));
-        return -1;
+        if (errno != EEXIST) {
+            Log::error(42, "[COMPARE] Cannot initialize global mutex named: %s. What: %s", c_named_mutex, strerror(errno));
+            return -1;
+        }
+        Log::debug("[COMPARE] Global mutex already initialized");
+        return 0;
     }
     chmod(strncat(buffer,c_named_mutex,30),0666);
     ftruncate(fd, sizeof(pthread_mutex_t));
@@ -122,7 +126,7 @@ destroyGlobalMutex(void) {
 
     pthread_mutex_destroy(mutex);
     shm_unlink(c_named_mutex);
-    Log::debug("Mutex destroyed");
+    Log::debug("[COMPARE] Mutex destroyed");
     return 0;
 }
 
@@ -187,15 +191,15 @@ apr_status_t openLogFile(const char * filepath,std::ios_base::openmode mode) {
 
     gFile.open(filepath,mode);
     if (!gFile.is_open()){
-        Log::error(43,"Couldn't open correctly the file");
+        Log::error(43,"[COMPARE] Couldn't open correctly the file");
         return 400; // to modify
     }
 #if AP_SERVER_MINORVERSION_NUMBER==2
     if ( chown(filepath, unixd_config.user_id, unixd_config.group_id) < 0 ) {
-       Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, unixd_config.user_name, errno, strerror(errno) );
+       Log::error(528, "[COMPARE] Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, unixd_config.user_name, errno, strerror(errno) );
 #elif AP_SERVER_MINORVERSION_NUMBER==4
     if ( chown(filepath, ap_unixd_config.user_id, ap_unixd_config.group_id) < 0 ) {
-       Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, ap_unixd_config.user_name, errno, strerror(errno) );
+       Log::error(528, "[COMPARE] Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, ap_unixd_config.user_name, errno, strerror(errno) );
 #else
 #error "Unsupported Apache Version, only 2.2 or 2.4"
 #endif
@@ -210,7 +214,7 @@ childInit(apr_pool_t *pPool, server_rec *pServer)
     if( gWriteInFile ){
         gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
         if (!gFile.is_open()){
-            Log::error(43,"Couldn't open correctly the file");
+            Log::error(43,"[COMPARE] Couldn't open correctly the file");
         }
     }
     createGlobalMutex();
@@ -310,7 +314,7 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 	lConf->mCompareDisabled= strcmp(pValue, "1")==0 || strcmp(pValue, "true")==0;
     if(lConf->mCompareDisabled){
-    	Log::warn(42,"The use of the diffing library \nlibws-diff has been disabled!");
+    	Log::warn(42,"[COMPARE] The use of the diffing library \nlibws-diff has been disabled!");
     }
     return NULL;
 }
