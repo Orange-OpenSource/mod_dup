@@ -140,25 +140,20 @@ public:
 };
 
 /**
- * @brief Overlay on the commands object
- * Adds a destination concept
- */
-struct CommandsByDestination {
-    /** Commands indexed by the duplication destination*/
-    std::map<std::string, Commands> mCommands;
-};
-
-/**
  * @brief RequestProcessor is responsible for processing and sending requests to their destination.
  * This is where all the business logic is configured and executed.
  * Its main method is run which will continuously pull requests off the internal queue in order to process them.
  */
 class RequestProcessor
 {
-
+public:
+    /** Commands indexed by the duplication destination*/
+    typedef std::map<std::string, Commands> tCommandsByDestination;
+    typedef std::map<const void *, tCommandsByDestination> tCommandsByConfPathAndDestination;
+    
 private:
-    /** @brief Maps paths to their corresponding processing (filter and substitution) directives */
-    std::map<std::string, CommandsByDestination> mCommands;
+    /** @brief Maps DupConf(per virtualhost+path)+Destination to their corresponding processing (filter and substitution) directives */
+    tCommandsByConfPathAndDestination mCommands;
 
     /** @brief The timeout for outgoing requests in ms */
     unsigned int                                    mTimeout;
@@ -224,7 +219,7 @@ public:
      * @param fType the filter type
      */
     void
-    addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
+    addFilter(const std::string &pField, const std::string &pFilter,
             const DupConf &pAssociatedConf, tFilter::eFilterTypes fType);
 
     /**
@@ -234,7 +229,7 @@ public:
      * @param percentage : the percentage to affect to this destination
      */
     void
-    setDestinationDuplicationPercentage(const std::string &pPath, const std::string &destination,
+    setDestinationDuplicationPercentage(const DupConf &pAssociatedConf, const std::string &destination,
                                         int percentage);
 
     /**
@@ -245,7 +240,7 @@ public:
      * @param fType the filter type
      */
     void
-    addRawFilter(const std::string &pPath, const std::string &pFilter,
+    addRawFilter(const std::string &pFilter,
             const DupConf &pAssociatedConf, tFilter::eFilterTypes fType);
 
     /**
@@ -257,7 +252,7 @@ public:
      * @param pAssociatedConf the filter declaration context
      */
     void
-    addSubstitution(const std::string &pPath, const std::string &pField,
+    addSubstitution(const std::string &pField,
             const std::string &pMatch, const std::string &pReplace,
             const DupConf &pAssociatedConf);
 
@@ -270,7 +265,7 @@ public:
      * @param pAssociatedConf the filter declaration context
      */
     void
-    addRawSubstitution(const std::string &pPath, const std::string &pMatch, const std::string &pReplace,
+    addRawSubstitution(const std::string &pMatch, const std::string &pReplace,
             const DupConf &pAssociatedConf);
 
     /**
@@ -281,7 +276,7 @@ public:
      * @return the first matched filter, null otherwise
      */
     const tFilter*
-    argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, std::list<tKeyVal> &pParsedArgs);
+    argsMatchFilter(RequestInfo &pRequest, const Commands &pCommands, std::list<tKeyVal> &pParsedArgs);
 
     /**
      * @brief Parses arguments into key valye pairs. Also url-decodes values and converts keys to upper case.
@@ -338,7 +333,7 @@ private:
             std::list<tKeyVal> &pHeaderParsedArgs);
 
     const tFilter *
-    keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
+    keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
             ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes eType);
 
     bool

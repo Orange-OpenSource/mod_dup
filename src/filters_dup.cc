@@ -51,7 +51,7 @@ static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
 
     // Basic
     r.mPoison = false;
-    r.mConfPath = tConf->dirName;
+    r.mConf = tConf;
     r.mPath = pRequest->uri;
     r.mArgs = pRequest->args ? pRequest->args : "";
 }
@@ -91,7 +91,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap
                 apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
             }
 
-            info->mConfPath = conf->dirName;
+            info->mConf = conf;
             info->mArgs = pRequest->args ? pRequest->args : "";
         }
         pFilter->ctx = reqInfo->get();
@@ -166,7 +166,7 @@ apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *p
 			ri = reqInfo->get();
             pFilter->ctx = ri;
 
-            ri->mConfPath = tConf->dirName;
+            ri->mConf = tConf;
             ri->mArgs = pRequest->args ? pRequest->args : "";
 
         } else {
@@ -259,7 +259,7 @@ apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade
             ri = reqInfo->get();
             pFilter->ctx = ri;
 
-            ri->mConfPath = tConf->dirName;
+            ri->mConf = tConf;
             ri->mArgs = pRequest->args ? pRequest->args : "";
         } else {
             pFilter->ctx = (void *) -1;

@@ -53,16 +53,15 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
         // Not a location that we treat, we decline the request
         return DECLINED;
     }
-    std::unordered_map<std::string, std::list<MigrateConf::MigrateEnv>>::const_iterator it = conf->mEnvLists.find(rInfo.mConfPath);
 
     // No filters for this path
-    if (it == conf->mEnvLists.end() || it->second.empty())
+    if (conf->mEnvLists.empty())
         return 0;
     int count = 0;
-    const std::list<MigrateConf::MigrateEnv>& envList = it->second;
+    const std::list<MigrateConf::MigrateEnv>& envList = conf->mEnvLists;
 
     // Iteration through context enrichment
-    BOOST_FOREACH(const MigrateConf::MigrateEnv &ctx, envList) {
+    BOOST_FOREACH(const MigrateConf::MigrateEnv &ctx, conf->mEnvLists) {
         if (ctx.mApplicationScope & ApplicationScope::URL) {
             std::string toSet = boost::regex_replace(rInfo.mArgs, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             count += (int)setEnvVar(pRequest, ctx, toSet, count);
@@ -149,7 +148,7 @@ int translateHook(request_rec *pRequest) {
     }
 
     // Synchronous context enrichment
-    info->mConfPath = conf->mDirName;
+    info->mConf = conf;
     info->mArgs = pRequest->args ? pRequest->args : "";
     enrichContext(pRequest, *info);
     pRequest->read_length = 0;

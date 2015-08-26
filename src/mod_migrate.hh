@@ -56,8 +56,8 @@ public:
 
     ApplicationScope::eApplicationScope mCurrentApplicationScope;
 
-    /// Map with Location as key and a list of MigrateEnv structure as value
-    std::unordered_map<std::string, std::list<MigrateEnv>> mEnvLists;
+    /// list of MigrateEnv structure 
+    std::list<MigrateEnv> mEnvLists;
 
     MigrateConf() : mDirName(NULL),mCurrentApplicationScope(ApplicationScope::ALL) {}
 };

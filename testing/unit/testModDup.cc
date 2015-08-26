@@ -269,6 +269,7 @@ void TestModDup::testDuplicationPercentage() {
 
         {
             RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=eightyfour");
+            ri.mConf = lDoHandle;
             std::list<std::pair<std::string, std::string> > lParsedArgs;
             gProcessor->parseArgs(lParsedArgs, ri.mArgs);
             std::list<const tFilter *> ff = gProcessor->processRequest(ri, lParsedArgs);
@@ -280,14 +281,15 @@ void TestModDup::testDuplicationPercentage() {
             CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, first->mFilterType);
 
             // Get a handle on the corresponding command
-            CommandsByDestination &cbd = gProcessor->mCommands.at(ri.mConfPath);
-            Commands &c = cbd.mCommands.at(first->mDestination);
+            RequestProcessor::tCommandsByDestination &cbd = gProcessor->mCommands.at(ri.mConf);
+            Commands &c = cbd.at(first->mDestination);
             // Checks the duplication percentage
             CPPUNIT_ASSERT_EQUAL((unsigned int)84, c.mDuplicationPercentage);
         }
 
         {
             RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=fortytwo");
+            ri.mConf = lDoHandle;
             std::list<std::pair<std::string, std::string> > lParsedArgs;
             gProcessor->parseArgs(lParsedArgs, ri.mArgs);
             std::list<const tFilter *> ff = gProcessor->processRequest(ri, lParsedArgs);
@@ -299,8 +301,8 @@ void TestModDup::testDuplicationPercentage() {
             CPPUNIT_ASSERT_EQUAL(tFilter::eFilterTypes::REGULAR, first->mFilterType);
 
             // Get a handle on the corresponding command
-            CommandsByDestination &cbd = gProcessor->mCommands.at(ri.mConfPath);
-            Commands &c = cbd.mCommands.at(first->mDestination);
+            RequestProcessor::tCommandsByDestination &cbd = gProcessor->mCommands.at(ri.mConf);
+            Commands &c = cbd.at(first->mDestination);
             // Checks the duplication percentage
             CPPUNIT_ASSERT_EQUAL((unsigned int)42, c.mDuplicationPercentage);
         }
