@@ -288,7 +288,7 @@ void TestModMigrate::testInputFilterBody2Brigade() {
                     continue;
                 const char *data = 0;
                 apr_size_t len = 0;
-                apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+                apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
                 if (len) {
                     result.append(data, len);
                 }

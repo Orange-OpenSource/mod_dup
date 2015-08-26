@@ -31,7 +31,7 @@ void jsonDiffPrinter::addInfo(const std::string& key,const double value){
 void jsonDiffPrinter::addRequestUri(const std::string& uri,
 		const std::string& paramsBody){
 	this->jsonRes["request"]["uri"]=uri;
-	int pivot=uri.find('?');
+	size_t pivot=uri.find('?');
 	this->jsonRes["request"]["url"]=uri.substr(0,pivot);
 	std::vector<std::string> vectParams;
 	if(pivot!=uri.length()){
