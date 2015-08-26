@@ -1,6 +1,6 @@
 Description
 ===========
-This repository contain two modules apache, mod_dup and mod_compare which duplicate and compare HTTP requests  respectively.
+This repository contains three Apache C++ modules, mod_dup, mod_migrate and mod_compare which duplicate, redirect and compare HTTP requests  respectively.
 
 mod_dup
 =======
@@ -9,7 +9,7 @@ Only requests which match specified filters are duplicated.
 Before duplication, all defined substitutions are applied to the incoming request.
 To minimize resource usage, mod_dup adapts to the amount of incoming by adjusting its number of threads.
 If maximum thresholds are reached, requests are dropped.
-In other words, mod_dup is built to guarantee a low system impact by sacrifizing the reliability of duplications.
+In other words, mod_dup is built to guarantee a low system impact by sacrificing the reliability of duplications.
 However, by using a high number of maximum threads, request dropping can be avoided and system impact raised.
 mod_dup periodically emits log messages containing metrics such as the number of dropped requests.
 
@@ -31,7 +31,7 @@ WARNING: The Web Services must not be CGI based scripts.
 
 mod_migrate
 =======
-mod_migrate migrates Apache requests (POST, GET or both).
+mod_migrate allows redirecting requests based on the body content, on top of mod_rewrite which can only match URLs and Headers. Hence all HTTP Methods may be redirected or proxied (GET, POST, PUT, PATCH...).
 Only requests which match specified filters are migrated.
 This mod uses mod_rewrite and mod_proxy to redirect the requests.
 
@@ -52,7 +52,7 @@ Documentation
 
 To generate the technical documentation of the code using doxygen, see documentation in the Build section.
 
-For usage and configuration documentation, read the module Wiki at this page https://github.com/Orange-OpenSource/mod_dup/wiki
+For usage and configuration documentation, read the module's Wiki at this page https://github.com/Orange-OpenSource/mod_dup/wiki
 
 
 Build
@@ -88,6 +88,10 @@ or to generate documentation:
 	make doc
 
 	<browser> docs/doxygen/html/index.html
+
+Packaging
+=========
+A debian folder compatible with Ubuntu Precise and Trusty is present
 
 Dependencies
 ============
