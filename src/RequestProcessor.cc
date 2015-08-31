@@ -156,7 +156,7 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
 }
 
 void
-RequestProcessor::addHeadersIn(std::list<tKeyVal> &pParsedArgs, const std::list<std::pair<std::string, std::string>> &pHeadersIn) {
+RequestProcessor::addHeadersIn(const RequestInfo::tHeaders &pHeadersIn, std::list<tKeyVal> &pParsedArgs) {
     std::list<std::pair<std::string, std::string>>::const_iterator it;
     for(it = pHeadersIn.begin(); it != pHeadersIn.end(); it++) {
       std::string lKey = boost::to_upper_copy(it->first);
@@ -438,7 +438,7 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
         return ret;
 
     // Add the request's headers to the parsed list
-    addHeadersIn(parsedArgs, pRequest.mHeadersIn);
+    addHeadersIn(pRequest.mHeadersIn, parsedArgs);
         
     tCommandsByDestination &lCommands = it->second;
     // For each duplication destination

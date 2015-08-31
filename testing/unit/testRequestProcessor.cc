@@ -66,6 +66,7 @@ void TestRequestProcessor::testSubstitution()
     proc.addRawFilter(".*", conf, tFilter::eFilterTypes::REGULAR);
 
     proc.addSubstitution("titi", "[ae]", "-", conf);
+    proc.addSubstitution("H1", "[Aa]", "*", conf);
 
     query = "titi=tatae&tutu=tatae";
     RequestInfo ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
@@ -87,6 +88,27 @@ void TestRequestProcessor::testSubstitution()
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
         proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
+    }
+
+    {
+        //  Header substitution
+        query = "titi=tatae&tutu";
+        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri.mConf = &conf;
+        ri.mHeadersIn.push_back(tKeyVal(std::string("H1"), std::string("tAta1,2#")));
+        ri.mHeadersIn.push_back(tKeyVal(std::string("H2"), std::string(""))); ;
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
+        Commands &c = cbd.at(conf.currentDupDestination);
+        proc.substituteRequest(ri, c, lParsedArgs);
+        CPPUNIT_ASSERT_EQUAL(ri.mHeadersIn.front().first, std::string("H1"));
+        CPPUNIT_ASSERT_EQUAL(ri.mHeadersIn.front().second, std::string("t*t*1,2#"));
+        ri.mHeadersIn.pop_front();
+        CPPUNIT_ASSERT_EQUAL(ri.mHeadersIn.front().first, std::string("H2"));
+        CPPUNIT_ASSERT_EQUAL(ri.mHeadersIn.front().second, std::string(""));
+        ri.mHeadersIn.pop_front();
         CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
     }
 
@@ -245,6 +267,33 @@ void TestRequestProcessor::testFilterBasic()
         proc.addFilter( "STOP", "true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
         std::string body = "BODY=hello&STOP=true";
         RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        ri.mConf = &conf;
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    }
+
+    {
+        // Filter applied on body only MATCH stopped by RAW PREVENT filter type on body
+        RequestProcessor proc;
+        proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
+        proc.addRawFilter( "STOP=true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
+        std::string body = "BODY=hello&STOP=true";
+        RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        ri.mConf = &conf;
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    }
+
+    {
+        // MATCH on body stopped by RAW PREVENT filter type on header
+        conf.currentApplicationScope = ApplicationScope::ALL;
+        RequestProcessor proc;
+        proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
+        proc.addRawFilter( "STOP=true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
+        std::string body = "BODY=hello";
+        RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "STOP=true", &body);
         ri.mConf = &conf;
         std::list<std::pair<std::string, std::string> > lParsedArgs;
         proc.parseArgs(lParsedArgs, ri.mArgs);
@@ -486,6 +535,24 @@ void TestRequestProcessor::testParseArgs()
 
     query = "titi=tAta1,2#&tutu";
     proc.parseArgs(lParsedArgs, query);
+    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().first, std::string("TITI"));
+    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().second, std::string("tAta1,2#"));
+    lParsedArgs.pop_front();
+
+    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().first, std::string("TUTU"));
+    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().second, std::string(""));
+    lParsedArgs.pop_front();
+}
+
+void TestRequestProcessor::testAddHeadersIn()
+{
+    RequestProcessor proc;
+    RequestInfo::tHeaders lHeaders;
+    std::list<std::pair<std::string, std::string> > lParsedArgs;
+
+    lHeaders.push_back(tKeyVal(std::string("TITI"), std::string("tAta1,2#")));
+    lHeaders.push_back(tKeyVal(std::string("TUTU"), std::string("")));
+    proc.addHeadersIn(lHeaders, lParsedArgs);
     CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().first, std::string("TITI"));
     CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().second, std::string("tAta1,2#"));
     lParsedArgs.pop_front();

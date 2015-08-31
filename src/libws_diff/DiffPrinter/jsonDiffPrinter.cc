@@ -14,6 +14,7 @@ namespace LibWsDiff {
 
 jsonDiffPrinter::jsonDiffPrinter(std::string id):diffPrinter(id){
 	this->jsonRes["id"]=id;
+        this->printerType = diffTypeAvailable::JSON;
 }
 
 jsonDiffPrinter::~jsonDiffPrinter() {

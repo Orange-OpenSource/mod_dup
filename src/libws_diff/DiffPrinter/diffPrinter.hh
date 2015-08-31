@@ -38,6 +38,7 @@ public:
 	virtual ~diffPrinter(){}
 
 	bool isDiff(){return this->isADiff;}
+	enum diffTypeAvailable getPrinterType() {return this->printerType;}
 
 	/**
 	 * Basic factory-like constructor method
@@ -109,6 +110,11 @@ public:
 	 * \param[out] : bool : True if one diff at least (body or header)
 	 */
 	virtual bool retrieveDiff(std::string& res)=0;
+
+protected:
+
+    enum diffTypeAvailable printerType;
+
 };
 
 } /* namespace LibWsDiff */

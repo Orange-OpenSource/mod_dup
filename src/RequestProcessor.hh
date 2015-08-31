@@ -292,7 +292,7 @@ public:
      * @param pHeadersIn the request's header in a key value list
      */
     void
-    addHeadersIn(std::list<tKeyVal> &pParsedArgs, const std::list<std::pair<std::string, std::string>> &pHeadersIn);
+    addHeadersIn(const RequestInfo::tHeaders &pHeadersIn, std::list<tKeyVal> &pParsedArgs);
 
     /**
      * @brief Process a field. This includes filtering and executing substitutions

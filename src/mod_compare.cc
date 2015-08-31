@@ -59,22 +59,6 @@ const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
 bool gWriteInFile = true;
 std::string gLogFacility;
 
-
-pthread_mutex_t *getGlobalMutex() {
-    static pthread_mutex_t *mutex = NULL;
-    if (mutex == NULL) {
-        int fd;
-        fd = shm_open(c_named_mutex, O_RDWR, 0666);
-        if (fd < 0) {
-            Log::error(42, "[COMPARE] Cannot open global mutex named: %s.", c_named_mutex);
-            return NULL;
-        }
-        mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        close(fd);
-    }
-    return mutex;
-}
-
 /**
  * @brief Create the global mutex in the shared memory
  * @return 0 if successful, -1 when it fails
@@ -107,6 +91,7 @@ createGlobalMutex(void) {
     return 0;
 }
 
+// not used in apache to prevent issues when restarting
 /**
  * @brief Destroy the global mutex and unlink the shared memory
  * @return 0 if successful, -1 when it fails
@@ -130,6 +115,23 @@ destroyGlobalMutex(void) {
     return 0;
 }
 
+pthread_mutex_t *getGlobalMutex() {
+    static pthread_mutex_t *mutex = NULL;
+    if (mutex == NULL) {
+        if (createGlobalMutex()) {
+            return NULL;
+        }
+        int fd;
+        fd = shm_open(c_named_mutex, O_RDWR, 0666);
+        if (fd < 0) {
+            Log::error(42, "[COMPARE] Cannot open global mutex named: %s.", c_named_mutex);
+            return NULL;
+        }
+        mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        close(fd);
+    }
+    return mutex;
+}
 
 CompareConf::CompareConf(): mCompareDisabled(false), mIsActive(false) {
 }
@@ -217,7 +219,6 @@ childInit(apr_pool_t *pPool, server_rec *pServer)
             Log::error(43,"[COMPARE] Couldn't open correctly the file");
         }
     }
-    createGlobalMutex();
 }
 
 /**

@@ -105,22 +105,27 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     }
 
     if(!gWriteInFile){
-        pthread_mutex_t *lMutex = getGlobalMutex();
-        if (not lMutex) {
-            Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
-            return;
+        if (printer.getPrinterType() == LibWsDiff::diffPrinter::MULTILINE) {
+            pthread_mutex_t *lMutex = getGlobalMutex();
+            if (not lMutex) {
+                Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
+                return;
+            }
+            if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
+                pthread_mutex_consistent(lMutex);
+            }
+            std::vector<std::string> resLines;
+            boost::split(resLines,res,boost::is_any_of("\n"));
+            for(std::vector<std::string>::iterator it= resLines.begin();
+                            it!=resLines.end();it++)
+            {
+                writeInFacility(*it);
+            }
+            pthread_mutex_unlock(lMutex);
+        } else {
+            // syslog is threadsafe
+            Log::error(12, "%s", res.c_str());
         }
-        if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
-            pthread_mutex_consistent(lMutex);
-        }
-        std::vector<std::string> resLines;
-        boost::split(resLines,res,boost::is_any_of("\n"));
-        for(std::vector<std::string>::iterator it= resLines.begin();
-        		it!=resLines.end();it++)
-        {
-            writeInFacility(*it);
-        }
-        pthread_mutex_unlock(lMutex);
     }
     else {
         if (gFile.is_open()){

@@ -61,7 +61,6 @@ extern std::string gLogFacility;
  */
 pthread_mutex_t *getGlobalMutex();
 
-
 /**
  * A class that holds the configuration specific to the location
  */
