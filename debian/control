@@ -26,7 +26,7 @@ Depends: ${misc:Depends}, ${shlibs:Depends},
          libapr1,
          libaprutil1,
          apache2,
-         apache2.2-bin
+         apache2-bin | apache2.2-bin
 Conflicts: libapache2-mod-tee
 Description: Apache module which duplicates requests to another server
 Homepage: http://sourceforge.x-echo.com/projects/pns/
@@ -37,7 +37,7 @@ Depends: ${misc:Depends}, ${shlibs:Depends},
          libapr1,
          libaprutil1,
          apache2,
-         apache2.2-bin,
+         apache2-bin | apache2.2-bin,
 	 libpns-jsoncpp0,
 	 libboost-date-time1.48.0 | libboost-date-time1.46.1 | libboost-date-time,	 
          libws-diff (>= ${binary:Version})
@@ -50,7 +50,7 @@ Depends: ${misc:Depends}, ${shlibs:Depends},
          libapr1,
          libaprutil1,
          apache2,
-         apache2.2-bin
+         apache2-bin | apache2.2-bin
 Description: Apache module which migrates requests from a server to another
 Homepage: http://sourceforge.x-echo.com/projects/pns/
 
