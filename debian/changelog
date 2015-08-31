@@ -1,3 +1,10 @@
+pns-mod-dup (2.2.0) precise; urgency=low
+
+  * Process headers for duplication and subtitution
+  * Bug fix : mod_compare deadlock when a process dies without unlocking the mutex
+
+ -- waitamer <waitamer.ext@orange.com>  Mon, 31 Aug 2015 16:25:32 +0200
+
 pns-mod-dup (2.1.1) precise; urgency=low
 
   * UTF8 validation before json printing of diff
