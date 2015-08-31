@@ -34,6 +34,7 @@ std::string* multilineDiffPrinter::getStream(const diffPartitionning part){
 
 multilineDiffPrinter::multilineDiffPrinter(std::string id):diffPrinter(id),hadPreviousCassDiff(false){
 	this->getStream(diffPartitionning::BEGIN)->append("BEGIN NEW REQUEST DIFFERENCE n: "+this->id+"\n");
+        this->printerType = diffTypeAvailable::MULTILINE;
 }
 
 multilineDiffPrinter::~multilineDiffPrinter() {}

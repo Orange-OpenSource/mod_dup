@@ -153,7 +153,7 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination, const c
             if (perc > 100) {
                 return "Duplication percentage value not valid: must be an integer between 0 and 100";
             }
-            gProcessor->setDestinationDuplicationPercentage(pParams->path, pDestination, perc);
+            gProcessor->setDestinationDuplicationPercentage(*tC, pDestination, perc);
         } catch (boost::bad_lexical_cast&) {
             std::string msg = "Duplication percentage value not valid: ";
             msg += duplicationPercentage;
@@ -189,7 +189,7 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     assert(conf);
 
     try {
-        gProcessor->addRawSubstitution(pParams->path, pMatch, pReplace,
+        gProcessor->addRawSubstitution(pMatch, pReplace,
                                        *conf);
     } catch (boost::bad_expression&) {
         return "Invalid regular expression in substitution definition.";
@@ -256,7 +256,7 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
     assert(conf);
 
     try {
-        gProcessor->addSubstitution(pParams->path, pField, pMatch, pReplace, *conf);
+        gProcessor->addSubstitution(pField, pMatch, pReplace, *conf);
     } catch (boost::bad_expression&) {
         return "Invalid regular expression in substitution definition.";
     }
@@ -324,7 +324,7 @@ _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilt
     assert(conf);
 
     try {
-        gProcessor->addFilter(pParams->path, pField, pFilter, *conf, fType);
+        gProcessor->addFilter(pField, pFilter, *conf, fType);
     } catch (boost::bad_expression&) {
         return "Invalid regular expression in filter definition.";
     }
@@ -352,7 +352,7 @@ _setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression, tFilter::
     assert(conf);
 
     try {
-        gProcessor->addRawFilter(pParams->path, pExpression, *conf, fType);
+        gProcessor->addRawFilter(pExpression, *conf, fType);
     } catch (boost::bad_expression&) {
         return "Invalid regular expression in filter definition.";
     }

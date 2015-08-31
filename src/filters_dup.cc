@@ -37,6 +37,7 @@ static int iterateOverHeadersCallBack(void *d, const char *key, const char *valu
 
 static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r)
 {
+    Log::debug("[DUP] Pepare request info");
     // Add the HTTP Status Code Header
     r.mHeadersIn.push_front(std::make_pair("X_DUP_HTTP_STATUS", boost::lexical_cast<std::string>(pRequest->status)));
     // Add the HTTP Request Method
@@ -50,7 +51,7 @@ static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
 
     // Basic
     r.mPoison = false;
-    r.mConfPath = tConf->dirName;
+    r.mConf = tConf;
     r.mPath = pRequest->uri;
     r.mArgs = pRequest->args ? pRequest->args : "";
 }
@@ -58,13 +59,14 @@ static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
 static void printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf)
 {
     const char *reqId = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
-    Log::debug("### Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
-    Log::debug("### Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
-    Log::debug("### Request args: %s", pRequest->args);
+    Log::debug("[DUP] Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
+    Log::debug("[DUP] Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
+    Log::debug("[DUP] Request args: %s", pRequest->args);
 }
 
 apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
 {
+    Log::debug("[DUP] Input filter handler");
     request_rec *pRequest = pFilter->r;
     if (!pRequest || !pRequest->per_dir_config) {
         return ap_get_brigade(pFilter->next, pB, pMode, pBlock, pReadbytes);
@@ -89,7 +91,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap
                 apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
             }
 
-            info->mConfPath = conf->dirName;
+            info->mConf = conf;
             info->mArgs = pRequest->args ? pRequest->args : "";
         }
         pFilter->ctx = reqInfo->get();
@@ -115,7 +117,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap
             apr_size_t len = 0;
             apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
             if (rv != APR_SUCCESS) {
-                Log::error(42, "Bucket read failed, skipping the rest of the body");
+                Log::error(42, "[DUP] Bucket read failed, skipping the rest of the body");
                 return rv;
             }
             if (len) {
@@ -134,6 +136,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap
  */
 apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade)
 {
+    Log::debug("[DUP] Output body filter handler");
 
     request_rec *pRequest = pFilter->r;
     apr_status_t rv;
@@ -163,7 +166,7 @@ apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *p
 			ri = reqInfo->get();
             pFilter->ctx = ri;
 
-            ri->mConfPath = tConf->dirName;
+            ri->mConf = tConf;
             ri->mArgs = pRequest->args ? pRequest->args : "";
 
         } else {
@@ -216,6 +219,7 @@ apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *p
  */
 apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade)
 {
+    Log::debug("[DUP] Output headers filter handler");
 
     apr_status_t rv;
     if (pFilter->ctx == (void *) -1) {
@@ -255,7 +259,7 @@ apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade
             ri = reqInfo->get();
             pFilter->ctx = ri;
 
-            ri->mConfPath = tConf->dirName;
+            ri->mConf = tConf;
             ri->mArgs = pRequest->args ? pRequest->args : "";
         } else {
             pFilter->ctx = (void *) -1;

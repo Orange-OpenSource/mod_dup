@@ -51,9 +51,9 @@ void
 printRequest(request_rec *pRequest, std::string pBody)
 {
     const char *reqId = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
-    Log::debug("### Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
-    Log::debug("### Uri:%s", pRequest->uri);
-    Log::debug("### Request args: %s", pRequest->args);
+    Log::debug("[COMPARE] Filtering a request with ID: %s, body size:%ld", reqId, pBody.size());
+    Log::debug("[COMPARE] Uri:%s", pRequest->uri);
+    Log::debug("[COMPARE] Request args: %s", pRequest->args);
 }
 
 void
@@ -350,6 +350,7 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 /// @brief second output filter, performs the actual comparison
 apr_status_t
 outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
+    Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler2");
 
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){

@@ -36,6 +36,7 @@
 #include <boost/tokenizer.hpp>
 #include <fstream>
 #include <unixd.h>
+#include <sys/mman.h>
 
 
 #include "mod_compare.hh"
@@ -53,28 +54,84 @@ const char* gNameOut = "CompareOut";
 const char* gNameOut2 = "CompareOut2";
 const char* c_COMPONENT_VERSION = "Compare/1.0";
 const char* c_named_mutex = "mod_compare_log_mutex";
-bool gRem = boost::interprocess::named_mutex::remove(c_named_mutex);
 std::ofstream gFile;
 const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
 bool gWriteInFile = true;
 std::string gLogFacility;
 
-
-boost::interprocess::named_mutex &getGlobalMutex() {
-    static boost::interprocess::named_mutex *gMutex = NULL;
-    try {
-        if (!gMutex) {
-            gMutex = new boost::interprocess::named_mutex(boost::interprocess::open_or_create, c_named_mutex);
+/**
+ * @brief Create the global mutex in the shared memory
+ * @return 0 if successful, -1 when it fails
+ */
+int
+createGlobalMutex(void) {
+    pthread_mutex_t *mutex;
+    pthread_mutexattr_t mutex_attr;
+    int fd;
+    char buffer[40] = "/dev/shm/";
+    fd = shm_open(c_named_mutex, O_RDWR | O_CREAT | O_EXCL, 0666);
+    if (fd < 0) {
+        if (errno != EEXIST) {
+            Log::error(42, "[COMPARE] Cannot initialize global mutex named: %s. What: %s", c_named_mutex, strerror(errno));
+            return -1;
         }
-        return *gMutex;
-    } catch (boost::interprocess::interprocess_exception& e) {
-        // Just in case the log has not been init yet
-        Log::init();
-        Log::error(42, "Cannot initialize global mutex named: %s. What: %s", c_named_mutex, e.what());
-        throw e;
+        Log::debug("[COMPARE] Global mutex already initialized");
+        return 0;
     }
+    chmod(strncat(buffer,c_named_mutex,30),0666);
+    ftruncate(fd, sizeof(pthread_mutex_t));
+    mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+    pthread_mutexattr_init(&mutex_attr);
+    pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutexattr_setrobust(&mutex_attr, PTHREAD_MUTEX_ROBUST);
+    pthread_mutex_init(mutex, &mutex_attr);
+    pthread_mutexattr_destroy(&mutex_attr);
+    Log::debug("Mutex initialized");
+    return 0;
 }
 
+// not used in apache to prevent issues when restarting
+/**
+ * @brief Destroy the global mutex and unlink the shared memory
+ * @return 0 if successful, -1 when it fails
+ */
+int
+destroyGlobalMutex(void) {
+    pthread_mutex_t *mutex;
+    int fd;
+
+    fd = shm_open(c_named_mutex, O_RDWR, 0666);
+    if (fd < 0) {
+        Log::error(42, "Cannot destroy global mutex named: %s. What: %s", c_named_mutex, strerror(errno));
+        return -1;
+    }
+    mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+
+    pthread_mutex_destroy(mutex);
+    shm_unlink(c_named_mutex);
+    Log::debug("[COMPARE] Mutex destroyed");
+    return 0;
+}
+
+pthread_mutex_t *getGlobalMutex() {
+    static pthread_mutex_t *mutex = NULL;
+    if (mutex == NULL) {
+        if (createGlobalMutex()) {
+            return NULL;
+        }
+        int fd;
+        fd = shm_open(c_named_mutex, O_RDWR, 0666);
+        if (fd < 0) {
+            Log::error(42, "[COMPARE] Cannot open global mutex named: %s.", c_named_mutex);
+            return NULL;
+        }
+        mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        close(fd);
+    }
+    return mutex;
+}
 
 CompareConf::CompareConf(): mCompareDisabled(false), mIsActive(false) {
 }
@@ -136,15 +193,15 @@ apr_status_t openLogFile(const char * filepath,std::ios_base::openmode mode) {
 
     gFile.open(filepath,mode);
     if (!gFile.is_open()){
-        Log::error(43,"Couldn't open correctly the file");
+        Log::error(43,"[COMPARE] Couldn't open correctly the file");
         return 400; // to modify
     }
 #if AP_SERVER_MINORVERSION_NUMBER==2
     if ( chown(filepath, unixd_config.user_id, unixd_config.group_id) < 0 ) {
-       Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, unixd_config.user_name, errno, strerror(errno) );
+       Log::error(528, "[COMPARE] Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, unixd_config.user_name, errno, strerror(errno) );
 #elif AP_SERVER_MINORVERSION_NUMBER==4
     if ( chown(filepath, ap_unixd_config.user_id, ap_unixd_config.group_id) < 0 ) {
-       Log::error(528, "Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, ap_unixd_config.user_name, errno, strerror(errno) );
+       Log::error(528, "[COMPARE] Failed to change ownership of shared mem file %s to child user %s, error %d (%s)", filepath, ap_unixd_config.user_name, errno, strerror(errno) );
 #else
 #error "Unsupported Apache Version, only 2.2 or 2.4"
 #endif
@@ -159,7 +216,7 @@ childInit(apr_pool_t *pPool, server_rec *pServer)
     if( gWriteInFile ){
         gFile.open(gFilePath, std::ofstream::out | std::ofstream::app );
         if (!gFile.is_open()){
-            Log::error(43,"Couldn't open correctly the file");
+            Log::error(43,"[COMPARE] Couldn't open correctly the file");
         }
     }
 }
@@ -258,7 +315,7 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
 	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 	lConf->mCompareDisabled= strcmp(pValue, "1")==0 || strcmp(pValue, "true")==0;
     if(lConf->mCompareDisabled){
-    	Log::warn(42,"The use of the diffing library \nlibws-diff has been disabled!");
+    	Log::warn(42,"[COMPARE] The use of the diffing library \nlibws-diff has been disabled!");
     }
     return NULL;
 }

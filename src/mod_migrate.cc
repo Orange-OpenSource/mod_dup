@@ -99,7 +99,7 @@ const char* setMigrateEnv(cmd_parms* pParams, void* pCfg, const char *pVarName, 
     assert(conf);
 
     // Flag boost::regex_constants::icase must be set in order for the regex to be case insensitive
-    conf->mEnvLists[pParams->path].push_back(MigrateConf::MigrateEnv{pVarName,boost::regex(pMatchRegex,boost::regex_constants::icase),pSetValue,conf->mCurrentApplicationScope});
+    conf->mEnvLists.push_back(MigrateConf::MigrateEnv{pVarName,boost::regex(pMatchRegex,boost::regex_constants::icase),pSetValue,conf->mCurrentApplicationScope});
 
     return NULL;
 }

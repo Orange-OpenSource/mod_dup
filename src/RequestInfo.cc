@@ -64,12 +64,13 @@ RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std
                          const std::string &pArgs, const std::string *pBody)
     : mPoison(false),
       mId(id),
-      mConfPath(pConfPath),
       mPath(pPath),
       mArgs(pArgs),
       mEOS(false),
       mStartTime(boost::posix_time::microsec_clock::universal_time()),
-      mElapsedTime() {
+      mElapsedTime(),
+      mConf(nullptr)
+{
     if (pBody)
         mBody = *pBody;
 }
@@ -84,13 +85,17 @@ RequestInfo::RequestInfo(const mapStr &reqHeader, const std::string &reqBody, co
 	mDupResponseBody(dupBody),
         mEOS(false),
         mStartTime(boost::posix_time::microsec_clock::universal_time()),
-        mElapsedTime() {
+        mElapsedTime(),
+        mConf(nullptr)
+{
 }
 
 RequestInfo::RequestInfo(const std::string &id, int64_t startTime)
     : mPoison(false),
       mId(id),
-      mEOS(false){
+      mEOS(false),
+      mConf(nullptr)
+{
           namespace pt = boost::posix_time;
           mStartTime = pt::from_time_t(time_t(startTime / 1000000)) + pt::microseconds(startTime % 1000000);
 }
@@ -99,7 +104,9 @@ RequestInfo::RequestInfo() :
     mPoison(true),
     mEOS(false),
     mStartTime(boost::posix_time::microsec_clock::universal_time()),
-    mElapsedTime() {
+    mElapsedTime(),
+    mConf(nullptr)
+    {
 }
 
 bool

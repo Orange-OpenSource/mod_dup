@@ -52,10 +52,10 @@ static request_rec *prep_request_rec() {
 static void setConf(MigrateConf& conf, const std::string& pStr) {
     conf.mDirName = strdup("/location1");
 
-    conf.mEnvLists["location1"].push_back(MigrateConf::MigrateEnv{"var1",boost::regex(pStr,boost::regex_constants::icase),"set1",ApplicationScope::ALL});
-    conf.mEnvLists["location1"].push_back(MigrateConf::MigrateEnv{"var2",boost::regex(pStr,boost::regex_constants::icase),"set2",ApplicationScope::URL});
-    conf.mEnvLists["location1"].push_back(MigrateConf::MigrateEnv{"var3",boost::regex(pStr,boost::regex_constants::icase),"set3",ApplicationScope::HEADER});
-    conf.mEnvLists["location1"].push_back(MigrateConf::MigrateEnv{"var4",boost::regex(pStr,boost::regex_constants::icase),"set4",ApplicationScope::BODY});
+    conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var1",boost::regex(pStr,boost::regex_constants::icase),"set1",ApplicationScope::ALL});
+    conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var2",boost::regex(pStr,boost::regex_constants::icase),"set2",ApplicationScope::URL});
+    conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var3",boost::regex(pStr,boost::regex_constants::icase),"set3",ApplicationScope::HEADER});
+    conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var4",boost::regex(pStr,boost::regex_constants::icase),"set4",ApplicationScope::BODY});
 }
 
 void TestModMigrate::testEnrichContext()
@@ -71,7 +71,7 @@ void TestModMigrate::testEnrichContext()
     CPPUNIT_ASSERT(reinterpret_cast<MigrateConf *>(ap_get_module_config(req->per_dir_config, &migrate_module)));
 
     RequestInfo info("123456",  1000000 * time(NULL));
-    info.mConfPath = std::string("location1");
+    info.mConf = &conf;
 
     // in URL
     info.mArgs = "myRegexsdfwhgtdwhoij";
@@ -288,7 +288,7 @@ void TestModMigrate::testInputFilterBody2Brigade() {
                     continue;
                 const char *data = 0;
                 apr_size_t len = 0;
-                apr_status_t rv = apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
+                apr_bucket_read(b, &data, &len, APR_BLOCK_READ);
                 if (len) {
                     result.append(data, len);
                 }
@@ -362,19 +362,19 @@ void TestModMigrate::testMigrateEnv()
 
     // Adding multiple MigrateEnv
     CPPUNIT_ASSERT(!setMigrateEnv(lParms, (void *)conf, "varname", "regex", "value"));
-    CPPUNIT_ASSERT_EQUAL(std::string("varname"), conf->mEnvLists["/spp/main"].back().mVarName);
-    CPPUNIT_ASSERT_EQUAL(boost::regex("regex",boost::regex_constants::icase), conf->mEnvLists["/spp/main"].back().mMatchRegex);
-    CPPUNIT_ASSERT_EQUAL(std::string("value"), conf->mEnvLists["/spp/main"].back().mSetValue);
+    CPPUNIT_ASSERT_EQUAL(std::string("varname"), conf->mEnvLists.back().mVarName);
+    CPPUNIT_ASSERT_EQUAL(boost::regex("regex",boost::regex_constants::icase), conf->mEnvLists.back().mMatchRegex);
+    CPPUNIT_ASSERT_EQUAL(std::string("value"), conf->mEnvLists.back().mSetValue);
 
     CPPUNIT_ASSERT(!setMigrateEnv(lParms, (void *)conf, "varname2", "regex2", "value2"));
-    CPPUNIT_ASSERT_EQUAL(std::string("varname2"), conf->mEnvLists["/spp/main"].back().mVarName);
-    CPPUNIT_ASSERT_EQUAL(boost::regex("regex2",boost::regex_constants::icase), conf->mEnvLists["/spp/main"].back().mMatchRegex);
-    CPPUNIT_ASSERT_EQUAL(std::string("value2"), conf->mEnvLists["/spp/main"].back().mSetValue);
+    CPPUNIT_ASSERT_EQUAL(std::string("varname2"), conf->mEnvLists.back().mVarName);
+    CPPUNIT_ASSERT_EQUAL(boost::regex("regex2",boost::regex_constants::icase), conf->mEnvLists.back().mMatchRegex);
+    CPPUNIT_ASSERT_EQUAL(std::string("value2"), conf->mEnvLists.back().mSetValue);
 
     CPPUNIT_ASSERT(!setMigrateEnv(lParms, (void *)conf, "varname3", "regex3", "value3"));
-    CPPUNIT_ASSERT_EQUAL(std::string("varname3"), conf->mEnvLists["/spp/main"].back().mVarName);
-    CPPUNIT_ASSERT_EQUAL(boost::regex("regex3",boost::regex_constants::icase), conf->mEnvLists["/spp/main"].back().mMatchRegex);
-    CPPUNIT_ASSERT_EQUAL(std::string("value3"), conf->mEnvLists["/spp/main"].back().mSetValue);
+    CPPUNIT_ASSERT_EQUAL(std::string("varname3"), conf->mEnvLists.back().mVarName);
+    CPPUNIT_ASSERT_EQUAL(boost::regex("regex3",boost::regex_constants::icase), conf->mEnvLists.back().mMatchRegex);
+    CPPUNIT_ASSERT_EQUAL(std::string("value3"), conf->mEnvLists.back().mSetValue);
 }
 
 class Dummy {

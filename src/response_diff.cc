@@ -63,7 +63,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     		printer.addRuntime("DIFF",t);
     	}
     } catch ( boost::bad_lexical_cast &e ) {
-        Log::error(12, "Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
+        Log::error(12, "[COMPARE] Failed to cast ELAPSED_TIME_BY_DUP: %s to an int", it->second.c_str());
     }
 
 #ifdef UNIT_TESTING
@@ -105,25 +105,45 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     }
 
     if(!gWriteInFile){
-        std::string lLine;
-        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
-        std::vector<std::string> resLines;
-        boost::split(resLines,res,boost::is_any_of("\n"));
-        for(std::vector<std::string>::iterator it= resLines.begin();
-        		it!=resLines.end();it++)
-        {
-            writeInFacility(*it);
+        if (printer.getPrinterType() == LibWsDiff::diffPrinter::MULTILINE) {
+            pthread_mutex_t *lMutex = getGlobalMutex();
+            if (not lMutex) {
+                Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
+                return;
+            }
+            if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
+                pthread_mutex_consistent(lMutex);
+            }
+            std::vector<std::string> resLines;
+            boost::split(resLines,res,boost::is_any_of("\n"));
+            for(std::vector<std::string>::iterator it= resLines.begin();
+                            it!=resLines.end();it++)
+            {
+                writeInFacility(*it);
+            }
+            pthread_mutex_unlock(lMutex);
+        } else {
+            // syslog is threadsafe
+            Log::error(12, "%s", res.c_str());
         }
     }
     else {
         if (gFile.is_open()){
-            boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
+            pthread_mutex_t *lMutex = getGlobalMutex();
+            if (not lMutex) {
+                Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
+                return;
+            }
+            if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
+                pthread_mutex_consistent(lMutex);
+            }
             gFile << res;
             gFile.flush();
+            pthread_mutex_unlock(lMutex);
         }
         else
         {
-            Log::error(12, "File not correctly opened");
+            Log::error(12, "[COMPARE] File not correctly opened");
         }
     }
 }
@@ -160,13 +180,21 @@ void writeSerializedRequest(const DupModule::RequestInfo& req)
     }
     else {
         if (gFile.is_open()){
-            boost::lock_guard<boost::interprocess::named_mutex> fileLock(getGlobalMutex());
+            pthread_mutex_t *lMutex = getGlobalMutex();
+            if (not lMutex) {
+                Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
+                return;
+            }
+            if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
+                pthread_mutex_consistent(lMutex);
+            }
             boost::archive::text_oarchive oa(gFile);
             oa << req;
+            pthread_mutex_unlock(lMutex);
         }
         else
         {
-            Log::error(12, "File not correctly opened");
+            Log::error(12, "[COMPARE] File not correctly opened");
         }
     }
 

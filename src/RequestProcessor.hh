@@ -140,25 +140,20 @@ public:
 };
 
 /**
- * @brief Overlay on the commands object
- * Adds a destination concept
- */
-struct CommandsByDestination {
-    /** Commands indexed by the duplication destination*/
-    std::map<std::string, Commands> mCommands;
-};
-
-/**
  * @brief RequestProcessor is responsible for processing and sending requests to their destination.
  * This is where all the business logic is configured and executed.
  * Its main method is run which will continuously pull requests off the internal queue in order to process them.
  */
 class RequestProcessor
 {
-
+public:
+    /** Commands indexed by the duplication destination*/
+    typedef std::map<std::string, Commands> tCommandsByDestination;
+    typedef std::map<const void *, tCommandsByDestination> tCommandsByConfPathAndDestination;
+    
 private:
-    /** @brief Maps paths to their corresponding processing (filter and substitution) directives */
-    std::map<std::string, CommandsByDestination> mCommands;
+    /** @brief Maps DupConf(per virtualhost+path)+Destination to their corresponding processing (filter and substitution) directives */
+    tCommandsByConfPathAndDestination mCommands;
 
     /** @brief The timeout for outgoing requests in ms */
     unsigned int                                    mTimeout;
@@ -221,9 +216,10 @@ public:
      * @param pField the field on which to do the substitution
      * @param pFilter a reg exp which has to match for this request to be duplicated
      * @param pAssociatedConf the filter declaration context
+     * @param fType the filter type
      */
     void
-    addFilter(const std::string &pPath, const std::string &pField, const std::string &pFilter,
+    addFilter(const std::string &pField, const std::string &pFilter,
             const DupConf &pAssociatedConf, tFilter::eFilterTypes fType);
 
     /**
@@ -233,17 +229,18 @@ public:
      * @param percentage : the percentage to affect to this destination
      */
     void
-    setDestinationDuplicationPercentage(const std::string &pPath, const std::string &destination,
+    setDestinationDuplicationPercentage(const DupConf &pAssociatedConf, const std::string &destination,
                                         int percentage);
 
     /**
      * @brief Add a RAW filter for all requests on a given path
      * @param pPath the path of the request
      * @param pFilter a reg exp which has to match for this request to be duplicated
-     * @param Scope: the elements to match the filter with
+     * @param pAssociatedConf the filter declaration context
+     * @param fType the filter type
      */
     void
-    addRawFilter(const std::string &pPath, const std::string &pFilter,
+    addRawFilter(const std::string &pFilter,
             const DupConf &pAssociatedConf, tFilter::eFilterTypes fType);
 
     /**
@@ -252,9 +249,10 @@ public:
      * @param pField the field on which to do the substitution
      * @param pMatch the regexp matching what should be replaced
      * @param pReplace the value which the match should be replaced with
+     * @param pAssociatedConf the filter declaration context
      */
     void
-    addSubstitution(const std::string &pPath, const std::string &pField,
+    addSubstitution(const std::string &pField,
             const std::string &pMatch, const std::string &pReplace,
             const DupConf &pAssociatedConf);
 
@@ -264,19 +262,21 @@ public:
      * @param pField the field on which to do the substitution
      * @param pMatch the regexp matching what should be replaced
      * @param pReplace the value which the match should be replaced with
+     * @param pAssociatedConf the filter declaration context
      */
     void
-    addRawSubstitution(const std::string &pPath, const std::string &pMatch, const std::string &pReplace,
+    addRawSubstitution(const std::string &pMatch, const std::string &pReplace,
             const DupConf &pAssociatedConf);
 
     /**
      * @brief Returns wether or not the arguments match any of the filters
-     * @param pParsedArgs the list with the argument key value pairs
-     * @param pFilters the filters which should be applied
-     * @return true if there are no filters or at least one filter matches, false otherwhise
+     * @param pRequest the incoming request
+     * @param pCommands the commands to apply
+     * @param pParsedArgs the list filled with the key value pairs to be matched
+     * @return the first matched filter, null otherwise
      */
     const tFilter*
-    argsMatchFilter(RequestInfo &pRequest, Commands &pCommands, std::list<tKeyVal> &pParsedArgs);
+    argsMatchFilter(RequestInfo &pRequest, const Commands &pCommands, std::list<tKeyVal> &pParsedArgs);
 
     /**
      * @brief Parses arguments into key valye pairs. Also url-decodes values and converts keys to upper case.
@@ -287,8 +287,16 @@ public:
     parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &pArgs);
 
     /**
+     * @brief Adds the headers sent with the request to the parsed args from the query string.
+     * @param pParsedArgs the list which should be filled with the key value pairs
+     * @param pHeadersIn the request's header in a key value list
+     */
+    void
+    addHeadersIn(const RequestInfo::tHeaders &pHeadersIn, std::list<tKeyVal> &pParsedArgs);
+
+    /**
      * @brief Process a field. This includes filtering and executing substitutions
-     * @param pConfPath the path of the configuration which is applied
+     * @param pRequest the path of the configuration which is applied
      * @param pArgs the HTTP arguments/parameters of the incoming request
      * @return an empty list if the request does not need to be duplicated, a filter by duplication that matched otherwise.
      */
@@ -325,7 +333,7 @@ private:
             std::list<tKeyVal> &pHeaderParsedArgs);
 
     const tFilter *
-    keyFilterMatch(std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
+    keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
             ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes eType);
 
     bool
@@ -333,6 +341,9 @@ private:
             std::list<tKeyVal> &pParsedArgs,
             ApplicationScope::eApplicationScope scope,
             std::string &result);
+    bool
+    headerSubstitute(tFieldSubstitutionMap &pSubs,
+        std::list<std::pair<std::string, std::string>> &pHeadersIn);
 
     friend class ::TestRequestProcessor;
     friend class ::TestModDup;

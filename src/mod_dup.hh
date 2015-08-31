@@ -270,7 +270,7 @@ const char*
 setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType);
 
 /*
- * Read the request body ans stores it in a RequestInfo object in the request context
+ * Read the request body and stores it in a RequestInfo object in the request context
  * Enrich the request context for mod_rewrite
  */
 int

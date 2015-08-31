@@ -156,7 +156,7 @@ if(BUILD_COVERAGE)
 endif()
 
 add_subdirectory(testing/functionnal)
-#add_subdirectory(testing/mock)
+add_subdirectory(testing/mock)
 add_subdirectory(docs)
 add_subdirectory(conf)
 

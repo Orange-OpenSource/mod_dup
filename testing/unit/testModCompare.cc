@@ -182,11 +182,16 @@ void TestModCompare::testWriteCassandraDiff()
 
     CompareModule::writeCassandraDiff(lID, *printer);
     if (gFile.is_open()){
-        boost::lock_guard<boost::interprocess::named_mutex>  fileLock(getGlobalMutex());
+        pthread_mutex_t *lMutex = getGlobalMutex();
+        CPPUNIT_ASSERT(lMutex);
+        if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
+            pthread_mutex_consistent(lMutex);
+        }
         std::string result;
         CPPUNIT_ASSERT(printer->retrieveDiff(result));
         gFile << result;
         gFile.flush();
+        pthread_mutex_unlock(lMutex);
     }
 
     CPPUNIT_ASSERT( closeLogFile( (void *)1) == APR_SUCCESS);

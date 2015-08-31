@@ -38,17 +38,18 @@ struct apr_bucket_brigade;
 
 namespace MigrateModule {
 struct RequestInfo {
-    RequestInfo(std::string pId, int64_t startTime) : mId(pId) {}
+    RequestInfo(std::string pId, int64_t startTime) : mId(pId), mConf(nullptr) {}
     /** @brief The query unique ID. */
     std::string mId;
     /** @brief The body part of the query */
     std::string mBody;
     /** @brief The parameters part of the query (without leading ?). */
     std::string mArgs;
-    /** @brief The location (in the conf) which matched this query. */
-    std::string mConfPath;
     /** @brief string that represents the http header of the incoming request, e.g. "Content-Type: text/html\r\nHeader-key: Header-value*/
     std::string mHeader;
+    /** @brief The conf object for the location of this Request */
+    void * mConf;
+    
 };
 }
 
@@ -101,8 +102,6 @@ struct RequestInfo {
     bool mPoison;
     /** @brief The query unique ID. */
     std::string mId;
-    /** @brief The location (in the conf) which matched this query. */
-    std::string mConfPath;
     /** @brief The path part of the request. */
     std::string mPath;
     /** @brief The parameters part of the query (without leading ?). */
@@ -140,12 +139,17 @@ struct RequestInfo {
     int mReqHttpStatus;
     /* @brief The HTTP status returned by the duplicated request response */
     int mDupResponseHttpStatus;
+    
+    /** @brief The conf object for the location of this Request */
+    void * mConf;
 
     /**
      * @brief Constructs the object using the three strings.
+     * @param id The query unique ID
      * @param pConfPath The location (in the conf) which matched this query
-     * @param pPath The path part of the request
-     * @param pConfPath The parameters part of the query (without leading ?)
+     * @param pPath The path part of the requests
+     * @param pArgs The parameters part of the query (without leading ?)
+     * @param body The body part of the query
      */
     RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
             const std::string &pArgs, const std::string *body = 0);
@@ -169,7 +173,7 @@ struct RequestInfo {
     RequestInfo();
 
     /**
-     * returns true if the request has a body
+     * @brief Returns true if the request has a body
      */
     bool hasBody() const;
 
@@ -196,7 +200,7 @@ struct RequestInfo {
     }
 
     /**
-     * @brief Returns true if the EOS flag has been set
+     * @brief Sets the EOS flag
      * Computes the elapesed time on first call
      */
     void eos_seen(bool valToSet);
