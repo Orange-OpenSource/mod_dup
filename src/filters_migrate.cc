@@ -204,7 +204,7 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
     }  else {
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
-    return APR_SUCCESS;
+    return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
 }
 
 };
