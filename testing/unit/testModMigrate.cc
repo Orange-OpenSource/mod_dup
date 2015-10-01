@@ -295,8 +295,8 @@ void TestModMigrate::testInputFilterBody2Brigade() {
             apr_brigade_cleanup(bb);
         }
         // Compare the brigade content to what should have been sent
-        //CPPUNIT_ASSERT_EQUAL(std::string(testBody43p1).size() + std::string(testBody43p2).size(), result.size());
-        //CPPUNIT_ASSERT_EQUAL(result, std::string(testBody43p1) + std::string(testBody43p2));
+        CPPUNIT_ASSERT_EQUAL(std::string(testBody43p1).size() + std::string(testBody43p2).size(), result.size());
+        CPPUNIT_ASSERT_EQUAL(result, std::string(testBody43p1) + std::string(testBody43p2));
     }
 }
 

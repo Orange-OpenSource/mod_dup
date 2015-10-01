@@ -199,6 +199,7 @@ apr_status_t inputFilterBody2Brigade(ap_filter_t *pF, apr_bucket_brigade *pB, ap
             pF->ctx = (void *) -1;
         } else {
             pF->ctx = (void*)(read);
+            return APR_SUCCESS;
         }
 
     }  else {
