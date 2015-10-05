@@ -1,3 +1,9 @@
+pns-mod-dup (2.2.1) precise; urgency=low
+
+  * Bug fix in migrate input filter: now it returns ap_get_brigade if no more body to write
+
+ -- Dario Giampaglia <dgiampaglia.ext@orange.com>  Mon, 05 Oct 2015 12:25:14 +0200
+
 pns-mod-dup (2.2.0) precise; urgency=low
 
   * Process headers for duplication and subtitution
