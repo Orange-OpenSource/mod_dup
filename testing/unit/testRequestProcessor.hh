@@ -31,6 +31,7 @@ class TestRequestProcessor :
     CPPUNIT_TEST_SUITE(TestRequestProcessor);
     CPPUNIT_TEST(testParseArgs);
     CPPUNIT_TEST(testAddHeadersIn);
+    CPPUNIT_TEST(testAddValidationHeaders);
     CPPUNIT_TEST(testFilter);
     CPPUNIT_TEST(testSubstitution);
     CPPUNIT_TEST(testRun);
@@ -51,6 +52,7 @@ public:
     void testSubstitution();
     void testParseArgs();
     void testAddHeadersIn();
+    void testAddValidationHeaders();
     void testRun();
     void testFilterBasic();
     void testRawSubstitution();

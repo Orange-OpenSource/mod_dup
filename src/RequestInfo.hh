@@ -139,7 +139,12 @@ struct RequestInfo {
     int mReqHttpStatus;
     /* @brief The HTTP status returned by the duplicated request response */
     int mDupResponseHttpStatus;
-    
+
+    /** @brief true if X_DUP_LOG header is present in the request */
+    bool mValidationHeaderDup;
+    /** @brief true if X_DUP_LOG header is present in the request and the duplication type is whith answer */
+    bool mValidationHeaderComp;
+
     /** @brief The conf object for the location of this Request */
     void * mConf;
 

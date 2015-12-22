@@ -448,6 +448,9 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
         const tFilter* matchedFilter = NULL;
         if ((matchedFilter = argsMatchFilter(pRequest, itb.second, parsedArgs))) {
             ret.push_back(matchedFilter);
+            addValidationHeadersDup(pRequest, matchedFilter);
+        } else {
+            addValidationHeadersDup(pRequest, NULL);
         }
     }
     return ret;
@@ -569,8 +572,35 @@ void RequestProcessor::addCommonHeaders(const RequestInfo &rInfo, struct curl_sl
     slist = curl_slist_append(slist, "User-RealAgent: mod-dup");
 }
 
+/// @brief add http headers to the request sent to compare for validation
+/// @param rInfo
+/// @param matchedFilter
+/// @param slist slist ref on which to add
+void RequestProcessor::addValidationHeadersCompare(RequestInfo &rInfo, const tFilter &matchedFilter, struct curl_slist *&slist) {
+    // Set Compare log header
+    if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
+        if (rInfo.mValidationHeaderDup) {
+            rInfo.mValidationHeaderComp = true;
+            slist = curl_slist_append(slist, "X_COMP_LOG: ON");
+        }
+    }
+}
+
+/// @brief add http headers to the original response to validate the duplication
+/// @param rInfo
+/// @param matchedFilter
+void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const tFilter *matchedFilter) {
+    std::ostringstream xDupLog;
+    if (matchedFilter) {
+        xDupLog << "True, matched filter : " << matchedFilter->mRegex.str() << ". Scope : " << matchedFilter->mScope << ". Destination : " << matchedFilter->mDestination;
+    } else {
+        xDupLog << "False";
+    }
+    rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X_DUP_LOG", xDupLog.str()));
+}
+
 void
-RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo) {
+RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, RequestInfo &rInfo) {
     // Setting URI
     std::string uri = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
     curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
@@ -579,6 +609,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, cons
     struct curl_slist *slist = NULL;
     
     addCommonHeaders(rInfo, slist);
+    addValidationHeadersCompare(rInfo, matchedFilter, slist);
 
     // Sending body in plain or dup format according to the duplication need
     if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {

@@ -562,6 +562,38 @@ void TestRequestProcessor::testAddHeadersIn()
     lParsedArgs.pop_front();
 }
 
+void TestRequestProcessor::testAddValidationHeaders()
+{
+    RequestProcessor proc;
+    RequestInfo lInfo;
+    tFilter matchedFilter("papalino", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
+    matchedFilter.mDestination = "Alger";
+    matchedFilter.mDuplicationType = DuplicationType::COMPLETE_REQUEST;
+    matchedFilter.mRegex = "papalino";
+    matchedFilter.mScope = ApplicationScope::ALL;
+    lInfo.mHeadersIn.push_back(tKeyVal(std::string("X_DUP_LOG"), std::string("ON")));
+    proc.addValidationHeadersDup(lInfo, &matchedFilter);
+    CPPUNIT_ASSERT_EQUAL(std::string("True, matched filter : papalino. Scope : 3. Destination : Alger"), lInfo.mHeadersOut.front().second);
+
+    lInfo.mHeadersOut.pop_front();
+    matchedFilter.mRegex = "pipolino";
+    matchedFilter.mScope = ApplicationScope::HEADER;
+    matchedFilter.mDestination = "Napoli";
+    matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
+    proc.addValidationHeadersDup(lInfo, &matchedFilter);
+    CPPUNIT_ASSERT_EQUAL(std::string("True, matched filter : pipolino. Scope : 1. Destination : Napoli"), lInfo.mHeadersOut.front().second);
+
+    lInfo.mHeadersOut.pop_front();
+    proc.addValidationHeadersDup(lInfo, NULL);
+    CPPUNIT_ASSERT_EQUAL(std::string("False"), lInfo.mHeadersOut.front().second);
+
+    struct curl_slist *slist = NULL;
+    lInfo.mValidationHeaderDup = true;
+    proc.addValidationHeadersCompare(lInfo, matchedFilter, slist);
+    CPPUNIT_ASSERT_EQUAL(true, lInfo.mValidationHeaderComp);
+
+}
+
 void TestRequestProcessor::testRawSubstitution()
 {
     {

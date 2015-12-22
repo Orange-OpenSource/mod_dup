@@ -169,6 +169,8 @@ private:
 
     static void addOrigHeaders(const RequestInfo &rInfo, curl_slist *&slist);
     static void addCommonHeaders(const RequestInfo &rInfo, curl_slist *&slist);
+    static void addValidationHeadersCompare(RequestInfo &rInfo, const tFilter &matchedFilter, curl_slist *&slist);
+    static void addValidationHeadersDup(RequestInfo &rInfo, const tFilter *matchedFilter);
 
     void
     sendInBody(CURL *curl, const RequestInfo &rInfo, curl_slist *&slist, const std::string &toSend) const;
@@ -317,7 +319,7 @@ public:
     CURL * initCurl();
 
     void
-    performCurlCall(CURL *curl, const tFilter &matchedFilter, const RequestInfo &rInfo);
+    performCurlCall(CURL *curl, const tFilter &matchedFilter, RequestInfo &rInfo);
 
     /**
      * @brief perform curl for one request if it matches

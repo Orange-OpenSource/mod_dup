@@ -21,6 +21,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <http_config.h>
+#include <algorithm>
 
 namespace DupModule {
 
@@ -33,6 +34,25 @@ static int iterateOverHeadersCallBack(void *d, const char *key, const char *valu
     RequestInfo::tHeaders *headers = reinterpret_cast<RequestInfo::tHeaders *>(d);
     headers->push_back(std::pair<std::string, std::string>(key, value));
     return 1;
+}
+
+static int checkAdditionalHeaders(const RequestInfo &r, request_rec *pRequest)
+{
+    if (r.mValidationHeaderDup){
+        for (RequestInfo::tHeaders::value_type header : r.mHeadersOut) {
+            if (header.first == std::string("X_DUP_LOG")) {
+                apr_table_set(pRequest->headers_out,"X_DUP_LOG", header.second.c_str());
+            }
+        }
+    }
+    if (r.mValidationHeaderComp){
+        for (RequestInfo::tHeaders::value_type header : r.mHeadersOut) {
+            if (header.first == std::string("X_COMP_LOG")) {
+                apr_table_set(pRequest->headers_out,"X_COMP_LOG", header.second.c_str());
+            }
+        }
+    }
+    return 0;
 }
 
 static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r)
@@ -49,6 +69,9 @@ static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
     // Copy headers in, we might have duplicate headers in case of double dup but we'll deal with it later
     apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
 
+    // Check if X_DUP_LOG header is present
+    if (apr_table_get(pRequest->headers_in, "X_DUP_LOG")) r.mValidationHeaderDup = true;
+
     // Basic
     r.mPoison = false;
     r.mConf = tConf;
@@ -62,6 +85,26 @@ static void printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf
     Log::debug("[DUP] Pushing a request with ID: %s, body size:%ld", reqId, pBH->mBody.size());
     Log::debug("[DUP] Uri:%s, dir name:%s", pRequest->uri, tConf->dirName);
     Log::debug("[DUP] Request args: %s", pRequest->args);
+}
+
+static void initiateDuplication(DupConf *tConf, request_rec *pRequest, boost::shared_ptr<RequestInfo> * reqInfo)
+{
+    RequestInfo * ri = reqInfo->get();
+    // Pushing the answer to the processor
+    prepareRequestInfo(tConf, pRequest, *ri);
+
+    // Force synchronous mode when X_DUP_LOG to retrieve X_DUP_LOG header
+    if (tConf->synchronous || apr_table_get(pRequest->headers_in, "X_DUP_LOG")) {
+        static __thread CURL * lCurl = NULL;
+        if (!lCurl) {
+            lCurl = gProcessor->initCurl();
+        }
+        gProcessor->runOne(*ri, lCurl);
+    } else {
+        gThreadPool->push(*reqInfo);
+    }
+    checkAdditionalHeaders(*ri, pRequest);
+    printRequest(pRequest, ri, tConf);
 }
 
 apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap_input_mode_t pMode, apr_read_type_e pBlock, apr_off_t pReadbytes)
@@ -185,6 +228,10 @@ apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *p
 
         if (APR_BUCKET_IS_EOS(currentBucket)) {
             ri->eos_seen(true);
+            if (apr_table_get(pRequest->headers_in, "X_DUP_LOG")) {
+                apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
+                initiateDuplication(tConf, pRequest, reqInfo);
+            }
             pFilter->ctx = (void *) -1;
             rv = ap_pass_brigade(pFilter->next, pBrigade);
             apr_brigade_cleanup(pBrigade);
@@ -207,6 +254,7 @@ apr_status_t outputBodyFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *p
             }
         }
     }
+
     rv = ap_pass_brigade(pFilter->next, pBrigade);
     apr_brigade_cleanup(pBrigade);
     return rv;
@@ -271,7 +319,6 @@ apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade
         ri = reqInfo->get();
     }
 
-    // Copy headers out
     apr_table_do(&iterateOverHeadersCallBack, &ri->mHeadersOut, pRequest->headers_out, NULL);
 
     if (!ri->eos_seen()) {
@@ -280,20 +327,11 @@ apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade
         return rv;
     }
 
-    // Pushing the answer to the processor
-    prepareRequestInfo(tConf, pRequest, *ri);
-
-    if (tConf->synchronous) {
-        static __thread CURL * lCurl = NULL;
-        if (!lCurl) {
-            lCurl = gProcessor->initCurl();
-        }
-        gProcessor->runOne(*ri, lCurl);
-    } else {
-        gThreadPool->push(*reqInfo);
+    if (!apr_table_get(pRequest->headers_in, "X_DUP_LOG")) {
+        initiateDuplication(tConf, pRequest, reqInfo);
     }
+
     pFilter->ctx = (void *) -1;
-    printRequest(pRequest, ri, tConf);
     rv = ap_pass_brigade(pFilter->next, pBrigade);
     apr_brigade_cleanup(pBrigade);
     return rv;
