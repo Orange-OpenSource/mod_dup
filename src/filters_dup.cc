@@ -38,20 +38,19 @@ static int iterateOverHeadersCallBack(void *d, const char *key, const char *valu
 
 static int checkAdditionalHeaders(const RequestInfo &r, request_rec *pRequest)
 {
-    if (r.mValidationHeaderDup){
-        for (RequestInfo::tHeaders::value_type header : r.mHeadersOut) {
-            if (header.first == std::string("X_DUP_LOG")) {
-                apr_table_set(pRequest->headers_out,"X_DUP_LOG", header.second.c_str());
-            }
+    if (not r.mValidationHeaderDup && not r.mValidationHeaderComp){
+        return 0;
+    }
+
+    for (RequestInfo::tHeaders::value_type header : r.mHeadersOut) {
+        if (header.first == std::string("X_DUP_LOG")) {
+            apr_table_set(pRequest->headers_out,"X_DUP_LOG", header.second.c_str());
+        }
+        else if (header.first == std::string("X_COMP_LOG")) {
+            apr_table_set(pRequest->headers_out,"X_COMP_LOG", header.second.c_str());
         }
     }
-    if (r.mValidationHeaderComp){
-        for (RequestInfo::tHeaders::value_type header : r.mHeadersOut) {
-            if (header.first == std::string("X_COMP_LOG")) {
-                apr_table_set(pRequest->headers_out,"X_COMP_LOG", header.second.c_str());
-            }
-        }
-    }
+
     return 0;
 }
 
