@@ -62,6 +62,13 @@ extern const char* c_ERROR_ON_STRING_VALUE;
  */
 eApplicationScope stringToEnum(const char* strValue) throw (std::exception);
 
+/**
+ * Translates the enumerate value of a scope into it's character value
+ * raises a std::exception if the enumerate doesn't match any predefined values
+ * Values are : 1, 2, 3
+ */
+const char * enumToString(eApplicationScope scope) throw (std::exception);
+
 };
 
 }

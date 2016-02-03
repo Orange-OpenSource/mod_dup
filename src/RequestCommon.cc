@@ -51,5 +51,19 @@ eApplicationScope stringToEnum(const char *str) throw (std::exception) {
         return ApplicationScope::BODY;
     throw std::exception();
 }
+
+const char * enumToString(eApplicationScope scope) throw (std::exception) {
+    switch (scope) {
+        case ApplicationScope::ALL:
+            return c_ALL;
+        case ApplicationScope::HEADER:
+            return c_HEADER;
+        case ApplicationScope::BODY:
+            return c_BODY;
+        default:
+            throw std::exception();
+    }
+}
+
 }
 }
