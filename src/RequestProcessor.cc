@@ -592,9 +592,9 @@ void RequestProcessor::addValidationHeadersCompare(RequestInfo &rInfo, const tFi
 void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const tFilter *matchedFilter) {
     std::ostringstream xDupLog;
     if (matchedFilter) {
-        xDupLog << "True, matched filter : " << matchedFilter->mRegex.str() << ". Scope : " << matchedFilter->mScope << ". Destination : " << matchedFilter->mDestination;
+        xDupLog << "The request is duplicated, matched filter : " << matchedFilter->mRegex.str() << ". Scope : " << matchedFilter->mScope << ". Destination : " << matchedFilter->mDestination;
     } else {
-        xDupLog << "False";
+        xDupLog << "The request is not duplicated";
     }
     rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X_DUP_LOG", xDupLog.str()));
 }
