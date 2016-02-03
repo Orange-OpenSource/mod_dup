@@ -2,7 +2,7 @@ pns-mod-dup (2.2.2) precise; urgency=low
 
   * Add Validation headers for duplication
 
- -- waitamer <waitamer@ubuntu>  Wed, 03 Feb 2016 10:58:05 +0100
+ -- waitamer <waitamer.ext@orange.com>  Wed, 03 Feb 2016 10:58:05 +0100
 
 pns-mod-dup (2.2.1) precise; urgency=low
 
