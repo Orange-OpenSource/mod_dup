@@ -573,7 +573,10 @@ void TestRequestProcessor::testAddValidationHeaders()
     matchedFilter.mScope = ApplicationScope::ALL;
     lInfo.mHeadersIn.push_back(tKeyVal(std::string("X_DUP_LOG"), std::string("ON")));
     proc.addValidationHeadersDup(lInfo, &matchedFilter);
-    CPPUNIT_ASSERT_EQUAL(std::string("True, matched filter : papalino. Scope : 3. Destination : Alger"), lInfo.mHeadersOut.front().second);
+    CPPUNIT_ASSERT_EQUAL(std::string("X-MATCHED-PATTERN"), lInfo.mHeadersOut.front().first);
+    CPPUNIT_ASSERT_EQUAL(std::string("papalino"), lInfo.mHeadersOut.front().second);
+    lInfo.mHeadersOut.pop_front();
+    CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, matched filter : papalino. Scope : ALL. Destination : Alger"), lInfo.mHeadersOut.front().second);
 
     lInfo.mHeadersOut.pop_front();
     matchedFilter.mRegex = "pipolino";
@@ -581,11 +584,16 @@ void TestRequestProcessor::testAddValidationHeaders()
     matchedFilter.mDestination = "Napoli";
     matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
     proc.addValidationHeadersDup(lInfo, &matchedFilter);
-    CPPUNIT_ASSERT_EQUAL(std::string("True, matched filter : pipolino. Scope : 1. Destination : Napoli"), lInfo.mHeadersOut.front().second);
+
+    CPPUNIT_ASSERT_EQUAL(std::string("X-MATCHED-PATTERN"), lInfo.mHeadersOut.front().first);
+    CPPUNIT_ASSERT_EQUAL(std::string("pipolino"), lInfo.mHeadersOut.front().second);
 
     lInfo.mHeadersOut.pop_front();
+
+    CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, matched filter : pipolino. Scope : HEADER. Destination : Napoli"), lInfo.mHeadersOut.front().second);
+    lInfo.mHeadersOut.pop_front();
     proc.addValidationHeadersDup(lInfo, NULL);
-    CPPUNIT_ASSERT_EQUAL(std::string("False"), lInfo.mHeadersOut.front().second);
+    CPPUNIT_ASSERT_EQUAL(std::string("The request is not duplicated"), lInfo.mHeadersOut.front().second);
 
     struct curl_slist *slist = NULL;
     lInfo.mValidationHeaderDup = true;
