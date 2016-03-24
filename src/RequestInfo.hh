@@ -124,6 +124,10 @@ struct RequestInfo {
     mapStr mDupResponseHeader;
     /** @brief The body part of the answer of the duplicated request*/
     std::string mDupResponseBody;
+    /** @brief The header part of the answer of the Compare module */
+    mapStr mCompResponseHeader;
+    /** @brief The Curl response status sent by Duplicate module */
+    int mCurlResponseStatus;
 
     typedef std::list<std::pair<std::string, std::string> > tHeaders;
 

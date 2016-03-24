@@ -103,6 +103,24 @@ static void initiateDuplication(DupConf *tConf, request_rec *pRequest, boost::sh
         gThreadPool->push(*reqInfo);
     }
     checkAdditionalHeaders(*ri, pRequest);
+
+    if(apr_table_get(pRequest->headers_in, "X_DUP_LOG"))
+    {
+        if (ri->mCompResponseHeader.count("X-COMP-STATUS")) {
+            Log::debug("[DEBUG][DUP] header contains the X-COMP-STATUS");
+            apr_table_set( pRequest->headers_out,"X-COMP-STATUS", ri->mCompResponseHeader["X-COMP-STATUS"].c_str());
+        }
+        else {
+            if (ri->mCurlResponseStatus != CURLE_OK){
+                Log::debug("[DEBUG][DUP] Curl error happened.");
+                apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "UNCREACHED");
+            }
+            else {
+                Log::debug("[DEBUG][DUP] Curl error happened.");
+                apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED");
+            }
+        }
+    }
     printRequest(pRequest, ri, tConf);
 }
 

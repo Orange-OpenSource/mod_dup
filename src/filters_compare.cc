@@ -341,6 +341,11 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
         }
     }
 
+    if (apr_table_get(pRequest->headers_in, "X_COMP_LOG") != NULL) {
+        Log::debug("[DEBUG][COMPARE] all the body is received,X_COMP_LOG is set, responses will be compared");
+        apr_table_set( pRequest->headers_out,"X-COMP-STATUS", "COMPARED");
+    }
+
     rv = ap_pass_brigade(pFilter->next, pBrigade);
     apr_brigade_cleanup(pBrigade);
     return rv;

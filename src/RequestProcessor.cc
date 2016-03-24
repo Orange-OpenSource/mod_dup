@@ -36,6 +36,26 @@ namespace DupModule {
 
 const char * gUserAgent = "mod-dup";
 
+static size_t
+getCurlResponseHeaderCallback(char *buffer, size_t size, size_t nitems, void *userp)
+{
+
+    std::map< std::string, std::string>* lresponseHeader = reinterpret_cast< std::map< std::string, std::string> *>(userp);
+    std::string lheaderLine(buffer);
+
+    lheaderLine.erase(std::remove(lheaderLine.begin(), lheaderLine.end(), '\r'), lheaderLine.end());
+
+    string lheaderKey = lheaderLine.substr(0,lheaderLine.find(":"));
+    string lheaderValue = lheaderLine.substr(lheaderLine.find(":") + 1,string::npos);
+
+    boost::algorithm::trim(lheaderKey);
+    boost::algorithm::trim(lheaderValue);
+
+    (*lresponseHeader)[lheaderKey] = lheaderValue;
+
+    return size * nitems;
+}
+
 bool
 Commands::toDuplicate() {
     static bool GlobalInit = false;
@@ -611,6 +631,10 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
     addCommonHeaders(rInfo, slist);
     addValidationHeadersCompare(rInfo, matchedFilter, slist);
 
+    //Add callback function to getacess to the header returned by the curl call
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, getCurlResponseHeaderCallback);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA,(void *)&rInfo.mCompResponseHeader);
+
     // Sending body in plain or dup format according to the duplication need
     if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
         // POST with dup serialized original request body AND response
@@ -628,6 +652,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
     Log::debug("[DUP] >> Duplicating: %s", uri.c_str());
 
     int err = curl_easy_perform(curl);
+    rInfo.mCurlResponseStatus = err;
     if (slist)
         curl_slist_free_all(slist);
 
