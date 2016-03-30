@@ -633,7 +633,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
 
     //Add callback function to getacess to the header returned by the curl call
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, getCurlResponseHeaderCallback);
-    curl_easy_setopt(curl, CURLOPT_HEADERDATA,(void *)&rInfo.mCompResponseHeader);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA,(void *)&rInfo.mCurlCompResponseHeader);
 
     // Sending body in plain or dup format according to the duplication need
     if (matchedFilter.mDuplicationType == DuplicationType::REQUEST_WITH_ANSWER) {
@@ -651,15 +651,14 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
 
     Log::debug("[DUP] >> Duplicating: %s", uri.c_str());
 
-    int err = curl_easy_perform(curl);
-    rInfo.mCurlResponseStatus = err;
+    rInfo.mCurlCompResponseStatus = curl_easy_perform(curl);
     if (slist)
         curl_slist_free_all(slist);
 
-    if (err == CURLE_OPERATION_TIMEDOUT) {
+    if (rInfo.mCurlCompResponseStatus == CURLE_OPERATION_TIMEDOUT) {
         __sync_fetch_and_add(&mTimeoutCount, 1);
-    } else if (err) {
-        Log::error(403, "[DUP] Sending request failed with curl error code: %d, request:%s", err, uri.c_str());
+    } else if (rInfo.mCurlCompResponseStatus) {
+        Log::error(403, "[DUP] Sending request failed with curl error code: %d, request:%s", rInfo.mCurlCompResponseStatus, uri.c_str());
     }
     delete content;
 }
