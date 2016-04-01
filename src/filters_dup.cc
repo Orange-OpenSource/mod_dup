@@ -56,23 +56,23 @@ static int checkAdditionalHeaders(const RequestInfo &r, request_rec *pRequest)
 
 static int checkCurlResponseCompareStatus(const RequestInfo &ri, request_rec *pRequest)
 {
-    if(apr_table_get(pRequest->headers_in, "X_DUP_LOG"))
+    if( not apr_table_get(pRequest->headers_in, "X_DUP_LOG"))
     {
-        if (ri.mCurlCompResponseHeader.count("X-COMP-STATUS")) {
-            Log::debug("[DEBUG][DUP] header contains the X-COMP-STATUS");
-            apr_table_set( pRequest->headers_out,"X-COMP-STATUS", ri.mCurlCompResponseHeader.at("X-COMP-STATUS").c_str());
-        }
-        else {
-            if (ri.mCurlCompResponseStatus != CURLE_OK){
-                Log::debug("[DEBUG][DUP] Curl error happened the destination is not reached");
-                apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "UNCREACHED");
-            }
-            else {
-                Log::debug("[DEBUG][DUP] Curl returns OK but there was no comparison.");
-                apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED");
-            }
-        }
+        return 0;
     }
+    if (ri.mCurlCompResponseHeader.count("X-COMP-STATUS")) {
+        Log::debug("[DEBUG][DUP] header contains the X-COMP-STATUS");
+        apr_table_set( pRequest->headers_out,"X-COMP-STATUS", ri.mCurlCompResponseHeader.at("X-COMP-STATUS").c_str());
+        return 0;
+    }
+    if (ri.mCurlCompResponseStatus != CURLE_OK){
+        Log::debug("[DEBUG][DUP] Curl error happened the destination is not reached");
+        apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "UNCREACHED");
+        return 0;
+    }
+
+    Log::debug("[DEBUG][DUP] Curl returns OK but there was no comparison.");
+    apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED");
     return 0;
 }
 
