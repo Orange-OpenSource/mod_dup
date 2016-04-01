@@ -67,7 +67,7 @@ static int checkCurlResponseCompareStatus(const RequestInfo &ri, request_rec *pR
     }
     if (ri.mCurlCompResponseStatus != CURLE_OK){
         Log::debug("[DEBUG][DUP] Curl error happened the destination is not reached");
-        apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "UNCREACHED");
+        apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "NOT REACHED");
         return 0;
     }
 
