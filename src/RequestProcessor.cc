@@ -512,6 +512,14 @@ RequestProcessor::sendDupFormat(CURL *curl, const RequestInfo &rInfo, curl_slist
     slist = curl_slist_append(slist, "Content-Type: application/x-dup-serialized");
     // Adding HTTP HEADER to indicate that the request is duplicated with it's answer
     slist = curl_slist_append(slist, "Duplication-Type: Response");
+
+    for( const std::pair<std::string, std::string> &hdrOut : rInfo.mHeadersOut ) {
+        if( hdrOut.first == "X-MATCHED-PATTERN") {
+            const std::string temp  = hdrOut.first + ": " + hdrOut.second;
+           curl_slist_append(slist, temp.c_str() );
+        }
+    }
+
     //Computing dup format string
     std::stringstream ss;
     //Request body
@@ -613,6 +621,7 @@ void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const tFilter
     std::ostringstream xDupLog;
     if (matchedFilter) {
         xDupLog << "The request is duplicated, matched filter : " << matchedFilter->mRegex.str() << ". Scope : " << ApplicationScope::enumToString(matchedFilter->mScope) << ". Destination : " << matchedFilter->mDestination;
+        rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X-MATCHED-PATTERN", matchedFilter->mRegex.str()));
     } else {
         xDupLog << "The request is not duplicated";
     }
