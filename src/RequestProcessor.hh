@@ -83,6 +83,8 @@ public:
     DuplicationType::eDuplicationType mDuplicationType;     /** The duplication type for this filter */
 
     eFilterTypes mFilterType;
+
+    mutable std::string mMatch;
 };
 
 /**
@@ -150,7 +152,7 @@ public:
     /** Commands indexed by the duplication destination*/
     typedef std::map<std::string, Commands> tCommandsByDestination;
     typedef std::map<const void *, tCommandsByDestination> tCommandsByConfPathAndDestination;
-    
+
 private:
     /** @brief Maps DupConf(per virtualhost+path)+Destination to their corresponding processing (filter and substitution) directives */
     tCommandsByConfPathAndDestination mCommands;
