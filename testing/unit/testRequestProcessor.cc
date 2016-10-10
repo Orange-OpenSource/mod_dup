@@ -260,6 +260,17 @@ void TestRequestProcessor::testFilterBasic()
     }
 
     {
+        // Raw Filter MATCH
+        RequestProcessor proc;
+        proc.addRawFilter("SID>(.*)<", conf, tFilter::eFilterTypes::REGULAR);
+        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "<SID>ID-REQ</SID>");
+        ri.mConf = &conf;
+        std::list<std::pair<std::string, std::string> > lParsedArgs;
+        proc.parseArgs(lParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    }
+
+    {
         // Simple Filter NO MATCH
         RequestProcessor proc;
         proc.addFilter("INFO", "KIDO", conf, tFilter::eFilterTypes::REGULAR);
@@ -343,7 +354,7 @@ void TestRequestProcessor::testFilterOnNotMatching()
     conf.currentDupDestination = "Honolulu:8080";
 
     {
-    	// Exemple of negativ look ahead matching
+        // Exemple of negativ look ahead matching
         RequestProcessor proc;
         proc.addFilter("DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
                        "(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
@@ -410,7 +421,7 @@ void TestRequestProcessor::testFilter()
     query = "titi=tata&tutu";
     RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", query);
     ri.mConf = &conf;
-    
+
     std::list<std::pair<std::string, std::string> > lParsedArgs;
     proc.parseArgs(lParsedArgs, ri.mArgs);
     CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
@@ -558,7 +569,7 @@ void TestRequestProcessor::testFilter()
     proc.parseArgs(lParsedArgs, ri.mArgs);
     CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("y=%20"));
-    
+
 }
 
 void TestRequestProcessor::testParseArgs()
@@ -603,7 +614,7 @@ void TestRequestProcessor::testAddValidationHeaders()
     tFilter matchedFilter("papalino", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
     matchedFilter.mDestination = "Alger";
     matchedFilter.mDuplicationType = DuplicationType::COMPLETE_REQUEST;
-    matchedFilter.mRegex = "papalino";
+    matchedFilter.mMatch = "papalino";
     matchedFilter.mScope = ApplicationScope::ALL;
     lInfo.mHeadersIn.push_back(tKeyVal(std::string("X_DUP_LOG"), std::string("ON")));
     proc.addValidationHeadersDup(lInfo, &matchedFilter);
@@ -613,7 +624,7 @@ void TestRequestProcessor::testAddValidationHeaders()
     CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, matched filter : papalino. Scope : ALL. Destination : Alger"), lInfo.mHeadersOut.front().second);
 
     lInfo.mHeadersOut.pop_front();
-    matchedFilter.mRegex = "pipolino";
+    matchedFilter.mMatch = "pipolino";
     matchedFilter.mScope = ApplicationScope::HEADER;
     matchedFilter.mDestination = "Napoli";
     matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
@@ -738,7 +749,7 @@ void TestRequestProcessor::testRawSubstitution()
         std::string body = "mybody1test";
         RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/titi/", query, &body);
         ri.mConf = &conf;
-        
+
         proc.addRawFilter(".*", conf, tFilter::eFilterTypes::REGULAR);
         conf.currentApplicationScope = ApplicationScope::HEADER;
         proc.addRawSubstitution( "1", "2", conf);
@@ -810,7 +821,7 @@ void TestRequestProcessor::testTimeout() {
     proc.addFilter("SID", "mySid", conf, tFilter::eFilterTypes::REGULAR);
 
     boost::shared_ptr<RequestInfo> ri = boost::shared_ptr<RequestInfo>(new RequestInfo(std::string("42"),"/spp/main", "/spp/main", "SID=mySid"));
-    ri->mConf = &conf;    
+    ri->mConf = &conf;
     queue.push(ri);
     queue.push(POISON_REQUEST);
     proc.run(queue);

@@ -196,6 +196,7 @@ RequestProcessor::keyFilterMatch(const std::multimap<std::string, tFilter> &pFil
             if ((it->second.mScope & scope) &&                                  // Scope check
                     it->second.mFilterType == fType) {                              // Filter type check
                 if (boost::regex_search(lKeyVal.second, it->second.mRegex)) {
+                    it->second.mMatch = it->second.mRegex.str();
                     return &it->second;
                 }
             }
@@ -250,7 +251,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
     int rawFilterOnHeader = 0;
     int rawFilterOnBody = 0;
     applicationOnList(pCommands.mRawFilters, rawFilterOnHeader, rawFilterOnBody);
-    
+
     Log::debug("[DUP] Filters+Raw on body: %d+%d | on header: %d+%d", keyFilterOnBody, rawFilterOnBody, keyFilterOnHeader, rawFilterOnHeader);
 
     // Prevent Filtering check on HEADER
@@ -307,17 +308,21 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
     // Raw filters matching
     for (const tFilter &raw : pCommands.mRawFilters) {
         if (raw.mFilterType != tFilter::PREVENT_DUPLICATION) {
+            boost::smatch what;
             // Header application
             if (raw.mScope & ApplicationScope::HEADER) {
-                if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-                    Log::info(0, "[DUP] Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+
+                if (boost::regex_search(pRequest.mArgs, what, raw.mRegex)) {
+                    raw.mMatch = what[ 0 ];
+                    Log::info(0, "[DUP] Raw filter (HEADER) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
                     return &raw;
                 }
             }
             // Body application
             if (raw.mScope & ApplicationScope::BODY) {
-                if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-                    Log::info(0, "[DUP] Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                if (boost::regex_search(pRequest.mBody, what, raw.mRegex)) {
+                    raw.mMatch = what[ 0 ];
+                    Log::info(0, "[DUP] Raw filter (BODY) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
                     return &raw;
                 }
             }
@@ -421,7 +426,7 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
                 pHeaderParsedArgs,
                 ApplicationScope::HEADER,
                 pRequest.mArgs);
-	lDidSubstitute |= headerSubstitute(pCommands.mSubstitutions,
+    lDidSubstitute |= headerSubstitute(pCommands.mSubstitutions,
                 pRequest.mHeadersIn);
     }
     if (keySubOnBody) {
@@ -459,7 +464,7 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
 
     // Add the request's headers to the parsed list
     addHeadersIn(pRequest.mHeadersIn, parsedArgs);
-        
+
     tCommandsByDestination &lCommands = it->second;
     // For each duplication destination
     for ( const auto & itb : lCommands ) {
@@ -507,7 +512,7 @@ RequestProcessor::sendInBody(CURL *curl, const RequestInfo &rInfo, curl_slist *&
 
 std::string *
 RequestProcessor::sendDupFormat(CURL *curl, const RequestInfo &rInfo, curl_slist *&slist) const {
-  
+
     // set the content type to application/x-dup-serialized if we pass the REQUEST_WITH_ANSWER
     slist = curl_slist_append(slist, "Content-Type: application/x-dup-serialized");
     // Adding HTTP HEADER to indicate that the request is duplicated with it's answer
@@ -545,19 +550,19 @@ RequestProcessor::sendDupFormat(CURL *curl, const RequestInfo &rInfo, curl_slist
 /// @param slist
 void RequestProcessor::addOrigHeaders(const RequestInfo &rInfo, struct curl_slist *&slist) {
     // Copy the request input headers
-  
+
     // Create a set of headers already added
     std::set<std::string> headers;
-    
+
     curl_slist * curlist = slist;
     while ( curlist ) {
       if ( curlist->data ) {
-	  char *pos = strchr(curlist->data, ':');
-	  if ( pos ) {
-	      std::string header;
-	      header.assign(curlist->data, pos - curlist->data);
-	      headers.insert(header);
-	  }
+      char *pos = strchr(curlist->data, ':');
+      if ( pos ) {
+          std::string header;
+          header.assign(curlist->data, pos - curlist->data);
+          headers.insert(header);
+      }
       }
       curlist = curlist->next;
     }
@@ -566,15 +571,15 @@ void RequestProcessor::addOrigHeaders(const RequestInfo &rInfo, struct curl_slis
       ELAPSED_TIME_BY_DUP,X_DUP_HTTP_STATUS,X_DUP_METHOD,X_DUP_CONTENT_TYPE,
       Duplication-Type,Content-Length,Host,Expect,Transfer-Encoding,Content-Type
     */
-    
+
     // Now append only if not in the set of headers already added
     // or apache will at some point concatenate values in a csv list
     // but also never add Transfer-Encoding chunked or a Content-Length, or Duplication-Type
     // because we may not be adding it but a previous duplication might have put it there
     BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersIn) {
-        if ( (headers.find(v.first) == headers.end()) && (v.first != std::string("Host")) && 
-	  (v.first != std::string("Transfer-Encoding")) && 
-	  (v.first != std::string("Content-Length")) && (v.first != std::string("Duplication-Type")) ) {
+        if ( (headers.find(v.first) == headers.end()) && (v.first != std::string("Host")) &&
+      (v.first != std::string("Transfer-Encoding")) &&
+      (v.first != std::string("Content-Length")) && (v.first != std::string("Duplication-Type")) ) {
             headers.insert(v.first);
             slist = curl_slist_append(slist, std::string(v.first + std::string(": ") + v.second).c_str());
             // Log::error(11, "Adding header %s: %s", v.first.c_str(), v.second.c_str());
@@ -620,8 +625,9 @@ void RequestProcessor::addValidationHeadersCompare(RequestInfo &rInfo, const tFi
 void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const tFilter *matchedFilter) {
     std::ostringstream xDupLog;
     if (matchedFilter) {
-        xDupLog << "The request is duplicated, matched filter : " << matchedFilter->mRegex.str() << ". Scope : " << ApplicationScope::enumToString(matchedFilter->mScope) << ". Destination : " << matchedFilter->mDestination;
-        rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X-MATCHED-PATTERN", matchedFilter->mRegex.str()));
+        xDupLog << "The request is duplicated, matched filter : " << matchedFilter->mMatch << ". Scope : " << ApplicationScope::enumToString(matchedFilter->mScope) << ". Destination : " << matchedFilter->mDestination;
+        std::cout<<"----------------------"<<xDupLog.str()<<std::endl;
+        rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X-MATCHED-PATTERN", matchedFilter->mMatch));
     } else {
         xDupLog << "The request is not duplicated";
     }
@@ -636,7 +642,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
 
     std::string *content = NULL;
     struct curl_slist *slist = NULL;
-    
+
     addCommonHeaders(rInfo, slist);
     addValidationHeadersCompare(rInfo, matchedFilter, slist);
 
