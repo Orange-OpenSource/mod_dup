@@ -21,18 +21,52 @@
 #include "testRequestProcessor.hh"
 #include "mod_dup.hh"
 #include "TfyTestRunner.hh"
+#include "CurlStubs.cc"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <boost/shared_ptr.hpp>
+#include <curl/curl.h>
 
 CPPUNIT_TEST_SUITE_REGISTRATION( TestRequestProcessor );
 
 using namespace DupModule;
 
 static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
+
+
+static int curlTrace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp)
+{
+  (void)handle;
+  char* inpData = nullptr;
+
+  if (type == CURLINFO_HEADER_OUT)
+  {
+      inpData = (char*)malloc(sizeof(char)*size+1);
+      memcpy (inpData,data,size);
+      inpData[size]='\0';
+  }
+  else if(type == CURLINFO_DATA_OUT)
+  {
+      inpData = (char*)malloc(sizeof(char)*size+1);
+      memcpy (inpData,data,size);
+      inpData[size]='\0';
+  }
+
+  if(inpData)
+  {
+      std::string inpDataString(inpData);
+      std::string* inpPointer = reinterpret_cast<std::string*> (userp);
+      inpPointer->append(inpDataString);
+      if (inpDataString.find("X-DUPLICATED-REQUEST") != std::string::npos)
+          Log::debug("DEBUG MANU OK");
+      free(inpData);
+  }
+
+  return 0;
+}
 
 void TestRequestProcessor::testRun()
 {
@@ -902,6 +936,102 @@ void TestRequestProcessor::testMultiDestination() {
 
 }
 
+void TestRequestProcessor::testPerformCurlCall() {
+
+    DupConf lConf;
+    CURL* lCurl = curl_easy_init();
+
+    std::string data;
+    curl_easy_setopt(lCurl, CURLOPT_DEBUGFUNCTION, curlTrace);
+    curl_easy_setopt(lCurl, CURLOPT_DEBUGDATA, (void*)&data);
+    curl_easy_setopt(lCurl, CURLOPT_VERBOSE, 1L);
+
+    std::string lDestination = "localhost:8050";
+    std::string lQueryArgs = "arg=myarg";
+    std::string lBody = "mybodytest";
+
+    RequestProcessor requestProcessor;
+    RequestInfo requestInfo = RequestInfo(std::string("42"),"/test", "/test/path/", lQueryArgs, &lBody);
+    tFilter matchedFilter("test", ApplicationScope::ALL,lDestination,DuplicationType::REQUEST_WITH_ANSWER);
+
+
+    matchedFilter.mDestination = lDestination;
+    requestInfo.mConf = &lConf;
+    lConf.currentApplicationScope = ApplicationScope::ALL;
+
+    //Case 1: DuplicationType::REQUEST_WITH_ANSWER and comparison is true X_COMP_LOG is set
+    {
+        matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
+        requestInfo.mValidationHeaderDup = true;
+        requestProcessor.performCurlCall(lCurl, matchedFilter, requestInfo);
+        std::cout << data;
+
+        /**********AddCommonHeaders**********/
+       // CPPUNIT_ASSERT(data.find("ELAPSED_TIME_BY_DUP:") != std::string::npos);
+       // CPPUNIT_ASSERT(data.find("Expect:") != std::string::npos);
+        // CPPUNIT_ASSERT(data.find("X-DUPLICATED-REQUEST: 1:") != std::string::npos);
+        // CPPUNIT_ASSERT(data.find("User-RealAgent: mod-dup:") != std::string::npos);
+        /**********AddCommonHeaders**********/
+
+        /**********AddValidationHeadersCompare**********/
+        //CPPUNIT_ASSERT(data.find("X_COMP_LOG: ON") != std::string::npos);
+        /**********AddValidationHeadersCompare**********/
+    }
+
+    //Case 2: DuplicationType::REQUEST_WITH_ANSWER and comparison is false X_COMP_LOG is not set
+    {
+        matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
+        requestInfo.mValidationHeaderDup = false;
+        requestProcessor.performCurlCall(lCurl, matchedFilter, requestInfo);
+
+        /**********AddCommonHeaders**********/
+//        CPPUNIT_ASSERT(data.find("ELAPSED_TIME_BY_DUP:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("Expect:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("X-DUPLICATED-REQUEST: 1:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("User-RealAgent: mod-dup:") != std::string::npos);
+        /**********AddCommonHeaders**********/
+
+        /**********AddValidationHeadersCompare**********/
+//        CPPUNIT_ASSERT(data.find("X_COMP_LOG: ON")  == std::string::npos);
+        /**********AddValidationHeadersCompare**********/
+    }
+
+    //Case 3: DuplicationType::COMPLETE_REQUEST
+    {
+        matchedFilter.mDuplicationType = DuplicationType::COMPLETE_REQUEST;
+        requestProcessor.performCurlCall(lCurl, matchedFilter, requestInfo);
+
+        /**********AddCommonHeaders**********/
+//        CPPUNIT_ASSERT(data.find("ELAPSED_TIME_BY_DUP:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("Expect:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("X-DUPLICATED-REQUEST: 1:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("User-RealAgent: mod-dup:") != std::string::npos);
+        /**********AddCommonHeaders**********/
+
+        /**********AddValidationHeadersCompare**********/
+//        CPPUNIT_ASSERT(data.find("X_COMP_LOG: ON") == std::string::npos);
+        /**********AddValidationHeadersCompare**********/
+
+    }
+
+    //Case 4: Simple GET
+    {
+        matchedFilter.mDuplicationType = DuplicationType::NONE;
+        requestProcessor.performCurlCall(lCurl, matchedFilter, requestInfo);
+
+        /**********AddCommonHeaders**********/
+//        CPPUNIT_ASSERT(data.find("ELAPSED_TIME_BY_DUP:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("Expect:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("X-DUPLICATED-REQUEST: 1:") != std::string::npos);
+//        CPPUNIT_ASSERT(data.find("User-RealAgent: mod-dup:") != std::string::npos);
+        /**********AddCommonHeaders**********/
+
+        /**********AddValidationHeadersCompare**********/
+//        CPPUNIT_ASSERT(data.find("X_COMP_LOG: ON") == std::string::npos);
+        /**********AddValidationHeadersCompare**********/
+    }
+
+}
 
 //--------------------------------------
 // the main method

@@ -124,6 +124,10 @@ struct RequestInfo {
     mapStr mDupResponseHeader;
     /** @brief The body part of the answer of the duplicated request*/
     std::string mDupResponseBody;
+    /** @brief The response header of the CURL command sent from MOD_DUP to MOD_COMP */
+    mapStr mCurlCompResponseHeader;
+    /** @brief The response status of the CURL command sent from MOD_DUP to MOD_COMP */
+    int mCurlCompResponseStatus;
 
     typedef std::list<std::pair<std::string, std::string> > tHeaders;
 

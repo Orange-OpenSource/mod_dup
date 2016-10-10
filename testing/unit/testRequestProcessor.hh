@@ -43,6 +43,7 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testTimeout);
     CPPUNIT_TEST(testFilterOnNotMatching);
     CPPUNIT_TEST(testMultiDestination);
+    CPPUNIT_TEST(testPerformCurlCall);
 
     CPPUNIT_TEST_SUITE_END();
 
@@ -59,6 +60,7 @@ public:
     void testRequestInfo();
     void testTimeout();
     void testFilterOnNotMatching();
+    void testPerformCurlCall();
 
     /**
      * Tests the key substitution on the request body
