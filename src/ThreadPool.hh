@@ -96,17 +96,17 @@ private:
 	 * @brief Collect any threads which exited (probably because we poisoned them) and remove them from our list
 	 */
 	void collectKilled() {
-		time_duration nowait(0, 0, 0, 0);
+		time_duration shortWait(0, 0, 0, 10000); // wait for 0h,0min,0s,10ms
 
 		std::list<boost::thread *>::iterator it = mThreads.begin();
 		while (it != mThreads.end()) {
-			if ((*it)->timed_join(nowait)) {
+            if ((*it)->timed_join(shortWait)) {
 				Log::debug("Removing a terminated thread from pool.");
 				delete *it;
 				it = mThreads.erase(it);
 				mBeingKilled--;
 			} else {
-				++it;
+                ++it;
 			}
 		}
 	}
@@ -123,12 +123,12 @@ private:
 		while (mRunning) {
 			size_t lQueued = mQueue.size();
 			float lQueuedPerThread = static_cast<float>(mQueue.size()) / mThreads.size();
-
+            
 			collectKilled();
 
-			if (lQueuedPerThread > mMaxQueued && mThreads.size() < mMaxThreads) {
+			if ((lQueuedPerThread > mMaxQueued) && (mThreads.size() < mMaxThreads)) {
 				newThread();
-			} else if (lQueuedPerThread < mMinQueued && mThreads.size() - mBeingKilled > mMinThreads) {
+			} else if ((lQueuedPerThread < mMinQueued) && ((mThreads.size() - mBeingKilled) > mMinThreads)) {
 				poisonThread();
 			}
 
@@ -153,16 +153,11 @@ private:
 			usleep(mManageInterval);
 		}
 
-		unsigned lToBeKilled = mThreads.size() - mBeingKilled;
-		// Poison all remaining threads ...
-		for (unsigned i=0; i<lToBeKilled; ++i) {
+		// Poison all threads, not an issue if some were already exiting
+        for (unsigned i=0; i<mThreads.size(); ++i) {
 			poisonThread();
 		}
-
-		// ... and collect them
-		while (mBeingKilled) {
-			collectKilled();
-		}
+        collectKilled();
 	}
 
 public:

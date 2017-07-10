@@ -58,9 +58,8 @@ void TestThreadPool::run()
     apr_initialize();
 
     Log::init();
-
-	MultiThreadQueue<int> queue;
-	ThreadPool<int> pool(&worker, POISON);
+    
+    ThreadPool<int> pool(&worker, POISON);
 	// Display stats every second, so that this test triggers it
 	pool.setStatsInterval(1000000);
 
@@ -76,14 +75,23 @@ void TestThreadPool::run()
 
 	// theoretical processing time of 2 seconds of work with 1 to 4 threads: 650 ms
 	// theoretical thread wind down time: 400 ms
-	// error margin: 200ms
-	usleep(650000 + 400000 + 200000);
+	// error margin: 500ms
+	usleep(650000 + 400000 + 500000);
 
 	// So now we should have processed all items and wound down to a single thread again
 	CPPUNIT_ASSERT_EQUAL(1000, count);
 	CPPUNIT_ASSERT_EQUAL_UINT(1, pool.getThreadCount());
+    
+    // push a 10s sleep and record date
+    pool.push(10000000);
+    namespace pt = boost::posix_time;
+    pt::ptime lBefore = pt::microsec_clock::universal_time();
+    
 
 	pool.stop();
+    
+    // make sure the stop is done less than a second later, if not we have an infinite loop or deadlock at exit!
+    CPPUNIT_ASSERT((pt::microsec_clock::universal_time() - lBefore).total_microseconds() < 1000000 );
 }
 
 #ifdef UNIT_TESTING
