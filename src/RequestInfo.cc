@@ -66,13 +66,13 @@ RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std
       mId(id),
       mPath(pPath),
       mArgs(pArgs),
+      mValidationHeaderDup(false),
+      mValidationHeaderComp(false),
+      mConf(nullptr),
       mEOS(false),
       mStartTime(boost::posix_time::microsec_clock::universal_time()),
-      mElapsedTime(),
-      mConf(nullptr),
-      mValidationHeaderDup(false),
-      mValidationHeaderComp(false)
-{
+      mElapsedTime()
+      {
     if (pBody)
         mBody = *pBody;
 }
@@ -85,22 +85,22 @@ RequestInfo::RequestInfo(const mapStr &reqHeader, const std::string &reqBody, co
 	mResponseBody(respBody),
 	mDupResponseHeader(dupHeader),
 	mDupResponseBody(dupBody),
+	mValidationHeaderDup(false),
+	mValidationHeaderComp(false),
+    mConf(nullptr),
         mEOS(false),
         mStartTime(boost::posix_time::microsec_clock::universal_time()),
-        mElapsedTime(),
-        mConf(nullptr),
-        mValidationHeaderDup(false),
-        mValidationHeaderComp(false)
+        mElapsedTime()
 {
 }
 
 RequestInfo::RequestInfo(const std::string &id, int64_t startTime)
     : mPoison(false),
       mId(id),
-      mEOS(false),
-      mConf(nullptr),
       mValidationHeaderDup(false),
-      mValidationHeaderComp(false)
+      mValidationHeaderComp(false),
+      mConf(nullptr),
+      mEOS(false)
 {
           namespace pt = boost::posix_time;
           mStartTime = pt::from_time_t(time_t(startTime / 1000000)) + pt::microseconds(startTime % 1000000);
@@ -108,12 +108,12 @@ RequestInfo::RequestInfo(const std::string &id, int64_t startTime)
 
 RequestInfo::RequestInfo() :
     mPoison(true),
+    mValidationHeaderDup(false),
+    mValidationHeaderComp(false),
+    mConf(nullptr),
     mEOS(false),
     mStartTime(boost::posix_time::microsec_clock::universal_time()),
-    mElapsedTime(),
-    mConf(nullptr),
-    mValidationHeaderDup(false),
-    mValidationHeaderComp(false)
+    mElapsedTime()
     {
 }
 

@@ -58,7 +58,6 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
     if (conf->mEnvLists.empty())
         return 0;
     int count = 0;
-    const std::list<MigrateConf::MigrateEnv>& envList = conf->mEnvLists;
 
     // Iteration through context enrichment
     BOOST_FOREACH(const MigrateConf::MigrateEnv &ctx, conf->mEnvLists) {
