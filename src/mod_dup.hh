@@ -86,12 +86,10 @@ private:
 };
 
 /**
- * @brief Initialize our the processor and thread pool pre-config
- * @param pPool the apache pool
- * @return Always OK
+ * @brief Initialize our the processor and thread pool on first config call
  */
-int
-preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp);
+void
+init();
 
 /**
  * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it

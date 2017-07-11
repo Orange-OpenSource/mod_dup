@@ -59,7 +59,6 @@ void TestFilters::setUp() {
     CPPUNIT_ASSERT(gThreadPool);
 
     childInit(mParms->pool, mParms->server);
-    preConfig(NULL, NULL, NULL);
     postConfig(mParms->pool, mParms->pool, mParms->pool, mParms->server);
 
 }

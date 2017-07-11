@@ -59,7 +59,7 @@ cmd_parms * TestModDup::getParms() {
 
 void TestModDup::testInit()
 {
-    preConfig(NULL, NULL, NULL);
+    init();
     CPPUNIT_ASSERT(gProcessor);
     CPPUNIT_ASSERT(gThreadPool);
 

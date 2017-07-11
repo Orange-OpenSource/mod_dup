@@ -108,6 +108,9 @@ static void printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf
     Log::debug("[DUP] Request args: %s", pRequest->args);
 }
 
+/**
+ * @brief Duplicate this request, async or sync operation
+ */
 static void initiateDuplication(DupConf *tConf, request_rec *pRequest, boost::shared_ptr<RequestInfo> * reqInfo)
 {
     RequestInfo * ri = reqInfo->get();
@@ -120,8 +123,10 @@ static void initiateDuplication(DupConf *tConf, request_rec *pRequest, boost::sh
         if (!lCurl) {
             lCurl = gProcessor->initCurl();
         }
+        // Run synchronously without pushing to the queue
         gProcessor->runOne(*ri, lCurl);
     } else {
+        // will be popped by RequestProcessor::Run
         gThreadPool->push(*reqInfo);
     }
     checkAdditionalHeaders(*ri, pRequest);

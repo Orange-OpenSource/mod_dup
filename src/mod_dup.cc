@@ -95,8 +95,8 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
     //TODO move in preconfig function
 static boost::shared_ptr<RequestInfo> POISON_REQUEST(new RequestInfo());
 
-int
-preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
+void
+init() {
     gProcessor = new RequestProcessor();
     gThreadPool = new ThreadPool<boost::shared_ptr<RequestInfo> >(boost::bind(&RequestProcessor::run, gProcessor, _1),
                                                                   POISON_REQUEST);
@@ -105,7 +105,6 @@ preConfig(apr_pool_t * pPool, apr_pool_t * pLog, apr_pool_t * pTemp) {
                                                boost::bind(&RequestProcessor::getTimeoutCount, gProcessor)));
     gThreadPool->addStat("#DupReq", boost::bind(boost::lexical_cast<std::string, unsigned int>,
                                                 boost::bind(&RequestProcessor::getDuplicatedCount, gProcessor)));
-    return OK;
 }
 
 int
@@ -120,6 +119,7 @@ setName(cmd_parms* pParams, void* pCfg, const char* pName) {
     if (!pName || strlen(pName) == 0) {
         return "Missing program name";
     }
+    if ( ! gThreadPool ) init();
     gThreadPool->setProgramName(pName);
     return NULL;
 }
@@ -129,6 +129,7 @@ setUrlCodec(cmd_parms* pParams, void* pCfg, const char* pUrlCodec) {
     if (!pUrlCodec || strlen(pUrlCodec) == 0) {
         return "Missing url codec style";
     }
+    if ( ! gProcessor ) init();
     gProcessor->setUrlCodec(pUrlCodec);
     return NULL;
 }
@@ -139,6 +140,7 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination, const c
     if (lErrorMsg) {
         return lErrorMsg;
     }
+    if ( ! gProcessor ) init();
     struct DupConf *tC = reinterpret_cast<DupConf *>(pCfg);
     assert(tC);
     if (!pDestination || strlen(pDestination) == 0) {
@@ -169,6 +171,7 @@ setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pAppScope) {
     if (lErrorMsg) {
         return lErrorMsg;
     }
+    if ( ! gProcessor ) init();
     struct DupConf *tC = reinterpret_cast<DupConf *>(pCfg);
     try {
         tC->currentApplicationScope = ApplicationScope::stringToEnum(pAppScope);
@@ -185,6 +188,8 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     if (lErrorMsg) {
         return lErrorMsg;
     }
+    if ( ! gProcessor ) init();
+  
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
@@ -210,7 +215,8 @@ setThreads(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
 	if (lMax < lMin) {
 		return "Invalid value(s) for minimum and maximum number of threads.";
 	}
-	gThreadPool->setThreads(lMin, lMax);
+	if ( ! gThreadPool ) init();
+    gThreadPool->setThreads(lMin, lMax);
 	return NULL;
 }
 
@@ -223,6 +229,7 @@ setTimeout(cmd_parms* pParams, void* pCfg, const char* pTimeout) {
         return "Invalid value(s) for timeout.";
     }
 
+    if ( ! gProcessor ) init();
     gProcessor->setTimeout(lTimeout);
     return NULL;
 }
@@ -241,6 +248,7 @@ setQueue(cmd_parms* pParams, void* pCfg, const char* pMin, const char* pMax) {
         return "Invalid value(s) for minimum and maximum queue size.";
     }
 
+    if ( ! gThreadPool ) init();
     gThreadPool->setQueue(lMin, lMax);
     return NULL;
 }
@@ -251,7 +259,8 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
     if (lErrorMsg) {
         return lErrorMsg;
     }
-
+    if ( ! gProcessor ) init();
+    
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
@@ -319,7 +328,8 @@ _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilt
     if (lErrorMsg) {
         return lErrorMsg;
     }
-
+    if ( ! gProcessor ) init();
+    
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
@@ -348,6 +358,7 @@ _setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression, tFilter::
     if (lErrorMsg) {
         return lErrorMsg;
     }
+    if ( ! gProcessor ) init();
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
@@ -371,19 +382,25 @@ setRawPreventFilter(cmd_parms* pParams, void* pCfg, const char* pExpression) {
 
 apr_status_t
 cleanUp(void *) {
-    gThreadPool->stop();
-    delete gThreadPool;
-    gThreadPool = NULL;
+    if ( gThreadPool ) {
+        gThreadPool->stop();
+        delete gThreadPool;
+        gThreadPool = NULL;
+    }
 
-    delete gProcessor;
-    gProcessor = NULL;
+    if ( gProcessor ) {
+        delete gProcessor;
+        gProcessor = NULL;
+    }
     return APR_SUCCESS;
 }
 
 void
 childInit(apr_pool_t *pPool, server_rec *pServer) {
     curl_global_init(CURL_GLOBAL_ALL);
-    gThreadPool->start();
+    if ( gThreadPool ) {
+        gThreadPool->start();
+    }
     apr_pool_cleanup_register(pPool, NULL, cleanUp, cleanUp);
 }
 
@@ -520,7 +537,6 @@ static void insertOutputHeadersFilter(request_rec *pRequest) {
 void
 registerHooks(apr_pool_t *pPool) {
 #ifndef UNIT_TESTING
-    ap_hook_pre_config(preConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_post_config(postConfig, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(&childInit, NULL, NULL, APR_HOOK_MIDDLE);
 
