@@ -242,7 +242,7 @@ def main(options, args):
 
 if __name__ == '__main__':
     # By default, we use the test files in the data folder next to this script
-    defauldup_path = os.path.join(os.getcwd(), os.path.dirname(__file__), "data")
+    defauldup_path = os.path.join(os.getcwd(), os.path.dirname(__file__), "data/dup/requests")
 
     # Option parsing
     arg_parser = optparse.OptionParser()
