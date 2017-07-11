@@ -1,3 +1,9 @@
+pns-mod-dup (2.2.3) precise; urgency=low
+
+  * fix infinite loop at exit when a curl request is stuck
+
+ -- Emmanuel Courreges <emmanuel.courreges@orange.com>  Tue, 11 Jul 2017 10:20:49 +0200
+
 pns-mod-dup (2.2.2) precise; urgency=low
 
   * Add Validation headers for duplication
