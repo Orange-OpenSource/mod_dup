@@ -17,6 +17,8 @@
 */
 
 #include <httpd.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
 #include <boost/algorithm/string/replace.hpp>
 
 #include "Log.hh"

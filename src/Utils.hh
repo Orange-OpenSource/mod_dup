@@ -21,6 +21,8 @@
 #include <httpd.h>
 #include <http_config.h>
 #include <http_request.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
 
 namespace CommonModule {
 

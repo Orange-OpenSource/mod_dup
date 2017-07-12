@@ -90,8 +90,8 @@ void TestJsonDiffPrinter::testFullExtractionOfXmlTags(){
 
 void TestJsonDiffPrinter::testNullInHeader(){
 	LibWsDiff::jsonDiffPrinter test("4");
-	test.addHeaderDiff("nullDst",std::string("srcValue"),NULL);
-	test.addHeaderDiff("nullSrc",NULL,std::string("dstValue"));
+	test.addHeaderDiff("nullDst",std::string("srcValue"), boost::none);
+	test.addHeaderDiff("nullSrc",boost::none,std::string("dstValue"));
 
 	std::string json;
 	CPPUNIT_ASSERT(test.retrieveDiff(json));
@@ -102,7 +102,7 @@ void TestJsonDiffPrinter::testNullInHeader(){
 
 void TestJsonDiffPrinter::testUTF_8_OK(){
 	boost::scoped_ptr<LibWsDiff::diffPrinter> test(LibWsDiff::diffPrinter::createDiffPrinter("5\xe6",LibWsDiff::diffPrinter::UTF8JSON));
-	test->addHeaderDiff(std::string("\xe6\x97\xa5\xd1\x88\xfa"),std::string("\xe6\x97\xa5\xd1\x88\xfa"),NULL);
+	test->addHeaderDiff(std::string("\xe6\x97\xa5\xd1\x88\xfa"),std::string("\xe6\x97\xa5\xd1\x88\xfa"),boost::none);
 
 	std::string json;
 	CPPUNIT_ASSERT(test->retrieveDiff(json));

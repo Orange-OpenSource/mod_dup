@@ -29,7 +29,9 @@
 #include <math.h>
 #include <boost/tokenizer.hpp>
 #include <iomanip>
-#include <apache2/httpd.h>
+#include <httpd.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
 #include <boost/date_time/time_facet.hpp>
 
 const size_t SECTION_SIZE_CHARS = 8 ;

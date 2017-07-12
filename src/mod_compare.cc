@@ -21,6 +21,8 @@
 #include <http_request.h>
 #include <http_protocol.h>
 #include <http_connection.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
 #include <apr_pools.h>
 #include <apr_hooks.h>
 #include "apr_strings.h"

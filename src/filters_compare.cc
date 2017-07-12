@@ -25,6 +25,10 @@
 
 
 #include <http_config.h>
+#include <httpd.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
+
 #include <assert.h>
 #include <stdexcept>
 #include <boost/thread/detail/singleton.hpp>
@@ -32,9 +36,6 @@
 #include <boost/tokenizer.hpp>
 #include <boost/smart_ptr.hpp>
 #include <iomanip>
-#include <apache2/httpd.h>
-
-
 
 #define DEF_METHOD(name) static const char *g##name = #name;
 

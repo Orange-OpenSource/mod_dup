@@ -9,6 +9,9 @@
 #include <http_config.h>
 #include <http_core.h>
 #include <http_protocol.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
+
 #include <iostream>
 #include <list>
 #include <sys/types.h>

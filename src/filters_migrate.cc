@@ -21,13 +21,15 @@
 #include "Utils.hh"
 
 #include <http_config.h>
+#include <httpd.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
 #include <assert.h>
 #include <stdexcept>
 #include <boost/thread/detail/singleton.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/tokenizer.hpp>
 #include <iomanip>
-#include <apache2/httpd.h>
 #include <boost/regex.hpp>
 
 namespace MigrateModule {

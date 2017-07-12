@@ -22,6 +22,8 @@
 #include <http_config.h>
 #include <http_request.h>
 #include <http_protocol.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
 
 #include "TfyTestRunner.hh"
 #include "MultiThreadQueue.hh"

@@ -23,6 +23,8 @@
 #include <boost/lexical_cast.hpp>
 
 #include <httpd.h>
+// Work-around boost::chrono 1.53 conflict on CR typedef vs define in apache
+#undef CR
 #include <iomanip>
 #include <set>
 
