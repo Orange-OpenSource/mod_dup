@@ -43,6 +43,8 @@ public:
 	 */
 	MapCompare();
 	virtual ~MapCompare();
+    
+    void merge(const MapCompare &mc);
 
 	/**
 	 * Add a new ignore regex for map diffing

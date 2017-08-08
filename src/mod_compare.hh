@@ -74,6 +74,8 @@ public:
     CompareConf(std::string dirName = "");
 
     static apr_status_t cleaner(void *self);
+    
+    void merge(const CompareConf &cc);
 
     LibWsDiff::StringCompareBody mCompBody;
     LibWsDiff::MapCompare mCompHeader;
@@ -92,6 +94,15 @@ public:
  */
 void *
 createDirConfig(apr_pool_t *pPool, char *pDirName);
+
+/**
+ * @brief allocate a pointer to a string which will hold the path for the dir config if mod_dup is active on it
+ * @param pPool the apache pool on which to allocate data
+ * @param pDirName the directory name for which to create data
+ * @return a void pointer to newly allocated object
+ */
+void *
+mergeDirConfig(apr_pool_t *pPool, void *pBase, void *pAdd);
 
 /**
  * @brief Initialize logging post-config

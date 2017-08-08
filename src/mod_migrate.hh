@@ -36,7 +36,7 @@
 
 #include "Log.hh"
 #include "RequestInfo.hh"
-#include "RequestProcessor.hh"
+#include "RequestCommon.hh"
 
 extern module AP_DECLARE_DATA migrate_module;
 

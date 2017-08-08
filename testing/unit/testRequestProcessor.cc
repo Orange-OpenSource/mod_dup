@@ -611,39 +611,44 @@ void TestRequestProcessor::testAddValidationHeaders()
 {
     RequestProcessor proc;
     RequestInfo lInfo;
-    tFilter matchedFilter("papalino", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
-    matchedFilter.mDestination = "Alger";
-    matchedFilter.mDuplicationType = DuplicationType::COMPLETE_REQUEST;
-    matchedFilter.mMatch = "papalino";
-    matchedFilter.mScope = ApplicationScope::ALL;
-    lInfo.mHeadersIn.push_back(tKeyVal(std::string("X_DUP_LOG"), std::string("ON")));
-    proc.addValidationHeadersDup(lInfo, &matchedFilter);
-    CPPUNIT_ASSERT_EQUAL(std::string("X-MATCHED-PATTERN"), lInfo.mHeadersOut.front().first);
-    CPPUNIT_ASSERT_EQUAL(std::string("papalino"), lInfo.mHeadersOut.front().second);
+    {
+        tFilter matchedFilter("papalino", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
+        matchedFilter.mDestination = "Alger";
+        matchedFilter.mDuplicationType = DuplicationType::COMPLETE_REQUEST;
+        matchedFilter.mMatch = "papalino";
+        matchedFilter.mScope = ApplicationScope::ALL;
+        lInfo.mHeadersIn.push_back(tKeyVal(std::string("X_DUP_LOG"), std::string("ON")));
+        proc.addValidationHeadersDup(lInfo, &matchedFilter);
+        CPPUNIT_ASSERT_EQUAL(std::string("X-MATCHED-PATTERN"), lInfo.mHeadersOut.front().first);
+        CPPUNIT_ASSERT_EQUAL(std::string("papalino"), lInfo.mHeadersOut.front().second);
+        lInfo.mHeadersOut.pop_front();
+        CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, ALL filter: \"papalino\" matched : \"papalino\", Scope : ALL. Destination : Alger"), lInfo.mHeadersOut.front().second);
+    }
+    
     lInfo.mHeadersOut.pop_front();
-    CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, matched filter : papalino. Scope : ALL. Destination : Alger"), lInfo.mHeadersOut.front().second);
+    {
+        tFilter matchedFilter(".*", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
+        matchedFilter.mMatch = "papalino";
+        matchedFilter.mScope = ApplicationScope::HEADER;
+        matchedFilter.mDestination = "Napoli";
+        matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
+        proc.addValidationHeadersDup(lInfo, &matchedFilter);
 
-    lInfo.mHeadersOut.pop_front();
-    matchedFilter.mMatch = "pipolino";
-    matchedFilter.mScope = ApplicationScope::HEADER;
-    matchedFilter.mDestination = "Napoli";
-    matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
-    proc.addValidationHeadersDup(lInfo, &matchedFilter);
+        CPPUNIT_ASSERT_EQUAL(std::string("X-MATCHED-PATTERN"), lInfo.mHeadersOut.front().first);
+        CPPUNIT_ASSERT_EQUAL(std::string("papalino"), lInfo.mHeadersOut.front().second);
 
-    CPPUNIT_ASSERT_EQUAL(std::string("X-MATCHED-PATTERN"), lInfo.mHeadersOut.front().first);
-    CPPUNIT_ASSERT_EQUAL(std::string("pipolino"), lInfo.mHeadersOut.front().second);
+        lInfo.mHeadersOut.pop_front();
 
-    lInfo.mHeadersOut.pop_front();
-
-    CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, matched filter : pipolino. Scope : HEADER. Destination : Napoli"), lInfo.mHeadersOut.front().second);
-    lInfo.mHeadersOut.pop_front();
-    proc.addValidationHeadersDup(lInfo, NULL);
-    CPPUNIT_ASSERT_EQUAL(std::string("The request is not duplicated"), lInfo.mHeadersOut.front().second);
-
-    struct curl_slist *slist = NULL;
-    lInfo.mValidationHeaderDup = true;
-    proc.addValidationHeadersCompare(lInfo, matchedFilter, slist);
-    CPPUNIT_ASSERT_EQUAL(true, lInfo.mValidationHeaderComp);
+        CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, HEADER filter: \".*\" matched : \"papalino\", Scope : HEADER. Destination : Napoli"), lInfo.mHeadersOut.front().second);
+        lInfo.mHeadersOut.pop_front();
+        proc.addValidationHeadersDup(lInfo, NULL);
+        CPPUNIT_ASSERT_EQUAL(std::string("The request is not duplicated"), lInfo.mHeadersOut.front().second);
+        
+        struct curl_slist *slist = NULL;
+        lInfo.mValidationHeaderDup = true;
+        proc.addValidationHeadersCompare(lInfo, matchedFilter, slist);
+        CPPUNIT_ASSERT_EQUAL(true, lInfo.mValidationHeaderComp);
+    }
 
 }
 

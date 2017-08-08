@@ -31,6 +31,13 @@ StringCompare::StringCompare(const tStrings& stopRegex,const tStrings& ignoreReg
 	}
 }
 
+void StringCompare::merge(const StringCompare& sc)
+{
+    mStopRegex.insert(mStopRegex.end(), sc.mStopRegex.begin(),sc.mStopRegex.end());
+    mIgnoreRegex.insert(mIgnoreRegex.end(), sc.mIgnoreRegex.begin(),sc.mIgnoreRegex.end());
+}
+
+
 void StringCompare::ignoreCases(std::string & str) const{
 	for(tRegexes::const_iterator it=mIgnoreRegex.begin();it!=mIgnoreRegex.end();++it){
 		str = boost::regex_replace(str,*it,"");

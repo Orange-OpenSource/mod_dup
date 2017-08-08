@@ -58,6 +58,13 @@ getCurlResponseHeaderCallback(char *buffer, size_t size, size_t nitems, void *us
     return size * nitems;
 }
 
+/* Never writes anything, just returns the size presented 
+ avoids curl writing to stdout */
+size_t my_dummy_write(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+    return size * nmemb;
+}
+
 bool
 Commands::toDuplicate() {
     static bool GlobalInit = false;
@@ -230,12 +237,14 @@ void applicationOnMap(const T &list, int &header, int &body) {
 }
 
 template <class T>
-void applicationOnList(const T &list, int &header, int &body) {
+void applicationOnList(const T &list, int &header, int &body, int &path) {
     for(const auto & f: list) {
         if (f.mScope & ApplicationScope::BODY)
             body++;
         if (f.mScope & ApplicationScope::HEADER)
             header++;
+        if (f.mScope & ApplicationScope::URL)
+            path++;
     }
 }
 
@@ -252,9 +261,10 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
     applicationOnMap(pFilters, keyFilterOnHeader, keyFilterOnBody);
     int rawFilterOnHeader = 0;
     int rawFilterOnBody = 0;
-    applicationOnList(pCommands.mRawFilters, rawFilterOnHeader, rawFilterOnBody);
+    int rawFilterOnPath = 0;
+    applicationOnList(pCommands.mRawFilters, rawFilterOnHeader, rawFilterOnBody, rawFilterOnPath);
 
-    Log::debug("[DUP] Filters+Raw on body: %d+%d | on header: %d+%d", keyFilterOnBody, rawFilterOnBody, keyFilterOnHeader, rawFilterOnHeader);
+    Log::debug("[DUP] Filters+Raw on body: %d+%d | on header: %d+%d | on path: 0+%d", keyFilterOnBody, rawFilterOnBody, keyFilterOnHeader, rawFilterOnHeader, rawFilterOnPath);
 
     // Prevent Filtering check on HEADER
     if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::PREVENT_DUPLICATION))) {
@@ -276,6 +286,13 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
     // Raw filters prevent analyse
     for (const tFilter &raw : pCommands.mRawFilters) {
         if (raw.mFilterType == tFilter::PREVENT_DUPLICATION) {
+            // Path application
+            if (raw.mScope & ApplicationScope::URL) {
+                if (boost::regex_search(pRequest.mPath, raw.mRegex)) {
+                    Log::info(0, "[DUP] Prevent Raw filter (PATH) matched: %s | %s", pRequest.mPath.c_str(), raw.mRegex.str().c_str());
+                    return NULL;
+                }
+            }
             // Header applications
             if (raw.mScope & ApplicationScope::HEADER) {
                 if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
@@ -311,9 +328,16 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
     for (const tFilter &raw : pCommands.mRawFilters) {
         if (raw.mFilterType != tFilter::PREVENT_DUPLICATION) {
             boost::smatch what;
+            // Path application
+            if (raw.mScope & ApplicationScope::URL) {
+                if (boost::regex_search(pRequest.mPath, what, raw.mRegex)) {
+                    raw.mMatch = what[ 0 ];
+                    Log::info(0, "[DUP] Raw filter (PATH) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
+                    return &raw;
+                }
+            }
             // Header application
             if (raw.mScope & ApplicationScope::HEADER) {
-
                 if (boost::regex_search(pRequest.mArgs, what, raw.mRegex)) {
                     raw.mMatch = what[ 0 ];
                     Log::info(0, "[DUP] Raw filter (HEADER) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
@@ -428,7 +452,7 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
                 pHeaderParsedArgs,
                 ApplicationScope::HEADER,
                 pRequest.mArgs);
-    lDidSubstitute |= headerSubstitute(pCommands.mSubstitutions,
+        lDidSubstitute |= headerSubstitute(pCommands.mSubstitutions,
                 pRequest.mHeadersIn);
     }
     if (keySubOnBody) {
@@ -442,10 +466,12 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
     }
     // Run the raw substitutions
     BOOST_FOREACH(const tSubstitute &s, pCommands.mRawSubstitutions) {
+        if (s.mScope & ApplicationScope::URL) {
+            pRequest.mPath = boost::regex_replace(pRequest.mPath, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
+        }
         if (s.mScope & ApplicationScope::BODY) {
             pRequest.mBody = boost::regex_replace(pRequest.mBody, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
-
         if (s.mScope & ApplicationScope::HEADER) {
             pRequest.mArgs = boost::regex_replace(pRequest.mArgs, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
@@ -627,7 +653,7 @@ void RequestProcessor::addValidationHeadersCompare(RequestInfo &rInfo, const tFi
 void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const tFilter *matchedFilter) {
     std::ostringstream xDupLog;
     if (matchedFilter) {
-        xDupLog << "The request is duplicated, matched filter : " << matchedFilter->mMatch << ". Scope : " << ApplicationScope::enumToString(matchedFilter->mScope) << ". Destination : " << matchedFilter->mDestination;
+        xDupLog << "The request is duplicated, " << ApplicationScope::enumToString(matchedFilter->mScope) << " filter: \"" << matchedFilter->mRegex << "\" matched : \"" << matchedFilter->mMatch << "\", Scope : " << ApplicationScope::enumToString(matchedFilter->mScope) << ". Destination : " << matchedFilter->mDestination;
         std::cout<<"----------------------"<<xDupLog.str()<<std::endl;
         rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X-MATCHED-PATTERN", matchedFilter->mMatch));
     } else {
@@ -641,6 +667,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
     // Setting URI
     std::string uri = matchedFilter.mDestination + rInfo.mPath + "?" + rInfo.mArgs;
     curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &my_dummy_write); // this avoids curl printing the answer to stdout
 
     std::string *content = NULL;
     struct curl_slist *slist = NULL;

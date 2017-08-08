@@ -59,6 +59,8 @@ public:
 	StringCompare();
 	virtual ~StringCompare();
 
+    virtual void merge(const StringCompare & sc);
+    
 	/**
 	 * add a new regex string to ignore in the diff
 	 * @param re : the string to regex ignore in the diff
@@ -154,7 +156,7 @@ public:
 	 * Call the super constructor.
 	 */
 	StringCompareBody():StringCompare(){}
-
+	
 	/**
 	 * Split both string on their '><' junction and return the line by line diff
 	 * Stop and Ignore regex are also process on the input strings

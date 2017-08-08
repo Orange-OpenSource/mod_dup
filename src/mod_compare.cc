@@ -142,6 +142,18 @@ mDirName(dirName)
 {
 }
 
+void CompareConf::merge(const CompareConf& cc)
+{
+    if ( mIsActive || cc.mIsActive ) {
+        mCompBody.merge(cc.mCompBody);
+        mCompHeader.merge(cc.mCompHeader);
+        mLogType = cc.mLogType;
+        mCompareDisabled = cc.mCompareDisabled;
+        mIsActive = cc.mIsActive;
+        mDirName = cc.mDirName;
+    }
+}
+
 
 apr_status_t CompareConf::cleaner(void *self) {
     if(self){
@@ -168,10 +180,33 @@ createDirConfig(apr_pool_t *pPool, char *pDirName)
     else {
         new (addr) CompareConf("GLOBAL_ROOT");
     }
-    
+   
     apr_pool_cleanup_register(pPool, addr, CompareConf::cleaner,  apr_pool_cleanup_null);
     return addr;
 }
+
+/**
+ * @brief allocate a pointer to a string which will hold the path for the dir config if mod_compare is active on it
+ * @param pPool the apache pool on which to allocate data
+ * @param pDirName the directory name for which to create data
+ * @return a void pointer to newly allocated object
+ */
+void *
+mergeDirConfig(apr_pool_t *pPool, void *pBase, void *pAdd)
+{
+    if ( (! pBase) || (!pAdd) ) {
+        return nullptr;
+    }
+    CompareConf *lBase = reinterpret_cast<CompareConf *>(pBase);
+    CompareConf *lAdd = reinterpret_cast<CompareConf *>(pAdd);
+    void *addr= apr_pcalloc(pPool, sizeof(class CompareConf));
+    apr_pool_cleanup_register(pPool, addr, CompareConf::cleaner,  apr_pool_cleanup_null);
+    CompareConf * lNew = new (addr) CompareConf(*lBase);
+    lNew->merge(*lAdd);
+    printf("[COMPARE] merge dir config pBase %s, pAdd %s, active: %d\n", lBase->mDirName.c_str(), lAdd->mDirName.c_str(), lNew->mIsActive);
+    return lNew;
+}
+
 
 /**
  * @brief Initialize logging post-config
@@ -386,7 +421,11 @@ const char*
 setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
     CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
 
-    lConf->mIsActive= true;
+    if ( pValue && (0 == strcasecmp(pValue,"off")) ) {
+        lConf->mIsActive= false;
+    } else {
+        lConf->mIsActive= true;
+    }
 
 #ifndef UNIT_TESTING
         if (!ap_find_linked_module(MOD_REWRITE_NAME)) {
@@ -418,7 +457,7 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
                       reinterpret_cast<const char *(*)()>(&setCompare),
                       0,
                       ACCESS_CONF,
-                      "Activate mod_compare."),
+                      "on or off to Activate/Deactivate mod_compare."),
         AP_INIT_TAKE2("CompareLog",
                       reinterpret_cast<const char *(*)()>(&setCompareLog),
                       0,
@@ -492,7 +531,7 @@ registerHooks(apr_pool_t *pPool) {
 module AP_MODULE_DECLARE_DATA compare_module = {
     STANDARD20_MODULE_STUFF,
     CompareModule::createDirConfig,
-    0, // merge_dir_config
+    0, //CompareModule::mergeDirConfig, // merge_dir_config is not activated, not sure it's useful in our case
     0, // create_server_config
     0, // merge_server_config
     CompareModule::gCmds,

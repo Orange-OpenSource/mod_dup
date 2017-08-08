@@ -64,7 +64,7 @@ enum eDuplicationType {
     NONE                    = 0,    // Do not duplicate, is the default or used in enrichment mode
     HEADER_ONLY             = 1,    // Duplication only the HTTP HEADER of matching requests
     COMPLETE_REQUEST        = 2,    // Duplication HTTP HEADER AND BODY of matching requests
-    REQUEST_WITH_ANSWER     = 3,    // Duplication HTTP REQUEST AND ANSWER of matching requests
+    REQUEST_WITH_ANSWER     = 3,    // Duplication HTTP REQUEST AND ANSWER of matching requests for use with mod_compare
 };
 
 /*

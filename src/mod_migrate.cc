@@ -84,9 +84,9 @@ const char* setApplicationScope(cmd_parms* pParams, void* pCfg, const char* pApp
     }
     struct MigrateConf *tC = reinterpret_cast<MigrateConf *>(pCfg);
     try {
-        tC->mCurrentApplicationScope = MigrateModule::ApplicationScope::stringToEnum(pAppScope);
+        tC->mCurrentApplicationScope = ApplicationScope::stringToEnum(pAppScope);
     } catch (std::exception& e) {
-        return MigrateModule::ApplicationScope::c_ERROR_ON_STRING_VALUE;
+        return ApplicationScope::c_ERROR_ON_STRING_VALUE;
     }
 
     return NULL;

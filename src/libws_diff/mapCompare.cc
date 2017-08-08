@@ -18,6 +18,13 @@ MapCompare::MapCompare(){}
 
 MapCompare::~MapCompare(){}
 
+void MapCompare::merge(const MapCompare& mc)
+{
+    mStopRegex.insert(mc.mStopRegex.begin(), mc.mStopRegex.end());
+    mIgnoreRegex.insert(mc.mIgnoreRegex.begin(), mc.mIgnoreRegex.end());
+}
+
+
 void MapCompare::addIgnoreRegex(const std::string& key,const std::string& myregex){
 	mIgnoreRegex.insert(std::pair<std::string,boost::regex>(key,boost::regex(myregex)));
 }

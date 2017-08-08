@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "mod_migrate.hh"
 #include "RequestInfo.hh"
+#include "mod_migrate.hh"
 #include "Utils.hh"
 
 #include <http_config.h>
@@ -31,8 +31,10 @@
 #include <boost/tokenizer.hpp>
 #include <iomanip>
 #include <boost/regex.hpp>
+#include <boost/foreach.hpp>
 
 namespace MigrateModule {
+    
 
 static bool setEnvVar(request_rec *pRequest, const MigrateConf::MigrateEnv &ctx, const std::string& toSet, int& count) {
     if (!toSet.empty()) {

@@ -38,6 +38,9 @@ class TestRequestProcessor;
 class TestModDup;
 
 namespace DupModule {
+    
+    class DupConf;
+    typedef std::pair<std::string, std::string> tKeyVal;
 
 /**
  * Base class for filters and substitutions
