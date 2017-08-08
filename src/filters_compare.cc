@@ -344,7 +344,17 @@ outputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     if (apr_table_get(pRequest->headers_in, "X_COMP_LOG") != NULL) {
         Log::debug("[DEBUG][COMPARE] all the body is received,X_COMP_LOG is set, responses will be compared");
-        apr_table_set( pRequest->headers_out,"X-COMP-STATUS", "COMPARED");
+        std::string out = "COMPARED - with conf from ";
+        out += tConf->mDirName;
+        out += " logged in ";
+        if (gWriteInFile) {
+            out += gFilePath;
+        } else {
+            out += "SYSLOG";
+        }
+        out += " in format ";
+        out += LibWsDiff::diffPrinter::diffTypeStr(tConf->mLogType);
+        apr_table_set( pRequest->headers_out,"X-COMP-STATUS", out.c_str());
     }
 
     rv = ap_pass_brigade(pFilter->next, pBrigade);

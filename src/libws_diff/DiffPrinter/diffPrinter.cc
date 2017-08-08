@@ -17,15 +17,25 @@ diffPrinter* diffPrinter::createDiffPrinter(const std::string& id,
 	switch (type) {
 		case diffTypeAvailable::MULTILINE:
 			return new multilineDiffPrinter(id);
-			break;
 		case diffTypeAvailable::JSON:
 			return new jsonDiffPrinter(id);
-			break;
 		default:
 			//Default Case is the json case
 			return new utf8JsonDiffPrinter(id);
-			break;
 	}
 }
+
+std::string diffPrinter::diffTypeStr(diffPrinter::diffTypeAvailable d)
+{
+    switch (d) {
+        case diffTypeAvailable::MULTILINE:
+            return "MULTILINE";
+        case diffTypeAvailable::JSON:
+            return "SIMPLEJSON";
+        default:
+            return "UTF8JSON";
+    }
+}
+
 
 }; /* namespace LibWsDiff */

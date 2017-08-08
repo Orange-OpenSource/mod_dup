@@ -71,7 +71,7 @@ class CompareConf {
 
 public:
 
-    CompareConf();
+    CompareConf(std::string dirName = "");
 
     static apr_status_t cleaner(void *self);
 
@@ -80,6 +80,7 @@ public:
     LibWsDiff::diffPrinter::diffTypeAvailable mLogType;
     bool mCompareDisabled;
     bool mIsActive;
+    std::string mDirName;
 
 };
 

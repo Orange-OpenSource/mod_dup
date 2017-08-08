@@ -135,7 +135,11 @@ pthread_mutex_t *getGlobalMutex() {
     return mutex;
 }
 
-CompareConf::CompareConf(): mCompareDisabled(false), mIsActive(false) {
+CompareConf::CompareConf(std::string dirName): 
+mCompareDisabled(false), 
+mIsActive(false),
+mDirName(dirName)
+{
 }
 
 
@@ -158,7 +162,13 @@ void *
 createDirConfig(apr_pool_t *pPool, char *pDirName)
 {
     void *addr= apr_pcalloc(pPool, sizeof(class CompareConf));
-    new (addr) CompareConf();
+    if ( pDirName ) {
+        new (addr) CompareConf(pDirName);
+    }
+    else {
+        new (addr) CompareConf("GLOBAL_ROOT");
+    }
+    
     apr_pool_cleanup_register(pPool, addr, CompareConf::cleaner,  apr_pool_cleanup_null);
     return addr;
 }

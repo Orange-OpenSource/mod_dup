@@ -120,7 +120,7 @@ void TestModCompare::testInit()
 
 void TestModCompare::testConfig()
 {
-    CompareConf *lDoHandle = new CompareConf();
+    CompareConf *lDoHandle = new CompareConf("");
 
     CPPUNIT_ASSERT(setHeaderList(NULL, (void *) lDoHandle, "pippo","myKey",  ""));
     CPPUNIT_ASSERT(setHeaderList(NULL, (void *) lDoHandle, "","myKey", "pippo"));
@@ -490,7 +490,7 @@ void TestModCompare::testWriteDifferencesNoDiff()
     filter->next = (ap_filter_t *)(void *) 0x43;
     req->uri = (char *)"";
 
-    CompareConf *conf = new CompareConf;
+    CompareConf *conf = new CompareConf("");
     ap_set_module_config(req->per_dir_config, &compare_module, conf);
 
     apr_table_set(req->headers_in, "Duplication-Type", "Response");

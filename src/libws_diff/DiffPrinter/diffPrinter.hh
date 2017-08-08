@@ -45,6 +45,8 @@ public:
 	 */
 	static diffPrinter* createDiffPrinter(const std::string& id,
 			const diffTypeAvailable type=diffTypeAvailable::JSON);
+    
+    static std::string diffTypeStr(diffTypeAvailable d);
 
 	/***
 	 * Add simple key value information

@@ -72,11 +72,11 @@ static int checkCurlResponseCompareStatus(const RequestInfo &ri, request_rec *pR
     }
 
     Log::debug("[DEBUG][DUP] Curl returns OK but there was no comparison.");
-    apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED");
+    apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED - NO COMPARISON");
     return 0;
 }
 
-static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r)
+static bool prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r)
 {
     Log::debug("[DUP] Pepare request info");
     // Add the HTTP Status Code Header
@@ -87,6 +87,19 @@ static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
     const char* contentType = apr_table_get(pRequest->headers_in,"Content-Type");
     if (contentType) r.mHeadersIn.push_front(std::make_pair("X_DUP_CONTENT_TYPE", contentType));
 
+    // Increment the dup count and make sure we didn't duplicate more than 4 times
+    // avoids an infinite loop of duplication when destination is localhost or a loop in the network
+    const char* dupCount = apr_table_get(pRequest->headers_in,"X-DUP-COUNT");
+    int count = 0;
+    if (dupCount) {
+        count = atoi(dupCount);
+        if ( count >= 4 ) {
+            return false;
+        }
+    }
+    count++;
+    r.mHeadersIn.push_front(std::make_pair("X-DUP-COUNT", std::to_string(count).c_str()));
+    
     // Copy headers in, we might have duplicate headers in case of double dup but we'll deal with it later
     apr_table_do(&iterateOverHeadersCallBack, &r.mHeadersIn, pRequest->headers_in, NULL);
 
@@ -98,6 +111,7 @@ static void prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
     r.mConf = tConf;
     r.mPath = pRequest->uri;
     r.mArgs = pRequest->args ? pRequest->args : "";
+    return true;
 }
 
 static void printRequest(request_rec *pRequest, RequestInfo *pBH, DupConf *tConf)
@@ -115,7 +129,9 @@ static void initiateDuplication(DupConf *tConf, request_rec *pRequest, boost::sh
 {
     RequestInfo * ri = reqInfo->get();
     // Pushing the answer to the processor
-    prepareRequestInfo(tConf, pRequest, *ri);
+    if ( !  prepareRequestInfo(tConf, pRequest, *ri) ) {
+        return;
+    }
 
     // Force synchronous mode when X_DUP_LOG to retrieve X_DUP_LOG header
     if (tConf->synchronous || apr_table_get(pRequest->headers_in, "X_DUP_LOG")) {
@@ -354,6 +370,8 @@ apr_status_t outputHeadersFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade
         return rv;
     }
 
+    // Normal case, duplicate when the output headers are processed
+    // which seems late if we don't care about the response
     if (!apr_table_get(pRequest->headers_in, "X_DUP_LOG")) {
         initiateDuplication(tConf, pRequest, reqInfo);
     }
