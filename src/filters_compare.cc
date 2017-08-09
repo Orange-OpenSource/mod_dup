@@ -191,7 +191,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pF, apr_bucket_brigade *pB, ap_inpu
     
     const char *lDupType = apr_table_get(pRequest->headers_in, "Duplication-Type");
     if (( lDupType == NULL ) || ( strcmp("Response", lDupType) != 0) ) {
-        Log::debug("[DEBUG][COMPARE] inputFilterHandler not a duplicated request, nothing to compare");
+        Log::debug("[DEBUG][COMPARE] inputFilterHandler not a duplicated request on path %s, nothing to compare", pRequest->uri);
         return ap_get_brigade(pF->next, pB, pMode, pBlock, pReadbytes);
     }
 
@@ -370,6 +370,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     apr_status_t lStatus;
     if (pFilter->ctx == (void *)-1){
+        Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler2 pass because ctx -1");
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return lStatus;
@@ -379,6 +380,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     struct CompareConf *tConf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
     if( tConf == NULL ){
+        Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler2 pass because no per dir conf");
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return lStatus;
@@ -387,6 +389,7 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     boost::shared_ptr<DupModule::RequestInfo> *shPtr(reinterpret_cast<boost::shared_ptr<DupModule::RequestInfo> *>(ap_get_module_config(pRequest->request_config, &compare_module)));
 
     if ( !shPtr || !shPtr->get()) {
+        Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler2 pass because no request info");
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
         return lStatus;
@@ -394,9 +397,10 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
 
     DupModule::RequestInfo *req = shPtr->get();
     if (!req->eos_seen()) {
+        Log::debug("[DEBUG][COMPARE] Inside outputFilterHandler2 pass because not eos");
         lStatus =  ap_pass_brigade(pFilter->next, pBrigade);
         apr_brigade_cleanup(pBrigade);
-        return lStatus;
+         return lStatus;
     }
 
     req->mRequest = std::string(pRequest->unparsed_uri);
@@ -407,15 +411,19 @@ outputFilterHandler2(ap_filter_t *pFilter, apr_bucket_brigade *pBrigade) {
     boost::scoped_ptr<LibWsDiff::diffPrinter> printer(LibWsDiff::diffPrinter::createDiffPrinter(req->mId,tConf->mLogType));
 
     if (tConf->mCompareDisabled) {
+        Log::debug("[DEBUG][COMPARE] comparison disabled: write serialized request to file");
         writeSerializedRequest(*req);
     } else {
         req->mDupResponseHttpStatus = pRequest->status;
         boost::posix_time::ptime start = boost::posix_time::microsec_clock::universal_time();
-        if(tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,*printer)){
-            if (tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,*printer)){
-                if(printer->isDiff() || checkCassandraDiff(req->mId) || (req->mReqHttpStatus!=-1 && (req->mReqHttpStatus != req->mDupResponseHttpStatus)) ){
-                    writeDifferences(*req,*printer,boost::posix_time::microsec_clock::universal_time()-start);
-                }
+        Log::debug("[DEBUG][COMPARE] retrieve differences if any");
+        bool headerDiff = tConf->mCompHeader.retrieveDiff(req->mResponseHeader,req->mDupResponseHeader,*printer);
+        bool bodyDiff = tConf->mCompBody.retrieveDiff(req->mResponseBody,req->mDupResponseBody,*printer);
+        if ( headerDiff || bodyDiff) {
+            Log::debug("[DEBUG][COMPARE] header or body differences found");
+            if(printer->isDiff() || checkCassandraDiff(req->mId) || (req->mReqHttpStatus!=-1 && (req->mReqHttpStatus != req->mDupResponseHttpStatus)) ){
+                Log::debug("[DEBUG][COMPARE] write differences to file or syslog");
+                writeDifferences(*req,*printer,boost::posix_time::microsec_clock::universal_time()-start);
             }
         }
     }

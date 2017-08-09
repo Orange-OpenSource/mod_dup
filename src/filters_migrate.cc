@@ -36,6 +36,7 @@
 namespace MigrateModule {
     
 
+/// set apache env var
 static bool setEnvVar(request_rec *pRequest, const MigrateConf::MigrateEnv &ctx, const std::string& toSet, int& count) {
     if (!toSet.empty()) {
         Log::debug("CE: URL match: Value to set: %s, varName: %s", toSet.c_str(), ctx.mVarName.c_str());
@@ -65,7 +66,9 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
 
     // Iteration through context enrichment
     BOOST_FOREACH(const MigrateConf::MigrateEnv &ctx, conf->mEnvLists) {
-        if (ctx.mApplicationScope & ApplicationScope::URL) {
+        // PATH is not supported here => use mod_rewrite directly
+        // URL is handled by QUERY_STRING here
+        if (ctx.mApplicationScope & ApplicationScope::QUERY_STRING) {
             std::string toSet = boost::regex_replace(rInfo.mArgs, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             count += (int)setEnvVar(pRequest, ctx, toSet, count);
         }
@@ -73,7 +76,7 @@ int enrichContext(request_rec *pRequest, const RequestInfo &rInfo) {
             std::string toSet = regex_replace(rInfo.mBody, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             count += (int)setEnvVar(pRequest, ctx, toSet, count);
         }
-        if ((ctx.mApplicationScope & ApplicationScope::HEADER) && !rInfo.mHeader.empty()) {
+        if ((ctx.mApplicationScope & ApplicationScope::HEADERS) && !rInfo.mHeader.empty()) {
             std::string toSet = regex_replace(rInfo.mHeader, ctx.mMatchRegex, ctx.mSetValue, boost::match_default | boost::format_no_copy);
             count += (int)setEnvVar(pRequest, ctx, toSet, count);
         }

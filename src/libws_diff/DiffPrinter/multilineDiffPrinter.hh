@@ -51,6 +51,7 @@ private:
 			STATUS,
 			URI,
 			HEADER,
+            BODY,
 			CASSDIFF,
 			HEADERDIFF,
 			BODYDIFF
@@ -72,7 +73,8 @@ public:
 	virtual void addInfo(const std::string& key,const std::string& value);
 	virtual void addInfo(const std::string& key,const double value);
 	virtual void addRequestUri(const std::string& uri,const std::string& paramsBody="");
-	virtual void addRequestHeader(const std::string& key,const std::string& value);
+    virtual void addRequestBody(const std::string& body);
+    virtual void addRequestHeader(const std::string& key,const std::string& value);
 	virtual void addStatus(const std::string& service,const int statusCode);
 	virtual void addRuntime(const std::string& service,const int milli);
 
@@ -94,6 +96,8 @@ public:
 							const std::string& type="XML");
 
 	virtual bool retrieveDiff(std::string& res);
+    
+    static std::string partitionSeparator(diffPartitionning d);
 
 };
 

@@ -205,24 +205,24 @@ void TestModCompare::testWriteCassandraDiff()
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
 
-		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: IDtoto\n"
-"-------------------\n"
-"Field name in the db : 'myName'\n"
-"Multivalue/Collection index/key : 'myMultiValueKey'\n"
-"Value retrieved in Database : 'myDbValue'\n"
-"Value about to be set from Request : 'myReqValue'\n"
-"-------------------\n"
-"Field name in the db : 'myOtherData'\n"
-"Multivalue/Collection index/key : 'myOtherMultiValueKey'\n"
-"Value retrieved in Database : 'myOtherDbValue'\n"
-"Value about to be set from Request : 'myOtherReqValue'\n"
-"-------------------\n"
-"Field name in the db : 'toto'\n"
-"Multivalue/Collection index/key : 'pippo'\n"
-"Value retrieved in Database : 'pepita'\n"
-"Value about to be set from Request : 'maradona'\n"
-"-------------------\n"
-"END DIFFERENCE : IDtoto\n");
+        std::string assertRes(R"foo(BEGIN NEW REQUEST DIFFERENCE n: IDtoto
+---CASS_DIFF---
+Field name in the db : 'myName'
+Multivalue/Collection index/key : 'myMultiValueKey'
+Value retrieved in Database : 'myDbValue'
+Value about to be set from Request : 'myReqValue'
+-------------------
+Field name in the db : 'myOtherData'
+Multivalue/Collection index/key : 'myOtherMultiValueKey'
+Value retrieved in Database : 'myOtherDbValue'
+Value about to be set from Request : 'myOtherReqValue'
+-------------------
+Field name in the db : 'toto'
+Multivalue/Collection index/key : 'pippo'
+Value retrieved in Database : 'pepita'
+Value about to be set from Request : 'maradona'
+END DIFFERENCE : IDtoto
+)foo");
 		CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
     }
 }
@@ -306,27 +306,24 @@ void TestModCompare::testWriteDifferences()
 		readFile.open(lPath.c_str());
 		std::stringstream buffer;
 		buffer << readFile.rdbuf();
-		std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: 123\n"
-"-------------------\n"
-"ElapsedTime : 1\n"
-"Date : UNITTEST_TODAY_VALUE\n"
-"ReqBody : MyClientRequest\n"
-"-------------------\n"
-"Elapsed time for requests (ms): COMP 0\n"
-"-------------------\n"
-"Http Status Codes: DUP -1 COMP -1\n"
-"-------------------\n"
-"URI : \n"
-"-------------------\n"
-"agent-type : myAgent\n"
-"content-type : plain/text\n"
-"date : TODAY\n"
-"-------------------\n"
-"myHeaderDiff ==> /ImpossibruDiff\n"
-"-------------------\n"
-"myBodyDiff\n"
-"-------------------\n"
-"END DIFFERENCE : 123\n");
+        std::string assertRes(R"foo(BEGIN NEW REQUEST DIFFERENCE n: 123
+ElapsedTime : 1
+Date : UNITTEST_TODAY_VALUE
+Elapsed time for requests (ms): COMP 0
+Http Status Codes: DUP -1 COMP -1
+URI : 
+---REQ_HEADER---
+agent-type : myAgent
+content-type : plain/text
+date : TODAY
+---REQ_BODY---
+MyClientRequest
+---HDR_DIFF---
+myHeaderDiff ==> /ImpossibruDiff
+---BODY_DIFF---
+myBodyDiff
+END DIFFERENCE : 123
+)foo");
 		std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
 		CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
     }
@@ -427,27 +424,23 @@ void TestModCompare::testWriteDifferencesWithStatusDiff()
         readFile.open(lPath.c_str());
         std::stringstream buffer;
         buffer << readFile.rdbuf();
-        std::string assertRes("BEGIN NEW REQUEST DIFFERENCE n: 123\n"
-"-------------------\n"
-"ElapsedTime : 1\n"
-"Date : UNITTEST_TODAY_VALUE\n"
-"-------------------\n"
-"Elapsed time for requests (ms): DIFF 432 DUP 432 COMP 0\n"
-"-------------------\n"
-"Http Status Codes: DUP 456 COMP 654\n"
-"-------------------\n"
-"URI : /spp/main.php?MyClientRequest\n"
-"-------------------\n"
-"ELAPSED_TIME_BY_DUP : 432\n"
-"agent-type : myAgent\n"
-"content-type : plain/text\n"
-"date : TODAY\n"
-"-------------------\n"
-"myHeaderDiff ==> ImpossibruDiff/\n"
-"-------------------\n"
-"myBodyDiff\n"
-"-------------------\n"
-"END DIFFERENCE : 123\n");
+        std::string assertRes(R"foo(BEGIN NEW REQUEST DIFFERENCE n: 123
+ElapsedTime : 1
+Date : UNITTEST_TODAY_VALUE
+Elapsed time for requests (ms): DIFF 432 DUP 432 COMP 0
+Http Status Codes: DUP 456 COMP 654
+URI : /spp/main.php?MyClientRequest
+---REQ_HEADER---
+ELAPSED_TIME_BY_DUP : 432
+agent-type : myAgent
+content-type : plain/text
+date : TODAY
+---HDR_DIFF---
+myHeaderDiff ==> ImpossibruDiff/
+---BODY_DIFF---
+myBodyDiff
+END DIFFERENCE : 123
+)foo");
         std::cout << "\n==>" << buffer.str() << "\n-\n"<< assertRes << std::endl;
         CPPUNIT_ASSERT_EQUAL(assertRes,buffer.str());
     }

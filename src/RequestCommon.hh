@@ -8,16 +8,23 @@ namespace ApplicationScope {
 
 /**
  * Scopes that a filter/sub can have
+ * mask
  */
 enum eApplicationScope{
-    ALL = 0x7,
-    URL = 0x1,
-    HEADER = 0x2,
-    BODY = 0x4,
+    PATH = 1,
+    QUERY_STRING = 2,
+    URL = 3, // URL is path and query string
+    HEADERS = 4,
+    BODY = 8,
+    URL_AND_HEADERS = 7,
+    ALL = 15,
 };
 extern const char* c_ALL;
+extern const char* c_PATH;
+extern const char* c_QUERY_STRING;
 extern const char* c_URL;
-extern const char* c_HEADER;
+extern const char* c_HEADERS;
+extern const char* c_URL_AND_HEADERS;
 extern const char* c_BODY;
 extern const char* c_ERROR_ON_STRING_VALUE;
 

@@ -1,3 +1,11 @@
+pns-mod-dup (2.3.0) precise; urgency=low
+
+  * dup: support for PATH and URL (PATH+QUERY_STRING) filters and substitutions
+  * dup: renamed DupApplicationScope HEADER -> HEADERS. HEADERS is now only the Http Headers.
+  * dup: DupApplicationScope URL_AND_HEADERS does (PATH+QUERY_STRING+HEADERS)
+
+ -- Emmanuel Courreges <emmanuel.courreges@orange.com>  Tue, 08 Aug 2017 17:17:01 +0200
+
 pns-mod-dup (2.2.3) precise; urgency=low
 
   * fix infinite loop at exit when a curl request is stuck

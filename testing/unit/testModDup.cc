@@ -169,15 +169,27 @@ void TestModDup::testScope()
     DupConf *conf = new DupConf();
 
     // Default value
-    CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->currentApplicationScope);
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::QUERY_STRING, conf->currentApplicationScope);
 
     // Switching to ALL
     CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "ALL"));
     CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->currentApplicationScope);
 
     // Switching to HEADER
-    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "HEADER"));
-    CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->currentApplicationScope);
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "QUERY_STRING"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::QUERY_STRING, conf->currentApplicationScope);
+
+    // Switching to URL
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "URL"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::URL, conf->currentApplicationScope);
+    
+    // Switching to PATH
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "PATH"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::PATH, conf->currentApplicationScope);
+    
+    // Switching to HEADER
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "HEADERS"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADERS, conf->currentApplicationScope);
 
     // Switching to BODY
     CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "BODY"));
@@ -272,9 +284,8 @@ void TestModDup::testDuplicationPercentage() {
         {
             RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=eightyfour");
             ri.mConf = lDoHandle;
-            std::list<std::pair<std::string, std::string> > lParsedArgs;
-            gProcessor->parseArgs(lParsedArgs, ri.mArgs);
-            std::list<const tFilter *> ff = gProcessor->processRequest(ri, lParsedArgs);
+            gProcessor->parseArgs(ri.mParsedArgs, ri.mArgs);
+            std::list<const tFilter *> ff = gProcessor->processRequest(ri);
             CPPUNIT_ASSERT_EQUAL(1, (int)ff.size());
 
             // Check the filter that matched
@@ -292,9 +303,8 @@ void TestModDup::testDuplicationPercentage() {
         {
             RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=fortytwo");
             ri.mConf = lDoHandle;
-            std::list<std::pair<std::string, std::string> > lParsedArgs;
-            gProcessor->parseArgs(lParsedArgs, ri.mArgs);
-            std::list<const tFilter *> ff = gProcessor->processRequest(ri, lParsedArgs);
+            gProcessor->parseArgs(ri.mParsedArgs, ri.mArgs);
+            std::list<const tFilter *> ff = gProcessor->processRequest(ri);
             CPPUNIT_ASSERT_EQUAL(1, (int)ff.size());
 
             // Check the filter that matched

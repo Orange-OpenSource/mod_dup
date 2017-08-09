@@ -32,6 +32,32 @@ std::string* multilineDiffPrinter::getStream(const diffPartitionning part){
 	return it->second;
 }
 
+std::string multilineDiffPrinter::partitionSeparator(diffPartitionning d)
+{
+    switch (d)
+    {
+        case BEGIN:
+        case INFO:
+        case RUNTIME:
+        case STATUS:
+        case URI:
+            return "";
+        case HEADER:
+            return "---REQ_HEADER---\n";
+        case BODY:
+            return "---REQ_BODY---\n";
+        case CASSDIFF:
+            return "---CASS_DIFF---\n";
+        case HEADERDIFF:
+            return "---HDR_DIFF---\n";
+        case BODYDIFF:
+            return "---BODY_DIFF---\n";
+        default:
+            return "-------------------\n";
+    }
+}
+
+
 multilineDiffPrinter::multilineDiffPrinter(std::string id):diffPrinter(id),hadPreviousCassDiff(false){
 	this->getStream(diffPartitionning::BEGIN)->append("BEGIN NEW REQUEST DIFFERENCE n: "+this->id+"\n");
         this->printerType = diffTypeAvailable::MULTILINE;
@@ -53,6 +79,12 @@ void multilineDiffPrinter::addRequestUri(const std::string& uri,const std::strin
 		this->getStream(diffPartitionning::URI)->append(paramsBody);
 	}
 	this->getStream(diffPartitionning::URI)->append("\n");
+}
+void multilineDiffPrinter::addRequestBody(const std::string& body){
+    if(!body.empty()){
+        this->getStream(diffPartitionning::BODY)->append(body);
+        this->getStream(diffPartitionning::BODY)->append("\n");
+    }
 }
 
 void multilineDiffPrinter::addRequestHeader(const std::string& key,const std::string& value){
@@ -109,6 +141,7 @@ bool multilineDiffPrinter::retrieveDiff(std::string& res){
 	if(this->isADiff){
 		for(stringmap::iterator it=this->streams.begin();it!=this->streams.end();it++){
 			if(!it->second->empty()){
+                res.append(partitionSeparator(it->first));
 				//Adding header for the current part
 				if(prettyfyStartLine.find(it->first)!=prettyfyStartLine.end()){
 					res.append(prettyfyStartLine.at(it->first));
@@ -120,7 +153,6 @@ bool multilineDiffPrinter::retrieveDiff(std::string& res){
 				if(prettyfyEndLine.find(it->first)!=prettyfyEndLine.end()){
 					res.append(prettyfyEndLine.at(it->first));
 				}
-				res.append(SEPARATOR);
 			}
 		}
 		res.append("END DIFFERENCE : "+ this->id + "\n");

@@ -4,10 +4,11 @@ This repository contains three Apache C++ modules, mod_dup, mod_migrate and mod_
 
 mod_dup
 =======
-mod_dup duplicates Apache requests (POST, GET or both).
-Only requests which match specified filters are duplicated.
-Before duplication, all defined substitutions are applied to the incoming request.
-To minimize resource usage, mod_dup adapts to the amount of incoming by adjusting its number of threads.
+mod_dup duplicates Apache requests (POST, GET or both).  
+Only requests which match specified filters are duplicated.  
+Filters can be applied on URL path, query string, headers, and/or body.
+Substitutions may be applied to duplicated requests.  
+To minimize resource usage, mod_dup adapts to the amount of incoming requests by adjusting its number of threads.  
 If maximum thresholds are reached, requests are dropped.
 In other words, mod_dup is built to guarantee a low system impact by sacrificing the reliability of duplications.
 However, by using a high number of maximum threads, request dropping can be avoided and system impact raised.
@@ -49,26 +50,23 @@ Duplication with Response
 
 Documentation
 =============
-
+For usage and configuration documentation, read the module's Wiki at this page https://github.com/Orange-OpenSource/mod_dup/wiki  
 To generate the technical documentation of the code using doxygen, see documentation in the Build section.
-
-For usage and configuration documentation, read the module's Wiki at this page https://github.com/Orange-OpenSource/mod_dup/wiki
-
 
 Build
 =====
 
 First create and go into a build directory:
-
 	mkdir build
 	cd build
 
 then run cmake & make:
-
 	cmake ..
 	make
 
-or with unit tests:
+Unit Tests
+==========
+build with unit tests:
 
 	cmake -DBUILD_UNIT_TESTS=ON ..
 	make test
@@ -82,16 +80,33 @@ or with coverage:
 
 	<browser> measures/coverage/html/index.html
 
-or to generate documentation:
-
+Generate Doxygen Documentation
+==============================
 	cmake ..
 	make doc
 
 	<browser> docs/doxygen/html/index.html
 
+Install code and tests
+=======
+Go to build directory:
+  
+	sudo make install
+	sudo service apache2 restart
+This installs the code and functional tests to apache2 folders
+
+Functional Tests
+================
+Make sure you installed code and tests and restarted apache
+
+	make check-functional
+
 Packaging
 =========
-A debian folder compatible with Ubuntu Precise and Trusty is present
+A debian folder compatible with Ubuntu Precise and Trusty is present  
+Just run from the repository base folder:
+
+    dpkg-buildpackage
 
 Dependencies
 ============

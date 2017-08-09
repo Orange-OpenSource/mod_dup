@@ -43,6 +43,7 @@ public:
     virtual void addInfo(const std::string& key, const double value);
     virtual void addRequestUri(const std::string& uri,
                                const std::string& paramsBody = std::string());
+    virtual void addRequestBody(const std::string& body);
     virtual void addRequestHeader(const std::string& key, const std::string& value);
     virtual void addStatus(const std::string& service, const int statusCode);
     virtual void addRuntime(const std::string& service, const int milli);

@@ -63,6 +63,11 @@ public:
 	 */
 	virtual void addRequestUri(const std::string& uri,const std::string& paramsBody="")=0;
 
+    /***
+     * Add the original request body
+     */
+    virtual void addRequestBody(const std::string& body)=0;
+    
 	/***
 	 * Add the Header of the request information
 	 */

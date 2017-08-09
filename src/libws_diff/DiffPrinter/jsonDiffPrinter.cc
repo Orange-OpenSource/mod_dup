@@ -33,6 +33,11 @@ void jsonDiffPrinter::addInfo(const std::string& key, const double value)
     mJsonRes[key] = value;
 }
 
+void jsonDiffPrinter::addRequestBody(const std::string& body)
+{
+    addInfo("ReqBody",body);
+}
+
 void jsonDiffPrinter::addRequestUri(const std::string& uri,
                                     const std::string& paramsBody)
 {

@@ -86,7 +86,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     }else{
     	printer.addRequestUri(pReqInfo.mRequest);
     	if(!pReqInfo.mReqBody.empty()){
-    		printer.addInfo("ReqBody",pReqInfo.mReqBody);
+    		printer.addRequestBody(pReqInfo.mReqBody);
     	}
 	}
 
@@ -104,11 +104,13 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
     bool diff = printer.retrieveDiff(res);
 
     if ( ( !cassDiff ) && ( !diff ) ){
+        Log::debug("No diff produced");
         return;
     }
-
+    
     if(!gWriteInFile){
         if (printer.getPrinterType() == LibWsDiff::diffPrinter::MULTILINE) {
+            Log::debug("We have a MULTILINE diff written to syslog");
             pthread_mutex_t *lMutex = getGlobalMutex();
             if (not lMutex) {
                 Log::error(12, "[COMPARE] Cannot write differences ! Mutex not initialized");
@@ -126,6 +128,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
             }
             pthread_mutex_unlock(lMutex);
         } else {
+            Log::debug("We have a json diff written to syslog");
             // syslog is threadsafe
             Log::error(12, "%s", res.c_str());
         }
@@ -140,6 +143,7 @@ void writeDifferences(const DupModule::RequestInfo &pReqInfo,
             if (pthread_mutex_lock(lMutex) == EOWNERDEAD) {
                 pthread_mutex_consistent(lMutex);
             }
+            Log::debug("We have a diff written to file");
             gFile << res;
             gFile.flush();
             pthread_mutex_unlock(lMutex);

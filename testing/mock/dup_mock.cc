@@ -62,7 +62,7 @@ void *createServerConfig(apr_pool_t *pPool, server_rec* ) {
 }
 
 const char* readBodyData(request_rec* r) {
-    int rc = ap_setup_client_block( r, REQUEST_CHUNKED_ERROR);
+    int rc = ap_setup_client_block( r, REQUEST_CHUNKED_DECHUNK);
 
     if( rc != OK ){
         return NULL;
@@ -74,39 +74,49 @@ const char* readBodyData(request_rec* r) {
         apr_off_t rpos = 0;
         apr_off_t length = r->remaining;
         char* result = reinterpret_cast<char*>(apr_pcalloc( r->pool, length + 1));
-
+        syslog(LOG_ERR, "DUP MOCK %ld bytes remaining", r->remaining);
+        
         if( result == NULL ){
             syslog(LOG_ERR, "Unable to allocate memory");
             return NULL;
         }
 
-        /*apr_hard_timeout("read_post_data", &pReq);*/
-        while( rpos < length ){
-
-            int rsize = (rpos + (int)sizeof(buf) > length) ? (length - rpos) : (int)sizeof(buf);
-
-            /*ap_reset_timeout(&pReq);*/
-            int bytes_read = ap_get_client_block(r, buf, rsize);
+        long int bytes_read = 1;
+        while( bytes_read > 0 ){
+            bytes_read = ap_get_client_block(r, buf, HUGE_STRING_LEN);
+            syslog(LOG_ERR, "Remaining %ld after we got a block of %ld",
+                                     r->remaining, bytes_read);
             if( bytes_read <= 0 ){
                 break;
+            }
+            if ( length < (bytes_read + rpos + 1) ) {
+                ///TODO find a more efficient memory reallocation model
+                // Compressed body with more bytes than planned, realloc more
+                length = (length + bytes_read) * 2;
+                // we end up storing again with twice the size
+                char *prevres = result;
+                result = reinterpret_cast<char*>(apr_pcalloc( r->pool, length + 1));
+                syslog(LOG_ERR, "Realloc result buffer to %ld bytes because result is bigger than expected (gziped body decompression)", length);
+                // so copy the previous buffer
+                memcpy(result, prevres, rpos);
             }
             memcpy(result + rpos, buf, bytes_read);
             rpos += bytes_read;
         }
-        /*apr_kill_timeout(&pReq);*/
         return result;
+        
     }
     return NULL;
 }
 
 static int wsmock_handler(request_rec *r) {
-    syslog(LOG_ERR, "DUP MOCK");
     std::string answer;
 
     if (!r->handler || strcmp(r->handler, "dup_mock"))
         return (DECLINED);
 
-
+    syslog(LOG_ERR, "DUP MOCK HANDLING REQUEST");
+    
     struct Conf *conf = SETTINGS_FROM_SERVER(r->server);
     assert(conf);
 

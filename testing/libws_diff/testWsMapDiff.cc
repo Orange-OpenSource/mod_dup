@@ -126,9 +126,8 @@ void TestWsMapDiff::testMapDiffPrinterMultiline(){
 	std::string json;
 	printer->retrieveDiff(json);
 	std::string expected="BEGIN NEW REQUEST DIFFERENCE n: myMultilineTest\n"
-			"-------------------\nsexyAttribute ==> Sexy/\n"
+    "---HDR_DIFF---\nsexyAttribute ==> Sexy/\n"
 			"newSexyAttribute ==> /Sexy\nagent-type ==> superAgent/superAgent2\n"
-			"-------------------\n"
 			"END DIFFERENCE : myMultilineTest\n";
 	CPPUNIT_ASSERT_EQUAL(expected,json);
 }

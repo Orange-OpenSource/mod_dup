@@ -59,7 +59,7 @@ namespace DuplicationType {
 };
 
 DupConf::DupConf()
-    : currentApplicationScope(ApplicationScope::HEADER)
+    : currentApplicationScope(ApplicationScope::QUERY_STRING)
     , dirName(NULL)
     , currentDupDestination()
     , synchronous(false)

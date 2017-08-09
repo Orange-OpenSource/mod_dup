@@ -40,7 +40,6 @@ class TestModDup;
 namespace DupModule {
     
     class DupConf;
-    typedef std::pair<std::string, std::string> tKeyVal;
 
 /**
  * Base class for filters and substitutions
@@ -276,14 +275,14 @@ public:
             const DupConf &pAssociatedConf);
 
     /**
-     * @brief Returns wether or not the arguments match any of the filters
+     * @brief Returns wether or not the request matches any of the filters
      * @param pRequest the incoming request
      * @param pCommands the commands to apply
      * @param pParsedArgs the list filled with the key value pairs to be matched
      * @return the first matched filter, null otherwise
      */
     const tFilter*
-    argsMatchFilter(RequestInfo &pRequest, const Commands &pCommands, std::list<tKeyVal> &pParsedArgs);
+    matchesFilter(RequestInfo &pRequest, const Commands &pCommands);
 
     /**
      * @brief Parses arguments into key valye pairs. Also url-decodes values and converts keys to upper case.
@@ -291,24 +290,15 @@ public:
      * @param pArgs the parameters part of the query
      */
     void
-    parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &pArgs);
-
-    /**
-     * @brief Adds the headers sent with the request to the parsed args from the query string.
-     * @param pParsedArgs the list which should be filled with the key value pairs
-     * @param pHeadersIn the request's header in a key value list
-     */
-    void
-    addHeadersIn(const RequestInfo::tHeaders &pHeadersIn, std::list<tKeyVal> &pParsedArgs);
+    parseArgs(tKeyValList &pParsedArgs, const std::string &pArgs);
 
     /**
      * @brief Process a field. This includes filtering and executing substitutions
      * @param pRequest the path of the configuration which is applied
-     * @param pArgs the HTTP arguments/parameters of the incoming request
      * @return an empty list if the request does not need to be duplicated, a filter by duplication that matched otherwise.
      */
     std::list<const tFilter *>
-    processRequest(RequestInfo &pRequest, std::list<std::pair<std::string, std::string> > parsedArgs);
+    processRequest(RequestInfo &pRequest);
 
     /**
      * @brief Run the infinite loop which pops new requests of the given queue, processes them and sends the over to the configured destination
@@ -336,21 +326,20 @@ public:
 private:
 
     bool
-    substituteRequest(RequestInfo &pRequest, Commands &pCommands,
-            std::list<tKeyVal> &pHeaderParsedArgs);
+    substituteRequest(RequestInfo &pRequest, Commands &pCommands);
 
     const tFilter *
-    keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
+    keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const tKeyValList &pParsedArgs,
             ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes eType);
 
     bool
     keySubstitute(tFieldSubstitutionMap &pSubs,
-            std::list<tKeyVal> &pParsedArgs,
+            tKeyValList &pParsedArgs,
             ApplicationScope::eApplicationScope scope,
             std::string &result);
     bool
     headerSubstitute(tFieldSubstitutionMap &pSubs,
-        std::list<std::pair<std::string, std::string>> &pHeadersIn);
+                     tKeyValList &pHeadersIn);
 
     friend class ::TestRequestProcessor;
     friend class ::TestModDup;

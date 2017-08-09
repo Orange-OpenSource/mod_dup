@@ -184,17 +184,8 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
     }
 }
 
-void
-RequestProcessor::addHeadersIn(const RequestInfo::tHeaders &pHeadersIn, std::list<tKeyVal> &pParsedArgs) {
-    std::list<std::pair<std::string, std::string>>::const_iterator it;
-    for(it = pHeadersIn.begin(); it != pHeadersIn.end(); it++) {
-      std::string lKey = boost::to_upper_copy(it->first);
-      pParsedArgs.push_back(tKeyVal(lKey, it->second));
-    }
-}
-
 const tFilter *
-RequestProcessor::keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const std::list<tKeyVal> &pParsedArgs,
+RequestProcessor::keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const tKeyValList &pParsedArgs,
         ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes fType){
 
     BOOST_FOREACH (const tKeyVal &lKeyVal, pParsedArgs) {
@@ -216,63 +207,41 @@ RequestProcessor::keyFilterMatch(const std::multimap<std::string, tFilter> &pFil
 }
 
 template <class T>
-void applicationOn(const T &list, int &header, int &body) {
-    header = body = 0;
+void applicationOnMap(const T &list, int &qs, int &header, int &body) {
     BOOST_FOREACH(const typename T::value_type &f, list) {
-        if (f.mScope & ApplicationScope::BODY)
-            body = true;
-        if (f.mScope & ApplicationScope::HEADER)
-            header = true;
-    }
-}
-
-template <class T>
-void applicationOnMap(const T &list, int &header, int &body) {
-    BOOST_FOREACH(const typename T::value_type &f, list) {
+        if (f.second.mScope & ApplicationScope::QUERY_STRING)
+            qs++;
         if (f.second.mScope & ApplicationScope::BODY)
             body++;
-        if (f.second.mScope & ApplicationScope::HEADER)
+        if (f.second.mScope & ApplicationScope::HEADERS)
             header++;
     }
 }
-
-template <class T>
-void applicationOnList(const T &list, int &header, int &body, int &path) {
-    for(const auto & f: list) {
-        if (f.mScope & ApplicationScope::BODY)
-            body++;
-        if (f.mScope & ApplicationScope::HEADER)
-            header++;
-        if (f.mScope & ApplicationScope::URL)
-            path++;
-    }
-}
-
 
 const tFilter *
-RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
+RequestProcessor::matchesFilter(RequestInfo &pRequest, const Commands &pCommands) {
 
     const tFilter *matched = NULL;
     const std::multimap<std::string, tFilter> &pFilters = pCommands.mFilters;
 
     // Key filter type deection
     int keyFilterOnHeader = 0;
+    int keyFilterOnQS = 0;
     int keyFilterOnBody = 0;
-    applicationOnMap(pFilters, keyFilterOnHeader, keyFilterOnBody);
-    int rawFilterOnHeader = 0;
-    int rawFilterOnBody = 0;
-    int rawFilterOnPath = 0;
-    applicationOnList(pCommands.mRawFilters, rawFilterOnHeader, rawFilterOnBody, rawFilterOnPath);
+    applicationOnMap(pFilters, keyFilterOnQS, keyFilterOnHeader, keyFilterOnBody);
 
-    Log::debug("[DUP] Filters+Raw on body: %d+%d | on header: %d+%d | on path: 0+%d", keyFilterOnBody, rawFilterOnBody, keyFilterOnHeader, rawFilterOnHeader, rawFilterOnPath);
-
-    // Prevent Filtering check on HEADER
-    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::PREVENT_DUPLICATION))) {
-        Log::info(0, "[DUP] PREVENT Filter on HEADER match");
+    // Prevent Filtering check on QUERY_STRING
+    if (keyFilterOnQS && keyFilterMatch(pFilters, pRequest.mParsedArgs, ApplicationScope::QUERY_STRING, tFilter::PREVENT_DUPLICATION)) {
+        Log::info(0, "[DUP] PREVENT Filter on QUERY_STRING match");
         return NULL;
     }
-
-    std::list<tKeyVal> lParsedArgs;
+    // Prevent Filtering check on HEADER
+    if (keyFilterOnHeader && keyFilterMatch(pFilters, pRequest.mHeadersIn, ApplicationScope::HEADERS, tFilter::PREVENT_DUPLICATION)) {
+        Log::info(0, "[DUP] PREVENT Filter on HEADERS match");
+        return NULL;
+    }
+    
+    tKeyValList lParsedArgs;
 
     // Prevent Filtering check on BODY
     if (keyFilterOnBody){
@@ -287,15 +256,22 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
     for (const tFilter &raw : pCommands.mRawFilters) {
         if (raw.mFilterType == tFilter::PREVENT_DUPLICATION) {
             // Path application
-            if (raw.mScope & ApplicationScope::URL) {
+            if (raw.mScope & ApplicationScope::PATH) {
                 if (boost::regex_search(pRequest.mPath, raw.mRegex)) {
                     Log::info(0, "[DUP] Prevent Raw filter (PATH) matched: %s | %s", pRequest.mPath.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
             // Header applications
-            if (raw.mScope & ApplicationScope::HEADER) {
+            if (raw.mScope & ApplicationScope::QUERY_STRING) {
                 if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
+                    Log::info(0, "[DUP] Prevent Raw filter (QUERY_STRING) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    return NULL;
+                }
+            }
+            // Header applications
+            if (raw.mScope & ApplicationScope::HEADERS) {
+                if (boost::regex_search(RequestInfo::flatten(pRequest.mHeadersIn), raw.mRegex)) {
                     Log::info(0, "[DUP] Prevent Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
@@ -311,11 +287,17 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
     }
 
     // Key filters on header
-    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pHeaderParsedArgs, ApplicationScope::HEADER, tFilter::REGULAR))){
-        Log::info(0, "[DUP] Filter on HEADER match");
+    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pRequest.mHeadersIn, ApplicationScope::HEADERS, tFilter::REGULAR))){
+        Log::info(0, "[DUP] Filter on HEADERS match");
         return matched;
     }
 
+    // Key filters on header
+    if (keyFilterOnQS && (matched = keyFilterMatch(pFilters, pRequest.mParsedArgs, ApplicationScope::QUERY_STRING, tFilter::REGULAR))){
+        Log::info(0, "[DUP] Filter on QUERY_STRING match");
+        return matched;
+    }
+    
     // Key filters on body
     if (keyFilterOnBody){
         if ((matched = keyFilterMatch(pFilters, lParsedArgs, ApplicationScope::BODY, tFilter::REGULAR))) {
@@ -337,8 +319,16 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
                 }
             }
             // Header application
-            if (raw.mScope & ApplicationScope::HEADER) {
+            if (raw.mScope & ApplicationScope::QUERY_STRING) {
                 if (boost::regex_search(pRequest.mArgs, what, raw.mRegex)) {
+                    raw.mMatch = what[ 0 ];
+                    Log::info(0, "[DUP] Raw filter (QUERY_STRING) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
+                    return &raw;
+                }
+            }
+            // Header application
+            if (raw.mScope & ApplicationScope::HEADERS) {
+                if (boost::regex_search(RequestInfo::flatten(pRequest.mHeadersIn), what, raw.mRegex)) {
                     raw.mMatch = what[ 0 ];
                     Log::info(0, "[DUP] Raw filter (HEADER) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
                     return &raw;
@@ -360,7 +350,7 @@ RequestProcessor::argsMatchFilter(RequestInfo &pRequest, const Commands &pComman
 
 bool
 RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
-        std::list<tKeyVal> &pParsedArgs,
+        tKeyValList &pParsedArgs,
         ApplicationScope::eApplicationScope scope,
         std::string &result){
     apr_pool_t *lPool = NULL;
@@ -403,7 +393,7 @@ RequestProcessor::keySubstitute(tFieldSubstitutionMap &pSubs,
 
 bool
 RequestProcessor::headerSubstitute(tFieldSubstitutionMap &pSubs,
-        std::list<std::pair<std::string, std::string>> &pHeadersIn){
+        tKeyValList &pHeadersIn){
 
     bool lDidSubstitute = false;
 
@@ -415,7 +405,7 @@ RequestProcessor::headerSubstitute(tFieldSubstitutionMap &pSubs,
             BOOST_FOREACH(const tSubstitute &lSubst, lSubstIter->second) {
                 Log::debug("Key substitute: %d | KeyVal:%s | lSubst:%s | Rep:%s", (int) lSubst.mScope, lKeyVal.second.c_str(),
                         lSubst.mRegex.str().c_str(), lSubst.mReplacement.c_str());
-                if (!(ApplicationScope::HEADER & lSubst.mScope))
+                if (!(ApplicationScope::HEADERS & lSubst.mScope))
                     continue;
 
                 lKeyVal.second = boost::regex_replace(lKeyVal.second, lSubst.mRegex, lSubst.mReplacement, boost::match_default | boost::format_all);
@@ -428,32 +418,36 @@ RequestProcessor::headerSubstitute(tFieldSubstitutionMap &pSubs,
 }
 
 bool
-RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, std::list<tKeyVal> &pHeaderParsedArgs) {
+RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands) {
     // Ideally we would use the pool from the apache request, but it's used in another thread
 
-    bool keySubOnBody, keySubOnHeader;
-    keySubOnBody = keySubOnHeader = false;
+    bool keySubOnBody, keySubOnHeader, keySubOnQs;
+    keySubOnBody = keySubOnHeader = keySubOnQs = false;
     // Detect the presence of the different key filters
     typedef std::pair<const std::string, std::list<tSubstitute> > value_type;
     BOOST_FOREACH(value_type &f, pCommands.mSubstitutions) {
         BOOST_FOREACH(tSubstitute &s, f.second) {
             if (s.mScope & ApplicationScope::BODY)
                 keySubOnBody = true;
-            if (s.mScope & ApplicationScope::HEADER)
+            if (s.mScope & ApplicationScope::QUERY_STRING)
+                keySubOnQs = true;
+            if (s.mScope & ApplicationScope::HEADERS)
                 keySubOnHeader = true;
         }
     }
 
     bool lDidSubstitute = false;
     // Perform the key substitutions
-    if (keySubOnHeader) {
+    if (keySubOnQs) {
         // On the header
         lDidSubstitute = keySubstitute(pCommands.mSubstitutions,
-                pHeaderParsedArgs,
-                ApplicationScope::HEADER,
+                pRequest.mParsedArgs,
+                ApplicationScope::QUERY_STRING,
                 pRequest.mArgs);
+    }
+    if (keySubOnHeader) {
         lDidSubstitute |= headerSubstitute(pCommands.mSubstitutions,
-                pRequest.mHeadersIn);
+                                           pRequest.mHeadersIn);
     }
     if (keySubOnBody) {
         // On the body
@@ -472,7 +466,7 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
         if (s.mScope & ApplicationScope::BODY) {
             pRequest.mBody = boost::regex_replace(pRequest.mBody, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
-        if (s.mScope & ApplicationScope::HEADER) {
+        if (s.mScope & ApplicationScope::QUERY_STRING) {
             pRequest.mArgs = boost::regex_replace(pRequest.mArgs, s.mRegex, s.mReplacement, boost::match_default | boost::format_all);
         }
         lDidSubstitute = true;
@@ -481,7 +475,7 @@ RequestProcessor::substituteRequest(RequestInfo &pRequest, Commands &pCommands, 
 }
 
 std::list<const tFilter *>
-RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std::string, std::string> > parsedArgs) {
+RequestProcessor::processRequest(RequestInfo &pRequest) {
     std::list<const tFilter *> ret;
 
     const auto & it = mCommands.find(pRequest.mConf);
@@ -490,16 +484,13 @@ RequestProcessor::processRequest(RequestInfo &pRequest, std::list<std::pair<std:
     if (it == mCommands.end())
         return ret;
 
-    // Add the request's headers to the parsed list
-    addHeadersIn(pRequest.mHeadersIn, parsedArgs);
-
     tCommandsByDestination &lCommands = it->second;
     // For each duplication destination
     for ( const auto & itb : lCommands ) {
         Log::debug("[DUP] Duplication tested: %s", itb.first.c_str() );
         // Tests if at least one active filter matches on this duplication location
         const tFilter* matchedFilter = NULL;
-        if ((matchedFilter = argsMatchFilter(pRequest, itb.second, parsedArgs))) {
+        if ((matchedFilter = matchesFilter(pRequest, itb.second))) {
             ret.push_back(matchedFilter);
             addValidationHeadersDup(pRequest, matchedFilter);
         } else {
@@ -560,7 +551,7 @@ RequestProcessor::sendDupFormat(CURL *curl, const RequestInfo &rInfo, curl_slist
 
     // Answer headers, Copy requestInfo out headers
     std::string answerHeaders;
-    BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersOut) {
+    BOOST_FOREACH(const tKeyValList::value_type &v, rInfo.mHeadersOut) {
         answerHeaders.append(v.first + std::string(": ") + v.second + "\n");
     }
     RequestInfo::Serialize(answerHeaders, ss);
@@ -604,7 +595,7 @@ void RequestProcessor::addOrigHeaders(const RequestInfo &rInfo, struct curl_slis
     // or apache will at some point concatenate values in a csv list
     // but also never add Transfer-Encoding chunked or a Content-Length, or Duplication-Type
     // because we may not be adding it but a previous duplication might have put it there
-    BOOST_FOREACH(const RequestInfo::tHeaders::value_type &v, rInfo.mHeadersIn) {
+    BOOST_FOREACH(const tKeyValList::value_type &v, rInfo.mHeadersIn) {
         if ( (headers.find(v.first) == headers.end()) && (v.first != std::string("Host")) &&
       (v.first != std::string("Transfer-Encoding")) &&
       (v.first != std::string("Content-Length")) && (v.first != std::string("Duplication-Type")) ) {
@@ -715,13 +706,10 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
  */
 void
 RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
-
-    std::list<std::pair<std::string, std::string> > lParsedArgs;
     // Parse query string args
-    parseArgs(lParsedArgs, reqInfo.mArgs);
+    parseArgs(reqInfo.mParsedArgs, reqInfo.mArgs);
 
-
-    std::list<const tFilter *> matchedFilters = processRequest(reqInfo, lParsedArgs);
+    std::list<const tFilter *> matchedFilters = processRequest(reqInfo);
     for (const auto & it : matchedFilters) {
             // First get a hand the commands structure that matches the destination duplication
             tCommandsByDestination &cbd = mCommands.at(reqInfo.mConf);
@@ -735,9 +723,9 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
 
             if (!c.mSubstitutions.empty() || !c.mRawSubstitutions.empty()) {
                 // perform substitutions specific to this location
-                RequestInfo b(reqInfo);
-                substituteRequest(b, c, lParsedArgs);
-                performCurlCall(pCurl, *it, b);
+                RequestInfo ri(reqInfo);
+                substituteRequest(ri, c);
+                performCurlCall(pCurl, *it, ri);
 
             } else {
                 performCurlCall(pCurl, *it, reqInfo);

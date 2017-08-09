@@ -80,7 +80,7 @@ void TestRequestProcessor::testRun()
     proc.addFilter("INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
 
     // This request won't go anywhere, but at least we exersize the loop in proc.run()
-    queue.push(boost::shared_ptr<RequestInfo>(new RequestInfo(std::string("42"),"/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&")));
+    queue.push(boost::shared_ptr<RequestInfo>(new RequestInfo("42","/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&")));
     queue.push(POISON_REQUEST);
 
     // If the poison pill would not work, this call would hang forever
@@ -99,44 +99,44 @@ void TestRequestProcessor::testSubstitution()
 
     proc.addRawFilter(".*", conf, tFilter::eFilterTypes::REGULAR);
 
+    conf.currentApplicationScope = ApplicationScope::QUERY_STRING;
     proc.addSubstitution("titi", "[ae]", "-", conf);
+    conf.currentApplicationScope = ApplicationScope::HEADERS;
     proc.addSubstitution("H1", "[Aa]", "*", conf);
-
+    conf.currentApplicationScope = ApplicationScope::QUERY_STRING;
+    
     query = "titi=tatae&tutu=tatae";
-    RequestInfo ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
+    RequestInfo ri = RequestInfo("42", "/toto", "/toto", query);
     ri.mConf = &conf;
-    std::list<std::pair<std::string, std::string> > lParsedArgs;
-    proc.parseArgs(lParsedArgs, ri.mArgs);
+    proc.parseArgs(ri.mParsedArgs, ri.mArgs);
     RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(ri.mConf);
     Commands &c = cbd.at(conf.currentDupDestination);
-    proc.substituteRequest(ri, c, lParsedArgs);
+    proc.substituteRequest(ri, c);
     CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=tatae"), ri.mArgs);
 
     {
         //  Empty fields are preserved
         query = "titi=tatae&tutu";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU"), ri.mArgs);
     }
 
     {
         //  Header substitution
         query = "titi=tatae&tutu";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
         ri.mHeadersIn.push_back(tKeyVal(std::string("H1"), std::string("tAta1,2#")));
         ri.mHeadersIn.push_back(tKeyVal(std::string("H2"), std::string(""))); ;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(ri.mHeadersIn.front().first, std::string("H1"));
         CPPUNIT_ASSERT_EQUAL(ri.mHeadersIn.front().second, std::string("t*t*1,2#"));
         ri.mHeadersIn.pop_front();
@@ -150,26 +150,24 @@ void TestRequestProcessor::testSubstitution()
         //  Empty fields can be substituted
         proc.addSubstitution("tutu", "^$", "titi", conf);
         query = "titi=tatae&tutu";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(std::string("TITI=t-t--&TUTU=titi"), ri.mArgs);
     }
 
     {
         // Substitutions are case-sensitive
         query = "titi=TATAE&tutu=TATAE";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(std::string("TITI=TATAE&TUTU=TATAE"), ri.mArgs);
     }
 
@@ -177,13 +175,12 @@ void TestRequestProcessor::testSubstitution()
         // Substitutions on the same path and field are executed in the order they are added
         proc.addSubstitution("titi", "-(.*)-", "T\\1", conf);
         query = "titi=tatae&tutu=tatae";
-        ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
+        ri = RequestInfo("42", "/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tatae"), ri.mArgs);
     }
 
@@ -191,26 +188,24 @@ void TestRequestProcessor::testSubstitution()
         // Substituions in other field but same path
         proc.addSubstitution("tutu", "ata", "W", conf);
         query = "titi=tatae&tutu=tatae";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(ri.mConf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
     }
 
     {
         // ... doesn't affect previous path
         query = "titi=tatae&tutu=tatae";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(std::string("TITI=tTt-&TUTU=tWe"), ri.mArgs);
     }
 
@@ -218,26 +213,24 @@ void TestRequestProcessor::testSubstitution()
         // Substitute escaped characters
         proc.addSubstitution( "titi", ",", "/", conf);
         query = "titi=1%2C2%2C3";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
     }
 
     {
         // Keys should be compared case-insensitively
         query = "TiTI=1%2C2%2C3";
-        ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "/toto", query);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(conf.currentDupDestination);
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
         CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITI=1%2f2%2f3"));
     }
 }
@@ -252,33 +245,30 @@ void TestRequestProcessor::testFilterBasic()
         // Simple Filter MATCH
         RequestProcessor proc;
         proc.addFilter( "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "INFO=myinfo");
+        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "INFO=myinfo");
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     }
 
     {
         // Raw Filter MATCH
         RequestProcessor proc;
         proc.addRawFilter("SID>(.*)<", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "<SID>ID-REQ</SID>");
+        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "<SID>ID-REQ</SID>");
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     }
 
     {
         // Simple Filter NO MATCH
         RequestProcessor proc;
         proc.addFilter("INFO", "KIDO", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "INFO=myinfo");
+        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "INFO=myinfo");
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
 
     {
@@ -286,11 +276,10 @@ void TestRequestProcessor::testFilterBasic()
         // Filter applied on body only NO MATCH
         RequestProcessor proc;
         proc.addFilter("INFO", "my", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "INFO=myinfo");
+        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "INFO=myinfo");
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
 
     {
@@ -298,11 +287,10 @@ void TestRequestProcessor::testFilterBasic()
         RequestProcessor proc;
         proc.addFilter("BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         std::string body = "BODY=hello";
-        RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     }
 
     {
@@ -311,11 +299,10 @@ void TestRequestProcessor::testFilterBasic()
         proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         proc.addFilter( "STOP", "true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
         std::string body = "BODY=hello&STOP=true";
-        RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
 
     {
@@ -324,11 +311,10 @@ void TestRequestProcessor::testFilterBasic()
         proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawFilter( "STOP=true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
         std::string body = "BODY=hello&STOP=true";
-        RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
 
     {
@@ -338,13 +324,33 @@ void TestRequestProcessor::testFilterBasic()
         proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawFilter( "STOP=true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
         std::string body = "BODY=hello";
-        RequestInfo ri = RequestInfo(std::string("42"),"/bb", "/bb/pws/titi/", "STOP=true", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "STOP=true", &body);
         ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
 
+}
+
+
+#define MAKE_REQ_INFO(id, pConfPath, pPath, pArgs, conf, proc) \
+RequestInfo ri = RequestInfo(id, pConfPath, pPath, pArgs);\
+ri.mConf = &conf;\
+proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+
+#define MAKE_REQ_INFO_BODY(id, pConfPath, pPath, pArgs, conf, proc, body) \
+RequestInfo ri = RequestInfo(id, pConfPath, pPath, pArgs, body);\
+ri.mConf = &conf;\
+proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+
+
+RequestInfo makeReqInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
+                        const std::string &pArgs, DupConf *conf, RequestProcessor &proc, const std::string *body = 0) {
+    
+    RequestInfo ri = RequestInfo(id, pConfPath, pPath, pArgs, body);
+    ri.mConf = &conf;
+    proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+    return ri;
 }
 
 void TestRequestProcessor::testFilterOnNotMatching()
@@ -353,58 +359,39 @@ void TestRequestProcessor::testFilterOnNotMatching()
     conf.currentApplicationScope = ApplicationScope::ALL;
     conf.currentDupDestination = "Honolulu:8080";
 
-    {
+    
         // Exemple of negativ look ahead matching
         RequestProcessor proc;
         proc.addFilter("DATAS", "^(?!.*WelcomePanel)(?!.*Bmk(Video){0,1}PortailFibre)"
                        "(?!.*MobileStartCommitment)(?!.*InternetCompositeOfferIds)(?!.*FullCompositeOffer)"
                        "(?!.*AppNat(Version|SubDate|NoUnReadMails|NextEMailID|OS|ISE))",conf,
                        tFilter::eFilterTypes::REGULAR);
+        { // should match, not found, not empty
+        MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd", conf, proc);
+        CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
+        }
+    {
+        MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred", conf, proc);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }
+    {
+        MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf", conf, proc);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }{
+        MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf", conf, proc);
+         CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }{
 
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdfWelcomefdsfd");
-        ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
-
-        RequestInfo ri2 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfBmkPortailFibred");
-        ri2.mConf = &conf;
-        lParsedArgs.clear();
-        proc.parseArgs(lParsedArgs, ri2.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri2, lParsedArgs).empty());
-
-        RequestInfo ri3 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskjqdffdsfdsfqsfgsAppNatSubDateqf");
-        ri3.mConf = &conf;
-        lParsedArgs.clear();
-        proc.parseArgs(lParsedArgs, ri3.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri3, lParsedArgs).empty());
-
-        RequestInfo ri4 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fdlskBmkVideoPortailFibrejqdffdsfdsfqsfgsqf");
-        ri4.mConf = &conf;
-        lParsedArgs.clear();
-        proc.parseArgs(lParsedArgs, ri4.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri4, lParsedArgs).empty());
-
-
-        RequestInfo ri5 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=fd,FullCompositeOffer,lskFibrejqdffdsfdsfqsfgsqf");
-        ri5.mConf = &conf;
-        lParsedArgs.clear();
-        proc.parseArgs(lParsedArgs, ri5.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri5, lParsedArgs).empty());
-
-        RequestInfo ri6 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
-        ri6.mConf = &conf;
-        lParsedArgs.clear();
-        proc.parseArgs(lParsedArgs, ri6.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri6, lParsedArgs).empty());
-
-        RequestInfo ri7 = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", "REQUEST=getPNS&DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR");
-        ri7.mConf = &conf;
-        lParsedArgs.clear();
-        proc.parseArgs(lParsedArgs, ri7.mArgs);
-        CPPUNIT_ASSERT(proc.processRequest(ri7, lParsedArgs).empty());
-
-     }
+        MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", "DATAS=fd,FullCompositeOffer,lskFibrejqdffdsfdsfqsfgsqf", conf, proc);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }{
+        MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", "DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR", conf, proc);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }{
+        MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", "REQUEST=getPNS&DATAS=AdviseCapping,FullCompositeOffer,InternetBillList,InternetBillList/Bill,InternetBillList/Date,InternetInvoiceTypePay,MSISDN-SI,MobileBillList/Bill,MobileBillList/Date,MobileBillingAccount,MobileDeviceTac,MobileLoyaltyDRE,MobileLoyaltyDRO,MobileLoyaltyDebutDate,MobileLoyaltyPcmNonAnnuleDate,MobileLoyaltyPoints,MobileLoyaltySeuilPcm,MobileLoyaltyProgrammeFid,MobileStartContractDate,OOPSApplications,TlmMobileTac,TlmMode&credential=2,161232061&sid=ADVSCO&version=1.0.0&country=FR", conf, proc);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }
+     
 }
 
 void TestRequestProcessor::testFilter()
@@ -417,159 +404,109 @@ void TestRequestProcessor::testFilter()
 
     std::string query;
 
+    {
     // No filter, so nothing should pass
     query = "titi=tata&tutu";
-    RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/pws/titi/", query);
-    ri.mConf = &conf;
-
-    std::list<std::pair<std::string, std::string> > lParsedArgs;
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto/pws/titi/", query, conf, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(std::string("titi=tata&tutu"), ri.mArgs);
-
+    } {
     query = "";
-    ri = RequestInfo(std::string("42"),"", "", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
-
+    MAKE_REQ_INFO("42","", "", query, conf, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }{
     // Filter
-    conf.currentApplicationScope = ApplicationScope::HEADER;
+    conf.currentApplicationScope = ApplicationScope::QUERY_STRING;
     proc.addFilter("titi", "^ta", conf, tFilter::eFilterTypes::REGULAR);
     query = "titi=tata&tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("titi=tata&tutu"));
-
+    }{
     query = "tata&tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("tata&tutu"));
-
+    }{
     query = "tititi=tata&tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("tititi=tata&tutu"));
-
+    }{
     // Filters are case-insensitive
     query = "TITi=tata&tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("TITi=tata&tutu"));
-
+    }
+    DupConf conf2;
+    {
     // On other paths, no filter is applied
     query = "titi=tata&tutu";
-    ri = RequestInfo(std::string("42"),"/to", "/to", query);
-    DupConf conf2;
-    ri.mConf = &conf2;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/to", "/to", query, conf2, proc);
+     CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(query, std::string("titi=tata&tutu"));
-
+    }{
     query = "tata&tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto/bla", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto/bla", query, conf, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("tata&tutu"));
-
+    }{
     // Two filters on same path - either of them has to match
-    conf.currentApplicationScope = ApplicationScope::HEADER;
+    conf.currentApplicationScope = ApplicationScope::QUERY_STRING;
     proc.addFilter("titi", "[tu]{2,15}", conf, tFilter::eFilterTypes::REGULAR);
     query = "titi=tata&tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("titi=tata&tutu"));
-
+    }{
     query = "titi=tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("titi=tutu"));
-
+    }{
     query = "titi=t";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("titi=t"));
-
-    // Two filters on different paths
+    }{
+    // Two filters on different paths matches
     proc.addFilter("x", "^.{3,5}$", conf2, tFilter::eFilterTypes::REGULAR);
     query = "x=1234";
-    ri = RequestInfo(std::string("42"),"/some/path", "/toto", query);
-    ri.mConf = &conf2;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/some/path", "/toto", query, conf2, proc);
+    CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("x=1234"));
-
+    }{// Two filters on different paths does not match
     query = "x=123456";
-    ri = RequestInfo(std::string("42"),"/some/path", "/some/path", query);
-    ri.mConf = &conf2;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/some/path", "/some/path", query, conf2, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("x=123456"));
-
+    }{
     // New filter should not change filter on other path
     query = "titi=tutu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("titi=tutu"));
-
+    }{
     query = "ti=tu";
-    ri = RequestInfo(std::string("42"),"/toto", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/toto", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("ti=tu"));
-
+    }{
     // Unknown paths still shouldn't have a filter applied
     query = "ti=tu";
-    ri = RequestInfo(std::string("42"),"/waaazzaaaa", "/toto", query);
-    ri.mConf = nullptr;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(proc.processRequest(ri, lParsedArgs).empty());
+    DupConf conf3;
+    MAKE_REQ_INFO("42","/waaazzaaaa", "/toto", query, conf3, proc);
+    CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("ti=tu"));
-
+    }{
     // Filter escaped characters
     proc.addFilter( "y", "^ ", conf, tFilter::eFilterTypes::REGULAR);
     query = "y=%20";
-    ri = RequestInfo(std::string("42"),"/escaped", "/toto", query);
-    ri.mConf = &conf;
-    lParsedArgs.clear();
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    CPPUNIT_ASSERT(!proc.processRequest(ri, lParsedArgs).empty());
+    MAKE_REQ_INFO("42","/escaped", "/toto", query, conf, proc);
+    CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     CPPUNIT_ASSERT_EQUAL(ri.mArgs, std::string("y=%20"));
-
+    }
 }
 
 void TestRequestProcessor::testParseArgs()
@@ -589,23 +526,6 @@ void TestRequestProcessor::testParseArgs()
     lParsedArgs.pop_front();
 }
 
-void TestRequestProcessor::testAddHeadersIn()
-{
-    RequestProcessor proc;
-    RequestInfo::tHeaders lHeaders;
-    std::list<std::pair<std::string, std::string> > lParsedArgs;
-
-    lHeaders.push_back(tKeyVal(std::string("TITI"), std::string("tAta1,2#")));
-    lHeaders.push_back(tKeyVal(std::string("TUTU"), std::string("")));
-    proc.addHeadersIn(lHeaders, lParsedArgs);
-    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().first, std::string("TITI"));
-    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().second, std::string("tAta1,2#"));
-    lParsedArgs.pop_front();
-
-    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().first, std::string("TUTU"));
-    CPPUNIT_ASSERT_EQUAL(lParsedArgs.front().second, std::string(""));
-    lParsedArgs.pop_front();
-}
 
 void TestRequestProcessor::testAddValidationHeaders()
 {
@@ -629,7 +549,7 @@ void TestRequestProcessor::testAddValidationHeaders()
     {
         tFilter matchedFilter(".*", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
         matchedFilter.mMatch = "papalino";
-        matchedFilter.mScope = ApplicationScope::HEADER;
+        matchedFilter.mScope = ApplicationScope::HEADERS;
         matchedFilter.mDestination = "Napoli";
         matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
         proc.addValidationHeadersDup(lInfo, &matchedFilter);
@@ -639,7 +559,7 @@ void TestRequestProcessor::testAddValidationHeaders()
 
         lInfo.mHeadersOut.pop_front();
 
-        CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, HEADER filter: \".*\" matched : \"papalino\", Scope : HEADER. Destination : Napoli"), lInfo.mHeadersOut.front().second);
+        CPPUNIT_ASSERT_EQUAL(std::string("The request is duplicated, HEADERS filter: \".*\" matched : \"papalino\", Scope : HEADERS. Destination : Napoli"), lInfo.mHeadersOut.front().second);
         lInfo.mHeadersOut.pop_front();
         proc.addValidationHeadersDup(lInfo, NULL);
         CPPUNIT_ASSERT_EQUAL(std::string("The request is not duplicated"), lInfo.mHeadersOut.front().second);
@@ -662,23 +582,20 @@ void TestRequestProcessor::testRawSubstitution()
 
         query = "arg1=myarg1";
         std::string body = "mybody1test";
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/titi/", query, &body);
         DupConf conf;
-        ri.mConf = &conf;
-        conf.currentApplicationScope = ApplicationScope::HEADER;
+        MAKE_REQ_INFO_BODY("42","/toto", "/toto/titi/", query, conf, proc, &body);
+        conf.currentApplicationScope = ApplicationScope::QUERY_STRING;
 
         proc.addRawFilter(".*", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawSubstitution( "1", "2", conf);
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        std::list<const tFilter *> matches = proc.processRequest(ri, lParsedArgs);
+        std::list<const tFilter *> matches = proc.processRequest(ri);
         CPPUNIT_ASSERT(!matches.empty());
         const tFilter *match = *matches.begin();
 
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(match->mDestination);
 
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
 
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(body, ri.mBody);
@@ -692,24 +609,21 @@ void TestRequestProcessor::testRawSubstitution()
 
         query = "arg1=myarg1";
         std::string body = "mybody1test";
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/titi/", query, &body);
         DupConf conf;
-        ri.mConf = &conf;
+        MAKE_REQ_INFO_BODY("42","/toto", "/toto/titi/", query, conf, proc, &body);
         conf.currentApplicationScope = ApplicationScope::BODY;
 
         proc.addRawFilter( ".*", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawSubstitution( "1", "2", conf);
 
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        std::list<const tFilter *> matches = proc.processRequest(ri, lParsedArgs);
+        std::list<const tFilter *> matches = proc.processRequest(ri);
         CPPUNIT_ASSERT(!matches.empty());
         const tFilter *match = *matches.begin();
 
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(match->mDestination);
 
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
 
         CPPUNIT_ASSERT_EQUAL(query, ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(std::string("mybody2test"), ri.mBody);
@@ -722,24 +636,21 @@ void TestRequestProcessor::testRawSubstitution()
 
         query = "arg1=myarg1";
         std::string body = "mybody1test";
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/titi/", query, &body);
         DupConf conf;
-        ri.mConf = &conf;
+        MAKE_REQ_INFO_BODY("42","/toto", "/toto/titi/", query, conf, proc, &body);
         conf.currentApplicationScope = ApplicationScope::ALL;
 
         proc.addRawFilter(".*", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawSubstitution("1", "2", conf);
 
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        std::list<const tFilter *> matches = proc.processRequest(ri, lParsedArgs);
+        std::list<const tFilter *> matches = proc.processRequest(ri);
         CPPUNIT_ASSERT(!matches.empty());
         const tFilter *match = *matches.begin();
 
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(match->mDestination);
 
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
 
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(std::string("mybody2test"), ri.mBody);
@@ -752,25 +663,22 @@ void TestRequestProcessor::testRawSubstitution()
         DupConf conf;
         query = "arg1=myarg1";
         std::string body = "mybody1test";
-        RequestInfo ri = RequestInfo(std::string("42"),"/toto", "/toto/titi/", query, &body);
-        ri.mConf = &conf;
+        MAKE_REQ_INFO_BODY("42","/toto", "/toto/titi/", query, conf, proc, &body);
 
         proc.addRawFilter(".*", conf, tFilter::eFilterTypes::REGULAR);
-        conf.currentApplicationScope = ApplicationScope::HEADER;
+        conf.currentApplicationScope = ApplicationScope::QUERY_STRING;
         proc.addRawSubstitution( "1", "2", conf);
         conf.currentApplicationScope = ApplicationScope::BODY;
         proc.addRawSubstitution( "1", "3", conf);
 
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        std::list<const tFilter *> matches = proc.processRequest(ri, lParsedArgs);
+        std::list<const tFilter *> matches = proc.processRequest(ri);
         CPPUNIT_ASSERT(!matches.empty());
         const tFilter *match = *matches.begin();
 
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
         Commands &c = cbd.at(match->mDestination);
 
-        proc.substituteRequest(ri, c, lParsedArgs);
+        proc.substituteRequest(ri, c);
 
         CPPUNIT_ASSERT_EQUAL(std::string("arg2=myarg2"), ri.mArgs);
         CPPUNIT_ASSERT_EQUAL(std::string("mybody3test"), ri.mBody);
@@ -783,7 +691,7 @@ void TestRequestProcessor::testDupFormat() {
     RequestProcessor proc;
     std::string query = "theBig=Lebowski";
     std::string body = "mybody1test";
-    RequestInfo ri = RequestInfo(std::string("42"), "/mypath", "/mypath/wb", query, &body);
+    RequestInfo ri = RequestInfo("42", "/mypath", "/mypath/wb", query, &body);
     CURL * curl = curl_easy_init();
     struct curl_slist *slist = NULL;
 
@@ -809,7 +717,7 @@ void TestRequestProcessor::testDupFormat() {
 }
 
 void TestRequestProcessor::testRequestInfo() {
-    RequestInfo ri = RequestInfo(std::string("42"), "/path", "/path", "arg1=value1");
+    RequestInfo ri = RequestInfo("42", "/path", "/path", "arg1=value1");
     CPPUNIT_ASSERT(!ri.hasBody());
     ri.mBody = "sdf";
     CPPUNIT_ASSERT(ri.hasBody());
@@ -825,7 +733,7 @@ void TestRequestProcessor::testTimeout() {
     conf.currentDupDestination = "Honolulu:8080";
     proc.addFilter("SID", "mySid", conf, tFilter::eFilterTypes::REGULAR);
 
-    boost::shared_ptr<RequestInfo> ri = boost::shared_ptr<RequestInfo>(new RequestInfo(std::string("42"),"/spp/main", "/spp/main", "SID=mySid"));
+    boost::shared_ptr<RequestInfo> ri = boost::shared_ptr<RequestInfo>(new RequestInfo("42","/spp/main", "/spp/main", "SID=mySid"));
     ri->mConf = &conf;
     queue.push(ri);
     queue.push(POISON_REQUEST);
@@ -844,21 +752,18 @@ void TestRequestProcessor::testKeySubstitutionOnBody()
     proc.addSubstitution( "titi", "value", "replacedValue", conf);
 
     query = "titi=value&tutu=tatae";
-    RequestInfo ri = RequestInfo(std::string("42"), "/toto", "/toto", query);
+    RequestInfo ri = makeReqInfo("42", "/toto", "/toto", query, &conf, proc);
     ri.mConf = &conf;
     ri.mBody = "key1=what??&titi=value";
 
-
-    std::list<std::pair<std::string, std::string> > lParsedArgs;
-    proc.parseArgs(lParsedArgs, ri.mArgs);
-    std::list<const tFilter *> matches = proc.processRequest(ri, lParsedArgs);
+    std::list<const tFilter *> matches = proc.processRequest(ri);
     CPPUNIT_ASSERT(!matches.empty());
     const tFilter *match = *matches.begin();
 
     RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
     Commands &c = cbd.at(match->mDestination);
 
-    proc.substituteRequest(ri, c, lParsedArgs);
+    proc.substituteRequest(ri, c);
 
     CPPUNIT_ASSERT_EQUAL(std::string("titi=value&tutu=tatae"), ri.mArgs);
     CPPUNIT_ASSERT_EQUAL(std::string("KEY1=what%3f%3f&TITI=replacedValue"), ri.mBody);
@@ -876,11 +781,8 @@ void TestRequestProcessor::testMultiDestination() {
         proc.addFilter( "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
         proc.addFilter("INFO", "myinfo", conf, tFilter::eFilterTypes::REGULAR);
 
-        RequestInfo ri = RequestInfo(std::string("42"),"/match", "/match/pws/titi/", "INFO=myinfo");
-        ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        CPPUNIT_ASSERT_EQUAL(1, (int)proc.processRequest(ri, lParsedArgs).size());
+        MAKE_REQ_INFO("42","/match", "/match/pws/titi/", "INFO=myinfo", conf, proc);
+        CPPUNIT_ASSERT_EQUAL(1, (int)proc.processRequest(ri).size());
     }
 
     {
@@ -892,11 +794,8 @@ void TestRequestProcessor::testMultiDestination() {
         conf.currentDupDestination = "Hikkaduwa:8090";
         proc.addFilter( "INFO", "myinfo", conf, tFilter::eFilterTypes::REGULAR);
 
-        RequestInfo ri = RequestInfo(std::string("42"),"/match", "/match/pws/titi/", "INFO=myinfo");
-        ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        std::list<const tFilter *> ff = proc.processRequest(ri, lParsedArgs);
+        MAKE_REQ_INFO("42","/match", "/match/pws/titi/", "INFO=myinfo", conf, proc);
+        std::list<const tFilter *> ff = proc.processRequest(ri);
         CPPUNIT_ASSERT_EQUAL(2, (int)ff.size());
 
         // Check the first filter
@@ -926,11 +825,8 @@ void TestRequestProcessor::testMultiDestination() {
         proc.addFilter( "INFO", "myinfo", conf, tFilter::eFilterTypes::REGULAR);
         proc.addFilter( "NO", "dup", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
 
-        RequestInfo ri = RequestInfo(std::string("42"),"/match", "/match/pws/titi/", "INFO=myinfo&NO=dup");
-        ri.mConf = &conf;
-        std::list<std::pair<std::string, std::string> > lParsedArgs;
-        proc.parseArgs(lParsedArgs, ri.mArgs);
-        std::list<const tFilter *> ff = proc.processRequest(ri, lParsedArgs);
+        MAKE_REQ_INFO("42","/match", "/match/pws/titi/", "INFO=myinfo&NO=dup", conf, proc);
+        std::list<const tFilter *> ff = proc.processRequest(ri);
         CPPUNIT_ASSERT_EQUAL(1, (int)ff.size());
 
         // Check the filter that matched
@@ -956,7 +852,7 @@ void TestRequestProcessor::testPerformCurlCall() {
     std::string lBody = "mybodytest";
 
     RequestProcessor requestProcessor;
-    RequestInfo requestInfo = RequestInfo(std::string("42"),"/test", "/test/path/", lQueryArgs, &lBody);
+    RequestInfo requestInfo = RequestInfo("42","/test", "/test/path/", lQueryArgs, &lBody);
     tFilter matchedFilter("test", ApplicationScope::ALL,lDestination,DuplicationType::REQUEST_WITH_ANSWER);
 
 

@@ -117,6 +117,18 @@ RequestInfo::RequestInfo() :
     {
 }
 
+std::string RequestInfo::flatten(const tKeyValList &kvl, std::string sep)
+{
+    std::string out;
+    for( const auto &item : kvl ) {
+        out += item.first;
+        out += sep;
+        out += item.second;
+    }
+    return out;
+}
+
+
 bool
 RequestInfo::isPoison() const {
     return mPoison;

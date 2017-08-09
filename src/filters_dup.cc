@@ -31,7 +31,7 @@ namespace DupModule {
  */
 static int iterateOverHeadersCallBack(void *d, const char *key, const char *value)
 {
-    RequestInfo::tHeaders *headers = reinterpret_cast<RequestInfo::tHeaders *>(d);
+    tKeyValList *headers = reinterpret_cast<tKeyValList *>(d);
     headers->push_back(std::pair<std::string, std::string>(key, value));
     return 1;
 }
@@ -42,7 +42,7 @@ static int checkAdditionalHeaders(const RequestInfo &r, request_rec *pRequest)
         return 0;
     }
 
-    for (RequestInfo::tHeaders::value_type header : r.mHeadersOut) {
+    for (tKeyValList::value_type header : r.mHeadersOut) {
         if (header.first == std::string("X_DUP_LOG")) {
             apr_table_set(pRequest->headers_out,"X_DUP_LOG", header.second.c_str());
         }

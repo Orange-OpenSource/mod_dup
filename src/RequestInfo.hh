@@ -55,6 +55,9 @@ struct RequestInfo {
 
 namespace DupModule {
 
+typedef std::pair<std::string, std::string> tKeyVal;
+typedef std::list<tKeyVal> tKeyValList;
+    
 /*
  * Different duplication modes supported by mod_dup
  */
@@ -62,8 +65,8 @@ namespace DuplicationType {
 
 enum eDuplicationType {
     NONE                    = 0,    // Do not duplicate, is the default or used in enrichment mode
-    HEADER_ONLY             = 1,    // Duplication only the HTTP HEADER of matching requests
-    COMPLETE_REQUEST        = 2,    // Duplication HTTP HEADER AND BODY of matching requests
+    HEADER_ONLY             = 1,    // Duplication only the HTTP HEADERS of matching requests
+    COMPLETE_REQUEST        = 2,    // Duplication HTTP HEADERS AND BODY of matching requests
     REQUEST_WITH_ANSWER     = 3,    // Duplication HTTP REQUEST AND ANSWER of matching requests for use with mod_compare
 };
 
@@ -97,15 +100,17 @@ struct RequestInfo {
         ar & mDupResponseHeader;
         ar & mDupResponseBody;
     }
-
+   
     /** @brief True if the request processor should stop ater seeing this object. */
     bool mPoison;
     /** @brief The query unique ID. */
     std::string mId;
     /** @brief The path part of the request. */
     std::string mPath;
-    /** @brief The parameters part of the query (without leading ?). */
+    /** @brief The parameters part of the query (query string without leading ?). */
     std::string mArgs;
+    /** @brief The parameters part of the query (without leading ?). */
+    tKeyValList mParsedArgs;
     /** @brief The body part of the query */
     std::string mBody;
     /** @brief The query answer */
@@ -129,13 +134,12 @@ struct RequestInfo {
     /** @brief The response status of the CURL command sent from MOD_DUP to MOD_COMP */
     int mCurlCompResponseStatus;
 
-    typedef std::list<std::pair<std::string, std::string> > tHeaders;
 
     /** @brief list that represents the headers of the incoming request */
-    tHeaders mHeadersIn;
+    tKeyValList mHeadersIn;
 
     /** @brief list that represents the headers of the request answer */
-    tHeaders mHeadersOut;
+    tKeyValList mHeadersOut;
 
     unsigned int offset;
 
@@ -181,6 +185,12 @@ struct RequestInfo {
      */
     RequestInfo();
 
+    /**
+     * reconstitute the list flat with no line break but with separator
+     */
+    static std::string flatten(const tKeyValList &kvl, std::string sep = ": ");
+    
+    
     /**
      * @brief Returns true if the request has a body
      */

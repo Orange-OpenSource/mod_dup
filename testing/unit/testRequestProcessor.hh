@@ -30,7 +30,6 @@ class TestRequestProcessor :
 
     CPPUNIT_TEST_SUITE(TestRequestProcessor);
     CPPUNIT_TEST(testParseArgs);
-    CPPUNIT_TEST(testAddHeadersIn);
     CPPUNIT_TEST(testAddValidationHeaders);
     CPPUNIT_TEST(testFilter);
     CPPUNIT_TEST(testSubstitution);
@@ -41,10 +40,8 @@ class TestRequestProcessor :
     CPPUNIT_TEST(testRequestInfo);
     CPPUNIT_TEST(testKeySubstitutionOnBody);
     CPPUNIT_TEST(testTimeout);
-    CPPUNIT_TEST(testFilterOnNotMatching);
     CPPUNIT_TEST(testMultiDestination);
     CPPUNIT_TEST(testPerformCurlCall);
-
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -52,7 +49,6 @@ public:
     void testFilter();
     void testSubstitution();
     void testParseArgs();
-    void testAddHeadersIn();
     void testAddValidationHeaders();
     void testRun();
     void testFilterBasic();

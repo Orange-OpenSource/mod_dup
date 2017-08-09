@@ -54,7 +54,7 @@ static void setConf(MigrateConf& conf, const std::string& pStr) {
 
     conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var1",boost::regex(pStr,boost::regex_constants::icase),"set1",ApplicationScope::ALL});
     conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var2",boost::regex(pStr,boost::regex_constants::icase),"set2",ApplicationScope::URL});
-    conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var3",boost::regex(pStr,boost::regex_constants::icase),"set3",ApplicationScope::HEADER});
+    conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var3",boost::regex(pStr,boost::regex_constants::icase),"set3",ApplicationScope::HEADERS});
     conf.mEnvLists.push_back(MigrateConf::MigrateEnv{"var4",boost::regex(pStr,boost::regex_constants::icase),"set4",ApplicationScope::BODY});
 }
 
@@ -334,13 +334,17 @@ void TestModMigrate::testScope()
     CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->mCurrentApplicationScope);
 
     // Switching to HEADER
-    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "HEADER"));
-    CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADER, conf->mCurrentApplicationScope);
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "HEADERS"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::HEADERS, conf->mCurrentApplicationScope);
 
     // Switching to ALL
     CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "ALL"));
     CPPUNIT_ASSERT_EQUAL(ApplicationScope::ALL, conf->mCurrentApplicationScope);
 
+    // Switching to URL
+    CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "URL_AND_HEADERS"));
+    CPPUNIT_ASSERT_EQUAL(ApplicationScope::URL_AND_HEADERS, conf->mCurrentApplicationScope);
+    
     // Switching to URL
     CPPUNIT_ASSERT(!setApplicationScope(lParms, (void *)conf, "URL"));
     CPPUNIT_ASSERT_EQUAL(ApplicationScope::URL, conf->mCurrentApplicationScope);
