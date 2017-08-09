@@ -38,7 +38,11 @@ file(GLOB lib_ws_diff_test_SOURCE_FILES
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/DiffPrinter)
 
 add_executable(libws_diff_test ${lib_ws_diff_test_SOURCE_FILES})
-target_link_libraries(libws_diff_test libws_diff pns_jsoncpp ${cppunit_LIBRARY} ${Boost_LIBRARIES})
+if ( ${PNS_JSONCPP_FOUND} )
+target_link_libraries(libws_diff_test libws_diff ${PNS_JSONCPP_LIBRARIES} ${cppunit_LIBRARY} ${Boost_LIBRARIES})
+else()
+target_link_libraries(libws_diff_test libws_diff ${JSONCPP_LIBRARIES} ${cppunit_LIBRARY} ${Boost_LIBRARIES})
+endif()
 add_test(testLibCompare libws_diff_test)
 
 #add_test(libws_diff_UnitTestInit rm -f libws_diff_unittest.file)

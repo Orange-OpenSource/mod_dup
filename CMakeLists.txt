@@ -143,7 +143,6 @@ include_directories("${PROJECT_SOURCE_DIR}")
 
 add_subdirectory(src)
 add_subdirectory(src/libws_diff)
-add_subdirectory(src/libws_diff/DiffPrinter)
 
 # Unit tests
 if(BUILD_UNIT_TESTS)

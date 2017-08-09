@@ -41,7 +41,10 @@ include_directories(${PROJECT_SOURCE_DIR}/extern/dtl-cpp/dtl)
 # Compile as library
 add_library(libws_diff SHARED ${libws_diff_SOURCE_FILES})
 set_target_properties(libws_diff PROPERTIES PREFIX "")
-target_link_libraries(libws_diff pns_jsoncpp ${Boost_LIBRARIES})
-
+if ( ${PNS_JSONCPP_FOUND} )
+target_link_libraries(libws_diff ${PNS_JSONCPP_LIBRARIES} ${Boost_LIBRARIES})
+else()
+target_link_libraries(libws_diff ${JSONCPP_LIBRARIES} ${Boost_LIBRARIES})
+endif()
 install(TARGETS libws_diff LIBRARY DESTINATION lib COMPONENT libws_diff)
 install(FILES ${libws_diff_HEADER_FILES} DESTINATION include/libws_diff COMPONENT libws_diff)

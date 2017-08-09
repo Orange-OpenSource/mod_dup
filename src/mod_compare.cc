@@ -81,7 +81,9 @@ createGlobalMutex(void) {
         return 0;
     }
     chmod(strncat(buffer,c_named_mutex,30),0666);
-    ftruncate(fd, sizeof(pthread_mutex_t));
+    if ( ftruncate(fd, sizeof(pthread_mutex_t)) ) {
+        Log::error(42, "[COMPARE] failed to truncate file descriptor of mutex named: %s. What: %s", c_named_mutex, strerror(errno));
+    }
     mutex = (pthread_mutex_t *)mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
     pthread_mutexattr_init(&mutex_attr);
