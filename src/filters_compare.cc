@@ -153,12 +153,10 @@ boost::shared_ptr<DupModule::RequestInfo>* initRequest(request_rec *pRequest)
  * It is used to remove the DUP headers and change the request method
  */
 int translateHook(request_rec *pRequest) {
-    Log::debug("[DEBUG][COMPARE] Inside translateHook");
-    Log::error(42, "translateHook %p", pRequest);
     if (!pRequest->per_dir_config)
         return DECLINED;
     CompareConf *conf = reinterpret_cast<CompareConf *>(ap_get_module_config(pRequest->per_dir_config, &compare_module));
-    if (!conf) {
+    if ((!conf) || (!conf->mIsActive)) {
         // Not a location that we treat, we decline the request
         return DECLINED;
     }
@@ -166,7 +164,8 @@ int translateHook(request_rec *pRequest) {
         Log::error(42, "No connection pool associated to the request");
         return DECLINED;
     }
-
+    Log::debug("[DEBUG][COMPARE] Inside translateHook");
+    
     initRequest(pRequest);
 
     return DECLINED;

@@ -747,6 +747,7 @@ void TestModCompare::testInputFilterHandler()
         // Set X_DUP_METHOD header to check that the apache method changed
         apr_table_set(req->headers_in, "X_DUP_METHOD", "PUT");
         CompareConf *conf = new CompareConf;
+        conf->mIsActive = true;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
         ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
@@ -779,6 +780,7 @@ void TestModCompare::testInputFilterHandler()
         // Set X_DUP_HTTP_STATUS header to some value
         apr_table_set(req->headers_in, "X_DUP_HTTP_STATUS", "123");
         CompareConf *conf = new CompareConf;
+        conf->mIsActive = true;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");
         ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
@@ -818,6 +820,7 @@ void TestModCompare::testInputFilterHandler()
         apr_table_set(req->headers_in, "Content-Type", "xml");
 
         CompareConf *conf = new CompareConf;
+        conf->mIsActive = true;
         ap_set_module_config(req->per_dir_config, &compare_module, conf);
         ap_set_module_config(req->request_config, &compare_module, new boost::shared_ptr<DupModule::RequestInfo>(new DupModule::RequestInfo));
         apr_table_set(req->headers_in, "UNIQUE_ID", "12345678");

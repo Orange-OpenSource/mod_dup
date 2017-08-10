@@ -98,6 +98,7 @@ std::string getOrSetUniqueID(request_rec *pRequest) {
     // If there is no UNIQUE_ID in the request header copy thr Request ID generated in both headers
     const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
     unsigned int lReqID;
+    Log::debug("[DUPCOMPMIG] getOrSetUniqueID %s %p", lID, pRequest);
     if( lID == NULL){
         // Not defined in a header
         lReqID = CommonModule::getNextReqId();

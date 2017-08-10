@@ -143,16 +143,6 @@ int translateHook(request_rec *pRequest) {
     // Copy headers in
     apr_table_do(&iterateOverHeadersCallBack, &info->mHeader, pRequest->headers_in, NULL);
 
-    const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
-    // Copy Request ID in both headers
-    if(lID == NULL) {
-        apr_table_set(pRequest->headers_in, CommonModule::c_UNIQUE_ID, info->mId.c_str());
-        apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, info->mId.c_str());
-    }
-    else {
-        apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
-    }
-
     // Synchronous context enrichment
     info->mConf = conf;
     info->mArgs = pRequest->args ? pRequest->args : "";

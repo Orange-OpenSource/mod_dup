@@ -196,6 +196,9 @@ setRawSubstitute(cmd_parms* pParams, void* pCfg,
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
+    if ( conf->currentDupDestination.empty() ) {
+        return "a DupDestination is required before a DupRawSubstitute";
+    }
     try {
         gProcessor->addRawSubstitution(pMatch, pReplace,
                                        *conf);
@@ -267,6 +270,9 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
+    if ( conf->currentDupDestination.empty() ) {
+        return "a DupDestination is required before a DupSubstitute";
+    }
     try {
         gProcessor->addSubstitution(pField, pMatch, pReplace, *conf);
     } catch (boost::bad_expression&) {
@@ -336,6 +342,9 @@ _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilt
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
+    if ( conf->currentDupDestination.empty() ) {
+        return "a DupDestination is required before a filter";
+    }
     try {
         gProcessor->addFilter(pField, pFilter, *conf, fType);
     } catch (boost::bad_expression&) {
@@ -365,6 +374,9 @@ _setRawFilter(cmd_parms* pParams, void* pCfg, const char* pExpression, tFilter::
     struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
     assert(conf);
 
+    if ( conf->currentDupDestination.empty() ) {
+        return "a DupDestination is required before a RawFilter";
+    }
     try {
         gProcessor->addRawFilter(pExpression, *conf, fType);
     } catch (boost::bad_expression&) {

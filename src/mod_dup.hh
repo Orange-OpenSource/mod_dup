@@ -179,17 +179,6 @@ const char*
 setRawSubstitute(cmd_parms* pParams, void* pCfg,
                  const char* pMatch, const char* pReplace);
 
-/**
- * @brief Add a substitution definition
- * @param pParams miscellaneous data
- * @param pCfg user data for the directory/location
- * @param pVarName The name of the variable to define if the regex matches
- * @param pMatchRegex the regex to apply to the currently defined scope
- * @param pSetValue the regex reference to apply to set the value
- * @return NULL if parameters are valid, otherwise a string describing the error
- */
-const char*
-setEnrichContext(cmd_parms* pParams, void* pCfg, const char *pVarName, const char* pMatchRegex, const char* pSetValue);
 
 /**
  * @brief Add a filter definition

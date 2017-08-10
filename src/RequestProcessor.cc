@@ -292,7 +292,7 @@ RequestProcessor::matchesFilter(RequestInfo &pRequest, const Commands &pCommands
         return matched;
     }
 
-    // Key filters on header
+    // Key filters on query string
     if (keyFilterOnQS && (matched = keyFilterMatch(pFilters, pRequest.mParsedArgs, ApplicationScope::QUERY_STRING, tFilter::REGULAR))){
         Log::info(0, "[DUP] Filter on QUERY_STRING match");
         return matched;
@@ -481,22 +481,25 @@ RequestProcessor::processRequest(RequestInfo &pRequest) {
     const auto & it = mCommands.find(pRequest.mConf);
 
     // No settings for this path or no duplication mechanism
-    if (it == mCommands.end())
+    if (it == mCommands.end()) {
+        addValidationHeadersDup(pRequest, ret, 0, 0);
         return ret;
+    }
 
     tCommandsByDestination &lCommands = it->second;
+    int filtersAttempted = 0;
     // For each duplication destination
     for ( const auto & itb : lCommands ) {
-        Log::debug("[DUP] Duplication tested: %s", itb.first.c_str() );
+        Log::debug("[DUP] Duplication tested for destination: %s", itb.first.c_str() );
         // Tests if at least one active filter matches on this duplication location
         const tFilter* matchedFilter = NULL;
         if ((matchedFilter = matchesFilter(pRequest, itb.second))) {
             ret.push_back(matchedFilter);
-            addValidationHeadersDup(pRequest, matchedFilter);
-        } else {
-            addValidationHeadersDup(pRequest, NULL);
         }
+        filtersAttempted += itb.second.mRawFilters.size();
+        filtersAttempted += itb.second.mFilters.size();
     }
+    addValidationHeadersDup(pRequest, ret, lCommands.size(), filtersAttempted);
     return ret;
 }
 
@@ -641,14 +644,20 @@ void RequestProcessor::addValidationHeadersCompare(RequestInfo &rInfo, const tFi
 /// @brief add http headers to the original response to validate the duplication
 /// @param rInfo
 /// @param matchedFilter
-void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const tFilter *matchedFilter) {
+void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const std::list<const tFilter *> & matchedFilters, int numDestinations, int numFiltersAttempted) 
+{
     std::ostringstream xDupLog;
-    if (matchedFilter) {
-        xDupLog << "The request is duplicated, " << ApplicationScope::enumToString(matchedFilter->mScope) << " filter: \"" << matchedFilter->mRegex << "\" matched : \"" << matchedFilter->mMatch << "\", Scope : " << ApplicationScope::enumToString(matchedFilter->mScope) << ". Destination : " << matchedFilter->mDestination;
-        std::cout<<"----------------------"<<xDupLog.str()<<std::endl;
-        rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X-MATCHED-PATTERN", matchedFilter->mMatch));
+    if (! matchedFilters.empty()) {
+        xDupLog << "The request is duplicated, ";
+        std::string separator;
+        for ( const auto & matchedFilter : matchedFilters) {
+            xDupLog << separator << ApplicationScope::enumToString(matchedFilter->mScope) << " filter: \"" << matchedFilter->mRegex << "\" matched: \"" << matchedFilter->mMatch << "\" Destination: " << matchedFilter->mDestination;
+            std::cout<<"----------------------"<<xDupLog.str();
+            rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X-MATCHED-PATTERN", matchedFilter->mMatch));
+            separator = " AND ";
+        }
     } else {
-        xDupLog << "The request is not duplicated";
+        xDupLog << "The request is not duplicated, having found " << numDestinations << " DupDestination(s) and attempted to match " << numFiltersAttempted << " DupFilter or DupRawFilter";
     }
     rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X_DUP_LOG", xDupLog.str()));
 }
@@ -715,9 +724,9 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
             tCommandsByDestination &cbd = mCommands.at(reqInfo.mConf);
             Commands &c = cbd.at(it->mDestination);
 
-            // Should we drop the duplication?
+            // if we don't want 100% duplication on this destination
             if (!c.toDuplicate()) {
-                Log::debug("Regulation drop");
+                Log::debug("dup dropped for DupDestination %s", it->mDestination.c_str());
                 continue;
             }
 

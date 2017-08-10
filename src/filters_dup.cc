@@ -168,15 +168,7 @@ apr_status_t inputFilterHandler(ap_filter_t *pFilter, apr_bucket_brigade *pB, ap
         if (!reqInfo || !reqInfo->get()) {
             reqInfo = CommonModule::makeRequestInfo<RequestInfo, &dup_module>(pRequest);
             RequestInfo *info = reqInfo->get();
-            const char* lID = apr_table_get(pRequest->headers_in, CommonModule::c_UNIQUE_ID);
-            // Copy Request ID in both headers
-            if (lID == NULL) {
-                apr_table_set(pRequest->headers_in, CommonModule::c_UNIQUE_ID, info->mId.c_str());
-                apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, info->mId.c_str());
-            } else {
-                apr_table_set(pRequest->headers_out, CommonModule::c_UNIQUE_ID, lID);
-            }
-
+ 
             info->mConf = conf;
             info->mArgs = pRequest->args ? pRequest->args : "";
         }
