@@ -141,6 +141,18 @@ void TestModCompare::testConfig()
     setDisableLibwsdiff(NULL, (void *) lDoHandle, "1");
     CPPUNIT_ASSERT(lDoHandle->mCompareDisabled);
 
+    CPPUNIT_ASSERT(setDiffLogType(NULL, (void *) lDoHandle, "badvalue"));
+    CPPUNIT_ASSERT(!setDiffLogType(NULL, (void *) lDoHandle, "arCHIVE"));
+    CPPUNIT_ASSERT_EQUAL(LibWsDiff::diffPrinter::diffTypeAvailable::UTF8JSON, lDoHandle->mLogType);
+    CPPUNIT_ASSERT_EQUAL(true, lDoHandle->mCompareDisabled);
+    CPPUNIT_ASSERT(!setDiffLogType(NULL, (void *) lDoHandle, "MultiLine"));
+    CPPUNIT_ASSERT_EQUAL(false, lDoHandle->mCompareDisabled);
+    CPPUNIT_ASSERT_EQUAL(LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE, lDoHandle->mLogType);
+    CPPUNIT_ASSERT(!setDiffLogType(NULL, (void *) lDoHandle, "simplejSON"));
+    CPPUNIT_ASSERT_EQUAL(LibWsDiff::diffPrinter::diffTypeAvailable::JSON, lDoHandle->mLogType);
+    CPPUNIT_ASSERT(!setDiffLogType(NULL, (void *) lDoHandle, "utf8JSON"));
+    CPPUNIT_ASSERT_EQUAL(LibWsDiff::diffPrinter::diffTypeAvailable::UTF8JSON, lDoHandle->mLogType);
+    
     CPPUNIT_ASSERT( CompareConf::cleaner( (void *)lDoHandle ) == 0 );
 }
 

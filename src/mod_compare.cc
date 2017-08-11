@@ -57,7 +57,7 @@ const char* gNameOut2 = "CompareOut2";
 const char* c_COMPONENT_VERSION = "Compare/1.0";
 const char* c_named_mutex = "mod_compare_log_mutex";
 std::ofstream gFile;
-const char * gFilePath = "/var/opt/hosting/log/apache2/compare_diff.log";
+const char * gFilePath = "/var/log/apache2/compare_diff.log";
 bool gWriteInFile = true;
 std::string gLogFacility;
 
@@ -138,6 +138,7 @@ pthread_mutex_t *getGlobalMutex() {
 }
 
 CompareConf::CompareConf(std::string dirName): 
+mLogType(LibWsDiff::diffPrinter::diffTypeAvailable::UTF8JSON),
 mCompareDisabled(false), 
 mIsActive(false),
 mDirName(dirName)
@@ -292,11 +293,11 @@ setBodyList(cmd_parms* pParams, void* pCfg, const char* pListType, const char* p
     std::string lListType(pListType);
     std::string lValue(pValue);
 
-    if (strcmp("STOP", pListType) == 0)
+    if (strcasecmp("STOP", pListType) == 0)
     {
         lConf->mCompBody.addStopRegex(lValue);
     }
-    else if(strcmp("IGNORE", pListType) == 0)
+    else if(strcasecmp("IGNORE", pListType) == 0)
     {
         lConf->mCompBody.addIgnoreRegex(lValue);
     }
@@ -334,11 +335,11 @@ const char* setHeaderList(cmd_parms* pParams, void* pCfg, const char* pListType,
     std::string lHeader(pAffectedKey);
     std::string lValue(pValue);
 
-    if (strcmp("STOP", pListType) == 0)
+    if (strcasecmp("STOP", pListType) == 0)
     {
         lConf->mCompHeader.addStopRegex(lHeader, lValue);
     }
-    else if(strcmp("IGNORE", pListType) == 0)
+    else if(strcasecmp("IGNORE", pListType) == 0)
     {
         lConf->mCompHeader.addIgnoreRegex(lHeader, lValue);
     }
@@ -368,19 +369,23 @@ setDisableLibwsdiff(cmd_parms* pParams, void* pCfg, const char* pValue) {
     }
     return NULL;
 }
-
 const char* setDiffLogType(cmd_parms* pParams,
 		void* pCfg,
 		const char* pValue) {
 	Log::init();
 	CompareConf *lConf = reinterpret_cast<CompareConf *>(pCfg);
-
-	if(strcasecmp(pValue,"multiline")==0){
+    lConf->mCompareDisabled = false; // libwsdiff is used in most cases
+    
+    if(strcasecmp(pValue,"archive")==0){
+        lConf->mCompareDisabled = true; // libwsdiff is not used in that case
+    } else if(strcasecmp(pValue,"multiline")==0){
     	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::MULTILINE;
 	}else if(strcasecmp(pValue,"simplejson")==0){
     	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::JSON;
-    }else{
+    }else if (strcasecmp(pValue,"utf8json")==0) {
     	lConf->mLogType=LibWsDiff::diffPrinter::diffTypeAvailable::UTF8JSON;
+    } else {
+        return "Wrong DiffLogType, must be simplejson|utf8json|multiline";
     }
     return NULL;
 }
@@ -396,12 +401,12 @@ setCompareLog(cmd_parms* pParams, void* pCfg, const char* pType, const char* pVa
         return "Missing file path or facility";
     }
 
-    if (strcmp("FILE", pType) == 0)
+    if (strcasecmp("FILE", pType) == 0)
     {
         gWriteInFile = true;
         gFilePath = pValue;
     }
-    else if(strcmp("SYSLOG", pType) == 0)
+    else if(strcasecmp("SYSLOG", pType) == 0)
     {
         gLogFacility = std::string(pValue);
         gWriteInFile = false;
@@ -445,16 +450,26 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
         //          void * extra data,
         //          overrides to allow in order to enable,
         //          help message),
+        AP_INIT_TAKE2("CompareBody",
+                      reinterpret_cast<const char *(*)()>(&setBodyList),
+                      0,
+                      ACCESS_CONF,// Only inside Directory or Location
+                      "List of reg_ex to apply to the body for the comparison."),
         AP_INIT_TAKE2("BodyList",
                       reinterpret_cast<const char *(*)()>(&setBodyList),
                       0,
-                      ACCESS_CONF,
-                      "List of reg_ex to apply to the body for the comparison."),
-        AP_INIT_TAKE3("HeaderList",
+                      ACCESS_CONF,// Only inside Directory or Location
+                      "List of reg_ex to apply to the body for the comparison. (Deprecated, use CompareBody instead"),
+        AP_INIT_TAKE3("CompareHeader",
                       reinterpret_cast<const char *(*)()>(&setHeaderList),
                       0,
                       ACCESS_CONF,
                       "List of reg_ex to apply to the Header for the comparison."),
+        AP_INIT_TAKE3("HeaderList",
+                      reinterpret_cast<const char *(*)()>(&setHeaderList),
+                      0,
+                      ACCESS_CONF,
+                      "List of reg_ex to apply to the Header for the comparison. (Deprecated, use CompareHeader instead"),
         AP_INIT_NO_ARGS("Compare",
                       reinterpret_cast<const char *(*)()>(&setCompare),
                       0,
@@ -463,19 +478,18 @@ setCompare(cmd_parms* pParams, void* pCfg, const char* pValue) {
         AP_INIT_TAKE2("CompareLog",
                       reinterpret_cast<const char *(*)()>(&setCompareLog),
                       0,
-                      OR_ALL,
-                      "Log to a facility instead of a file."),
-		AP_INIT_TAKE1("DiffLogType",
+                      RSRC_CONF, // only outside Directory or Location
+                      "Log to a facility or a file."),
+		AP_INIT_TAKE1("CompareLogType",
 					reinterpret_cast<const char *(*)()>(&setDiffLogType),
 					0,
-					OR_ALL,
-					"Specify the output log type for differences (<json>,multiline)"),
+                ACCESS_CONF,
+					"Specify the output log type <archive|utf8json|json|multiline>, default is utf8json)"),
         AP_INIT_TAKE1("DisableLibwsdiff",
                       reinterpret_cast<const char *(*)()>(&setDisableLibwsdiff),
                       0,
                       ACCESS_CONF,
-                      "Disable the use of libws-diff tools. Print raw serialization of the data in the log file."),
-        {0}
+                      "Disable the use of libws-diff tools. Print raw serialization of the data in the log file. DEPRECATED, use CompareLogType archive instead"),         {0}
     };
 
 #ifndef UNIT_TESTING
