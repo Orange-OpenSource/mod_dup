@@ -67,12 +67,14 @@ static int checkCurlResponseCompareStatus(const RequestInfo &ri, request_rec *pR
     }
     if (ri.mCurlCompResponseStatus != CURLE_OK){
         Log::debug("[DEBUG][DUP] Curl error happened the destination is not reached");
-        apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "NOT REACHED");
+        std::string out("NOT REACHED - curl status ");
+        out += std::to_string(ri.mCurlCompResponseStatus);
+        apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", out.c_str());
         return 0;
     }
 
-    Log::debug("[DEBUG][DUP] Curl returns OK but there was no comparison.");
-    apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED - NO COMPARISON");
+    Log::debug("[DEBUG][DUP] Curl returned OK but there was no comparison.");
+    apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED DESTINATION - NO COMPARISON");
     return 0;
 }
 

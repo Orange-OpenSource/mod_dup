@@ -702,7 +702,7 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
     if (rInfo.mCurlCompResponseStatus == CURLE_OPERATION_TIMEDOUT) {
         __sync_fetch_and_add(&mTimeoutCount, 1);
     } else if (rInfo.mCurlCompResponseStatus) {
-        Log::error(403, "[DUP] Sending request failed with curl error code: %d, request:%s", rInfo.mCurlCompResponseStatus, uri.c_str());
+        Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, body: %s", rInfo.mCurlCompResponseStatus, uri.c_str(), rInfo.mBody.c_str());
     }
     delete content;
 }
