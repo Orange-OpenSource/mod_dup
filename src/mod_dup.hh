@@ -68,8 +68,6 @@ public:
 
     /** @brief the current duplication destination set by the DupDestination directive */
     std::string                                 currentDupDestination;
-    /** The percentage of request to duplicate. Destination level */
-    int                                         currentDuplicationPercentage;
 
     bool                                        synchronous;
 

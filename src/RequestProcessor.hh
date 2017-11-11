@@ -137,10 +137,19 @@ public:
 
     /**
      * @brief Returns true if the request must be duplicated
-     * Uses the percentage of duplication to determine if the request must be
+     * Uses the remaining 1-99 percent of duplication to determine randomly if the request must be
      * duplicated or not
      */
     bool toDuplicate();
+
+    /**
+     * @brief Returns the number of times the request must be duplicated
+     * Uses the percentage of duplication to determine if the request must be
+     * duplicated or not
+     */
+    unsigned int toDuplicateInt();
+    
+    
 };
 
 /**
@@ -317,7 +326,11 @@ public:
     performCurlCall(CURL *curl, const tFilter &matchedFilter, RequestInfo &rInfo);
 
     /**
-     * @brief perform curl for one request if it matches
+     * @brief perform one or more curl(s) for one request if it matches
+     * if running more than one curl because of multiple destinations
+     * or destination >100%, the curls are done sequentially by the same thread/handle/connection
+     * so it prevents load balancing and may create spikes on destination servers
+     * however, this is preferable than a parallel spike.
      * @param reqInfo the RequestInfo instance for this request
      * @param pCurl a preinitialized curl handle
      */

@@ -147,14 +147,15 @@ const char * Log::stringLevel(int pLevel) {
         va_start(l_ap, msg); \
         va_list l_ap2;\
         va_copy(l_ap2, l_ap);\
-        vsyslog(level, msg, l_ap); \
+        vsyslog(level|gInstance->mFacility, msg, l_ap); \
         char longmsg2[LOG_LENGTH];\
         if ( level <= gLogLevel ) { \
         snprintf(longmsg2, LOG_LENGTH,"[%s] code:%d - %s\n", Log::stringLevel(level), code, msg); \
-        vprintf(longmsg2, l_ap2); }\
+        vprintf(longmsg2, l_ap2); } \
         va_end(l_ap2);\
         va_end(l_ap);\
 
+        
 /**
  * logs a debug with message parameters <...>
  * pMsg: the message
@@ -162,7 +163,7 @@ const char * Log::stringLevel(int pLevel) {
 void Log::debug(const char* pMsg, ...)
 {
 #ifdef DEBUG
-    VLOG((LOG_DEBUG|gInstance->mFacility), 0, pMsg);
+    VLOG((LOG_DEBUG), 0, pMsg);
 #endif
 }
 /**
@@ -171,7 +172,7 @@ void Log::debug(const char* pMsg, ...)
  */
 void Log::info(int pCode, const char* pMsg, ...)
 {
-    VLOG((LOG_INFO|gInstance->mFacility), pCode, pMsg);
+    VLOG((LOG_INFO), pCode, pMsg);
 }
 /**
  * logs a notice with message parameters <...>
@@ -179,7 +180,7 @@ void Log::info(int pCode, const char* pMsg, ...)
  */
 void Log::notice(int pCode, const char* pMsg, ...)
 {
-    VLOG((LOG_NOTICE|gInstance->mFacility), pCode, pMsg);
+    VLOG((LOG_NOTICE), pCode, pMsg);
 }
 /**
  * logs a warning with message parameters <...>
@@ -187,7 +188,7 @@ void Log::notice(int pCode, const char* pMsg, ...)
  */
 void Log::warn(int pCode, const char* pMsg, ...)
 {
-    VLOG((LOG_WARNING|gInstance->mFacility), pCode, pMsg);
+    VLOG((LOG_WARNING), pCode, pMsg);
 }
 
 /**
@@ -196,7 +197,7 @@ void Log::warn(int pCode, const char* pMsg, ...)
  */
 void Log::error(int pCode, const char* pMsg, ...)
 {
-    VLOG((LOG_ERR|gInstance->mFacility), pCode, pMsg);
+    VLOG((LOG_ERR), pCode, pMsg);
 }
 /**
  * logs a crit with message parameters <...>
@@ -204,5 +205,5 @@ void Log::error(int pCode, const char* pMsg, ...)
  */
 void Log::crit(int pCode, const char* pMsg, ...)
 {
-    VLOG((LOG_CRIT|gInstance->mFacility), pCode, pMsg);
+    VLOG((LOG_CRIT), pCode, pMsg);
 }

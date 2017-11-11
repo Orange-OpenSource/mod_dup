@@ -65,6 +65,15 @@ size_t my_dummy_write(char *ptr, size_t size, size_t nmemb, void *userdata)
     return size * nmemb;
 }
 
+unsigned int Commands::toDuplicateInt()
+{
+    // round to the lower 100;
+    unsigned int numDups = (mDuplicationPercentage - (mDuplicationPercentage % 100)) / 100;
+    // add or not 1 duplication randomly based on the remainder percentage
+    if ( ((mDuplicationPercentage % 100) != 0) && toDuplicate() ) ++numDups;
+    return numDups;
+}
+
 bool
 Commands::toDuplicate() {
     static bool GlobalInit = false;
@@ -90,15 +99,19 @@ Commands::toDuplicate() {
     }
 
     // Thread-safe calls with thread local initialization
-    int randNum = 1;
-    lRet = random_r(&lRD, &randNum);
+    int randNum = 1; // range from 0 to RAND_MAX
+    lRet = random_r(&lRD, &randNum); 
     if (lRet) {
         Log::error(524, "[DUP] random_r failed");
         // No duplication
         return false;
     }
 
-    return ((randNum % 100) < static_cast<int>(mDuplicationPercentage));
+    // randNum or mDuplicationPercentage modulo 100 can be 0 to 99
+    // when both are 0 the result is false (100% chance of false)
+    // when both are 99 the result is false (99% chance of true)
+    // when dup percent is 50, its true for a randNum 0-49: 50% chance
+    return ((randNum % 100) < static_cast<int>(mDuplicationPercentage % 100));
 }
 
 
@@ -724,23 +737,27 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
             tCommandsByDestination &cbd = mCommands.at(reqInfo.mConf);
             Commands &c = cbd.at(it->mDestination);
 
-            // if we don't want 100% duplication on this destination
-            if (!c.toDuplicate()) {
+            // How many times do we duplicate this request? (0-10 i.e. 0-1000% in conf)
+            unsigned int numDups = c.toDuplicateInt();
+            if (numDups == 0) {
                 Log::debug("dup dropped for DupDestination %s", it->mDestination.c_str());
                 continue;
+            } else if ( numDups > 1 ) {
+                Log::debug("Amplifying traffic, duplicated %u times", numDups);
             }
+            
+            for (unsigned int i = 0; i < numDups; i++ ) {
+                if (!c.mSubstitutions.empty() || !c.mRawSubstitutions.empty()) {
+                    // perform substitutions specific to this location
+                    RequestInfo ri(reqInfo);
+                    substituteRequest(ri, c);
+                    performCurlCall(pCurl, *it, ri);
 
-            if (!c.mSubstitutions.empty() || !c.mRawSubstitutions.empty()) {
-                // perform substitutions specific to this location
-                RequestInfo ri(reqInfo);
-                substituteRequest(ri, c);
-                performCurlCall(pCurl, *it, ri);
-
-            } else {
-                performCurlCall(pCurl, *it, reqInfo);
+                } else {
+                    performCurlCall(pCurl, *it, reqInfo);
+                }
+                __sync_fetch_and_add(&mDuplicatedCount, 1);
             }
-
-            __sync_fetch_and_add(&mDuplicatedCount, 1);
     }
 }
 

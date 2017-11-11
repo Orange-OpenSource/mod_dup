@@ -68,6 +68,45 @@ static int curlTrace(CURL *handle, curl_infotype type, char *data, size_t size, 
   return 0;
 }
 
+void TestRequestProcessor::testToDuplicate()
+{
+    Commands c;
+    c.mDuplicationPercentage = 100;
+    CPPUNIT_ASSERT(!c.toDuplicate());
+    c.mDuplicationPercentage = 500;
+    CPPUNIT_ASSERT(!c.toDuplicate());
+    c.mDuplicationPercentage = 501;
+    if ( c.toDuplicate() ) { // should happen only 1% of the time
+        CPPUNIT_ASSERT(!c.toDuplicate()); // should be ok except 1/10000 times
+    }
+    c.mDuplicationPercentage = 599;
+    if ( ! c.toDuplicate() ) { // should happen only 1% of the time   
+        CPPUNIT_ASSERT(c.toDuplicate());
+    }
+    
+    
+}
+
+void TestRequestProcessor::testToDuplicateInt()
+{
+    Commands c;
+    c.mDuplicationPercentage = 100;
+    CPPUNIT_ASSERT_EQUAL(1U, c.toDuplicateInt());
+    c.mDuplicationPercentage = 200;
+    CPPUNIT_ASSERT_EQUAL(2U, c.toDuplicateInt());
+    c.mDuplicationPercentage = 500;
+    CPPUNIT_ASSERT_EQUAL(5U, c.toDuplicateInt());
+    int sum = 0;
+    c.mDuplicationPercentage = 550;
+    for (int i = 0; i < 100; ++i) {
+        sum += c.toDuplicateInt();
+    }
+    CPPUNIT_ASSERT(sum > 530);
+    CPPUNIT_ASSERT(sum < 570);
+    
+}
+
+
 void TestRequestProcessor::testRun()
 {
     RequestProcessor proc;
@@ -76,15 +115,21 @@ void TestRequestProcessor::testRun()
     DupConf conf;
     conf.currentApplicationScope = ApplicationScope::ALL;
     conf.currentDupDestination = "Honolulu:8080";
-    // Filter
-    proc.addFilter("INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
+    proc.setDestinationDuplicationPercentage(conf, conf.currentDupDestination, 300);
 
-    // This request won't go anywhere, but at least we exersize the loop in proc.run()
-    queue.push(boost::shared_ptr<RequestInfo>(new RequestInfo("42","/spp/main", "/spp/main", "SID=ID_REQ&CREDENTIAL=1,toto&")));
+    // This request should be run 3 times (300%) for each push, so 6 times
+    proc.addRawFilter("SID>(.*)<", conf, tFilter::eFilterTypes::REGULAR);
+    boost::shared_ptr<RequestInfo> ri(new RequestInfo("42","/toto", "/toto/pws/titi/", "<SID>ID-REQ</SID>"));
+    ri->mConf = &conf;
+    queue.push(ri);
+    queue.push(ri);
     queue.push(POISON_REQUEST);
 
     // If the poison pill would not work, this call would hang forever
     proc.run(queue);
+    
+    volatile unsigned int val = 6U;
+    CPPUNIT_ASSERT_EQUAL(val,proc.mDuplicatedCount);
 
     // We could hack a web server with nc to test the rest of this method,
     // but this might be overkill for a unit test
