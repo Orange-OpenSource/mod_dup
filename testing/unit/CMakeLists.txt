@@ -41,6 +41,7 @@ file(GLOB lib_SOURCE_FILES
   ../../src/response_diff.cc
   ../../src/deserialize.cc
   ../../src/CassandraDiff.cc
+  ../../src/ThreadPool.cc
   ../../src/Utils.cc
 )
 

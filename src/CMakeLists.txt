@@ -27,6 +27,7 @@ file(GLOB mod_dup_SOURCE_FILES
   RequestProcessor.cc
   RequestInfo.cc
   Utils.cc
+  ThreadPool.cc
   UrlCodec.cc)
 
 file(GLOB mod_compare_SOURCE_FILES
@@ -37,6 +38,7 @@ file(GLOB mod_compare_SOURCE_FILES
   deserialize.cc
   Log.cc
   Utils.cc
+  ThreadPool.cc
   RequestInfo.cc)
 
 file(GLOB mod_migrate_SOURCE_FILES
@@ -46,6 +48,7 @@ file(GLOB mod_migrate_SOURCE_FILES
   RequestCommon.cc
   RequestInfo.cc
   Utils.cc
+  ThreadPool.cc
   UrlCodec.cc)
 
 
