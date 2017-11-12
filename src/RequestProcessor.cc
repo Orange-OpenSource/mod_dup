@@ -725,9 +725,10 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
  * One request per filter matched
  * @param reqInfo the RequestInfo instance for this request
  * @param pCurl a preinitialized curl handle
+ * @param stillRunning ref to see if queue is still running
  */
 void
-RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
+RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl,const bool & stillRunning) {
     // Parse query string args
     parseArgs(reqInfo.mParsedArgs, reqInfo.mArgs);
 
@@ -747,6 +748,10 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl) {
             }
             
             for (unsigned int i = 0; i < numDups; i++ ) {
+                // Exit faster than poison pill, just finish the running curl
+                if ( ! stillRunning ) {
+                    break;
+                }
                 if (!c.mSubstitutions.empty() || !c.mRawSubstitutions.empty()) {
                     // perform substitutions specific to this location
                     RequestInfo ri(reqInfo);
@@ -799,7 +804,7 @@ RequestProcessor::run(MultiThreadQueue<boost::shared_ptr<RequestInfo> > &pQueue)
             Log::debug("[DUP] Received poison pill. Exiting.");
             break;
         }
-        runOne(*lQueueItem, lCurl);
+        runOne(*lQueueItem, lCurl, pQueue.isRunning());
     }
     curl_easy_cleanup(lCurl);
 }

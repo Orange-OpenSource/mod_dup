@@ -19,6 +19,7 @@
 #include "ThreadPool.hh"
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include "RequestInfo.hh"
+#include "Log.hh"
 
 using namespace boost::posix_time;
 
@@ -160,6 +161,7 @@ template <typename QueueT> void ThreadPool<QueueT>::start()
 template <typename QueueT> void ThreadPool<QueueT>::stop()
 {
     mRunning = false;
+    mQueue.stop();
     if (mManagerThread) {
         // TODO improve this part.
         // The process can be stuck here if curl calls do not terminate

@@ -131,6 +131,20 @@ void TestRequestProcessor::testRun()
     volatile unsigned int val = 6U;
     CPPUNIT_ASSERT_EQUAL(val,proc.mDuplicatedCount);
 
+    // make sure we can restart the queue and requests are sent
+    queue.push(ri);
+    queue.push(POISON_REQUEST);
+    // If the poison pill would not work, this call would hang forever
+    proc.run(queue);
+    val = 9U;
+    CPPUNIT_ASSERT_EQUAL(val,proc.mDuplicatedCount);
+    
+    // Stop the queue before run and check that no additionnal request is sent (fast exit)
+    queue.push(ri);
+    queue.push(POISON_REQUEST);
+    queue.stop();
+    proc.run(queue);
+    CPPUNIT_ASSERT_EQUAL(val,proc.mDuplicatedCount);
     // We could hack a web server with nc to test the rest of this method,
     // but this might be overkill for a unit test
 }

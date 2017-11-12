@@ -42,6 +42,7 @@ file(GLOB lib_SOURCE_FILES
   ../../src/deserialize.cc
   ../../src/CassandraDiff.cc
   ../../src/ThreadPool.cc
+  ../../src/MultiThreadQueue.cc
   ../../src/Utils.cc
 )
 

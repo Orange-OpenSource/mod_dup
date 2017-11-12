@@ -142,7 +142,8 @@ static void initiateDuplication(DupConf *tConf, request_rec *pRequest, boost::sh
             lCurl = gProcessor->initCurl();
         }
         // Run synchronously without pushing to the queue
-        gProcessor->runOne(*ri, lCurl);
+        bool stillRunning = true;
+        gProcessor->runOne(*ri, lCurl, stillRunning);
     } else {
         // will be popped by RequestProcessor::Run
         gThreadPool->push(*reqInfo);

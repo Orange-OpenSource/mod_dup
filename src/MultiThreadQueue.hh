@@ -1,7 +1,7 @@
 /*
 * mod_dup - duplicates apache requests
 *
-* Copyright (C) 2013 Orange
+* Copyright (C) 2017 Orange
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,10 +19,8 @@
 #pragma once
 
 #include <deque>
-#include <boost/foreach.hpp>
 #include <boost/thread.hpp>
-
-#include "Log.hh"
+#include <apr_poll.h>
 
 namespace DupModule {
 
@@ -35,6 +33,57 @@ namespace DupModule {
 template <typename T>
 class MultiThreadQueue
 {
+public:
+    /**
+     * @brief Constructs a MultiThreadQueue
+     */
+    MultiThreadQueue() : mInCount(0), mOutCount(0), mDropCount(0), mDropSize(0), mRunning(true) {};
+    
+    /**
+     * @brief Adds the given object to the back of the queue so it will be the last one to be pulled
+     * @param object The object to be inserted
+     */
+    void push(const T object);
+    
+    /**
+     * @brief Adds the given object to the front of the queue so it will be the next one to be pulled
+     * @param object The object to be inserted
+     */
+    void push_front(const T object);
+    
+    /**
+     * @brief Remove and return the first object in the queue. Blocks until something is available.
+     * @return the object
+     */
+    T pop();
+    
+    /**
+     * @brief Returns the size of the queue
+     * @return the size of the queue
+     */
+    size_t size() const;
+    
+    /**
+     * @brief Sets the maximum size of the queue. Beyond this size, pushed elements will not be inserted anymnore
+     * @param pDropSize the maximum size of the queue. A value <= 0 means there's no maximum size.
+     */
+    void setDropSize(size_t pDropSize);
+    
+    /**
+     * @brief Gets various counters. Then resets all counters.
+     * @param pInCount the number of elements pushed since last call
+     * @param pOutCount the number of elements popped since last call
+     * @param pDropCount the number of elements dropped since last call
+     */
+    void getCounters(unsigned &pInCount, unsigned &pOutCount, unsigned &pDropCount);
+    
+    /// @brief stop queue faster than a poison pill
+    void stop() { mRunning = false;};
+    
+    /// @brief is the queue running or has it been stopped?
+    /// @return true if running, false if stopped
+    const bool & isRunning() const { return mRunning; } ;
+    
 private:
     /** @brief The underlying queue holding the itms */
     std::deque<T> mQueue;
@@ -50,92 +99,9 @@ private:
     unsigned mDropCount;
     /** @brief Maximum number of items to be queued after which any new ones should get dropped */
     size_t mDropSize;
+    /// @brief true by default, false to exit faster than a poison pill
+    bool mRunning;
 
-public:
-    /**
-     * @brief Constructs a MultiThreadQueue
-     */
-    MultiThreadQueue() : mInCount(0), mOutCount(0), mDropCount(0), mDropSize(0) {}
-
-    /**
-     * @brief Adds the given object to the back of the queue so it will be the last one to be pulled
-     * @param object The object to be inserted
-     */
-    void push(const T object)
-    {
-        {
-            boost::lock_guard<boost::mutex> lLock(mMutex);
-            if (mDropSize > 0 && mQueue.size() >= mDropSize) {
-                mDropCount++;
-            } else {
-                mQueue.push_back(object);
-                mInCount++;
-            }
-        }
-        mAvailableCondition.notify_one();
-    }
-
-    /**
-     * @brief Adds the given object to the front of the queue so it will be the next one to be pulled
-     * @param object The object to be inserted
-     */
-    void push_front(const T object)
-    {
-        {
-            boost::lock_guard<boost::mutex> lLock(mMutex);
-            if (mDropSize > 0 && mQueue.size() >= mDropSize) {
-                mDropCount++;
-                mQueue.pop_back();
-            }
-            mQueue.push_front(object);
-        }
-        mAvailableCondition.notify_one();
-    }
-
-    /**
-     * @brief Remove and return the first object in the queue. Blocks until something is available.
-     * @return the object
-     */
-    T pop()
-    {
-        boost::unique_lock<boost::mutex> lLock(mMutex);
-        while (mQueue.empty()) {
-            mAvailableCondition.wait(lLock);
-        }
-        T lObject = mQueue.front();
-        mQueue.pop_front();
-        mOutCount++;
-        return lObject;
-    }
-
-    /**
-     * @brief Returns the size of the queue
-     * @return the size of the queue
-     */
-    size_t size() {
-        return mQueue.size();
-    }
-
-    /**
-     * @brief Sets the maximum size of the queue. Beyond this size, pushed elements will not be inserted anymnore
-     * @param pDropSize the maximum size of the queue. A value <= 0 means there's no maximum size.
-     */
-    void setDropSize(size_t pDropSize) {
-        mDropSize = pDropSize;
-    }
-
-    /**
-     * @brief Gets various counters. Then resets all counters.
-     * @param pInCount the number of elements pushed since last call
-     * @param pOutCount the number of elements popped since last call
-     * @param pDropCount the number of elements dropped since last call
-     */
-    void getCounters(unsigned &pInCount, unsigned &pOutCount, unsigned &pDropCount) {
-        pInCount = mInCount;
-        pOutCount = mOutCount;
-        pDropCount = mDropCount;
-        mInCount = mOutCount = mDropCount = 0;
-    }
 };
 
 }

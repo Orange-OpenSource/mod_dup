@@ -24,6 +24,7 @@
 #include "MultiThreadQueue.hh"
 #include "testThreadPool.hh"
 #include "TfyTestRunner.hh"
+#include "Log.hh"
 
 // cppunit
 #include <cppunit/extensions/TestFactoryRegistry.h>

@@ -28,6 +28,7 @@ file(GLOB mod_dup_SOURCE_FILES
   RequestInfo.cc
   Utils.cc
   ThreadPool.cc
+  MultiThreadQueue.cc
   UrlCodec.cc)
 
 file(GLOB mod_compare_SOURCE_FILES
@@ -39,6 +40,7 @@ file(GLOB mod_compare_SOURCE_FILES
   Log.cc
   Utils.cc
   ThreadPool.cc
+  MultiThreadQueue.cc
   RequestInfo.cc)
 
 file(GLOB mod_migrate_SOURCE_FILES
@@ -49,6 +51,7 @@ file(GLOB mod_migrate_SOURCE_FILES
   RequestInfo.cc
   Utils.cc
   ThreadPool.cc
+  MultiThreadQueue.cc
   UrlCodec.cc)
 
 

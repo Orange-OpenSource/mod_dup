@@ -333,8 +333,9 @@ public:
      * however, this is preferable than a parallel spike.
      * @param reqInfo the RequestInfo instance for this request
      * @param pCurl a preinitialized curl handle
+     * @param stillRunning ref to see if queue is still running
      */
-    void runOne(RequestInfo &reqInfo, CURL * pCurl);
+    void runOne(RequestInfo &reqInfo, CURL * pCurl, const bool & stillRunning);
 
 private:
 
