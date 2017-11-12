@@ -1,3 +1,11 @@
+pns-mod-dup (2.4.0) precise; urgency=low
+
+  * Allow duplication up to 1000% per destination (10 times): for performance/amplification testing
+  * Printing body of request in logs in case of curl failure, so that requests like POST/PATCH/PUT can be replayed at a later time, with help of other tools
+  * faster exit in case of multi-destination or duplication >100%
+
+ -- Emmanuel Courreges <emmanuel.courreges@orange.com>  Sun, 12 Nov 2017 01:51:40 +0100
+
 pns-mod-dup (2.3.0) precise; urgency=low
 
   * dup: support for PATH and URL (PATH+QUERY_STRING) filters and substitutions
