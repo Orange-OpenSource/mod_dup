@@ -66,6 +66,7 @@ RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std
       mId(id),
       mPath(pPath),
       mArgs(pArgs),
+      mCurlCompResponseStatus(-1),
       mValidationHeaderDup(false),
       mValidationHeaderComp(false),
       mConf(nullptr),
@@ -79,24 +80,27 @@ RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std
 
 RequestInfo::RequestInfo(const mapStr &reqHeader, const std::string &reqBody, const mapStr &respHeader,
                          const std::string &respBody, const mapStr &dupHeader, const std::string &dupBody):
+	mPoison(false),
 	mReqHeader(reqHeader),
 	mReqBody(reqBody),
 	mResponseHeader(respHeader),
 	mResponseBody(respBody),
 	mDupResponseHeader(dupHeader),
 	mDupResponseBody(dupBody),
+	mCurlCompResponseStatus(-1),
 	mValidationHeaderDup(false),
 	mValidationHeaderComp(false),
-    mConf(nullptr),
-        mEOS(false),
-        mStartTime(boost::posix_time::microsec_clock::universal_time()),
-        mElapsedTime()
+	mConf(nullptr),
+    mEOS(false),
+    mStartTime(boost::posix_time::microsec_clock::universal_time()),
+    mElapsedTime()
 {
 }
 
 RequestInfo::RequestInfo(const std::string &id, int64_t startTime)
     : mPoison(false),
       mId(id),
+      mCurlCompResponseStatus(-1),
       mValidationHeaderDup(false),
       mValidationHeaderComp(false),
       mConf(nullptr),
@@ -108,6 +112,7 @@ RequestInfo::RequestInfo(const std::string &id, int64_t startTime)
 
 RequestInfo::RequestInfo() :
     mPoison(true),
+    mCurlCompResponseStatus(-1),
     mValidationHeaderDup(false),
     mValidationHeaderComp(false),
     mConf(nullptr),

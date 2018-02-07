@@ -146,6 +146,7 @@ RequestProcessor::addFilter(const std::string &pField, const std::string &pFilte
     mCommands[&pAssociatedConf][pAssociatedConf.currentDupDestination].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
             tFilter(pFilter, pAssociatedConf.currentApplicationScope,
                     pAssociatedConf.currentDupDestination, pAssociatedConf.getCurrentDuplicationType(),
+                    pAssociatedConf.errorLogBodyMatch,
             fType)));
 }
 
@@ -161,6 +162,7 @@ RequestProcessor::addRawFilter(const std::string &pFilter,
 
     mCommands[&pAssociatedConf][pAssociatedConf.currentDupDestination].mRawFilters.push_back(tFilter(pFilter, pAssociatedConf.currentApplicationScope,
             pAssociatedConf.currentDupDestination, pAssociatedConf.getCurrentDuplicationType(),
+            pAssociatedConf.errorLogBodyMatch,                                                                                         
             fType));
 }
 
@@ -715,7 +717,17 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
     if (rInfo.mCurlCompResponseStatus == CURLE_OPERATION_TIMEDOUT) {
         __sync_fetch_and_add(&mTimeoutCount, 1);
     } else if (rInfo.mCurlCompResponseStatus) {
-        Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, body: %s", rInfo.mCurlCompResponseStatus, uri.c_str(), rInfo.mBody.c_str());
+        boost::regex lRegex(matchedFilter.mErrorLogBodyMatch);
+        Log::debug("[DUP] matching body %s", matchedFilter.mErrorLogBodyMatch.str().c_str());
+        boost::smatch what;
+        if ( rInfo.mBody.empty() ) {
+            Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, empty body", rInfo.mCurlCompResponseStatus, uri.c_str());
+        } else if ( (!matchedFilter.mErrorLogBodyMatch.empty()) && boost::regex_search(rInfo.mBody, what, lRegex) ) {
+            std::string matchedBody = what[0];
+            Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, matched body: %s", rInfo.mCurlCompResponseStatus, uri.c_str(), matchedBody.c_str());
+        } else {
+            Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, truncated body: %s", rInfo.mCurlCompResponseStatus, uri.c_str(), rInfo.mBody.c_str());
+        }
     }
     delete content;
 }
@@ -828,11 +840,15 @@ tElementBase::~tElementBase() {
 tFilter::tFilter(const std::string &regex, ApplicationScope::eApplicationScope scope,
         const std::string &currentDupDestination,
         DuplicationType::eDuplicationType dupType,
+        const boost::regex & errorLogBodyMatch,
         tFilter::eFilterTypes fType)
 : tElementBase(regex, scope)
 , mDestination(currentDupDestination)
+, mErrorLogBodyMatch(errorLogBodyMatch)
 , mDuplicationType(dupType)
 , mFilterType(fType) {
+    // Log::debug("[DUP] errorLogBodyMatch: %s", mErrorLogBodyMatch.str().c_str());
+    
 }
 
 tFilter::~tFilter() {

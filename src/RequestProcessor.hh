@@ -76,12 +76,16 @@ public:
             ApplicationScope::eApplicationScope scope,
             const std::string &currentDupDestination,
             DuplicationType::eDuplicationType dupType,
+            const boost::regex & errorLogBodyMatch,
             tFilter::eFilterTypes fType = eFilterTypes::REGULAR);
 
     virtual ~tFilter();
 
     std::string mDestination;                               /** The host to duplicate the request to if the filter matches
                                                                     the destination in &lt;host>[:&lt;port>] format */
+    /** a regex to match for and start logging the body in case of error*/
+    boost::regex mErrorLogBodyMatch;
+    
     DuplicationType::eDuplicationType mDuplicationType;     /** The duplication type for this filter */
 
     eFilterTypes mFilterType;

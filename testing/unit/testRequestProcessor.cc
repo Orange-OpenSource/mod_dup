@@ -591,7 +591,7 @@ void TestRequestProcessor::testAddValidationHeaders()
     RequestProcessor proc;
     RequestInfo lInfo;
     {
-        tFilter matchedFilter("papalino", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
+        tFilter matchedFilter("papalino", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST, boost::regex("nomatch"));
         matchedFilter.mDestination = "Alger";
         matchedFilter.mDuplicationType = DuplicationType::COMPLETE_REQUEST;
         matchedFilter.mMatch = "papalino";
@@ -608,12 +608,12 @@ void TestRequestProcessor::testAddValidationHeaders()
     
     lInfo.mHeadersOut.pop_front();
     {
-        tFilter matchedFilter(".*", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
+        tFilter matchedFilter(".*", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST, boost::regex("nomatch"));
         matchedFilter.mMatch = "papalino";
         matchedFilter.mScope = ApplicationScope::HEADERS;
         matchedFilter.mDestination = "Napoli";
         matchedFilter.mDuplicationType = DuplicationType::REQUEST_WITH_ANSWER;
-        tFilter matchedFilter2(".*", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST);
+        tFilter matchedFilter2(".*", ApplicationScope::ALL, "Alger", DuplicationType::COMPLETE_REQUEST, boost::regex("nomatch"));
         matchedFilter2.mMatch = "pikolinos";
         matchedFilter2.mScope = ApplicationScope::URL_AND_HEADERS;
         matchedFilter2.mDestination = "Torino";
@@ -927,7 +927,7 @@ void TestRequestProcessor::testPerformCurlCall() {
 
     RequestProcessor requestProcessor;
     RequestInfo requestInfo = RequestInfo("42","/test", "/test/path/", lQueryArgs, &lBody);
-    tFilter matchedFilter("test", ApplicationScope::ALL,lDestination,DuplicationType::REQUEST_WITH_ANSWER);
+    tFilter matchedFilter("test", ApplicationScope::ALL,lDestination, DuplicationType::REQUEST_WITH_ANSWER,boost::regex("nomatch"));
 
 
     matchedFilter.mDestination = lDestination;

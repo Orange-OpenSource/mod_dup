@@ -64,17 +64,22 @@ static int checkCurlResponseCompareStatus(const RequestInfo &ri, request_rec *pR
         Log::debug("[DEBUG][DUP] header contains the X-COMP-STATUS");
         apr_table_set( pRequest->headers_out,"X-COMP-STATUS", ri.mCurlCompResponseHeader.at("X-COMP-STATUS").c_str());
         return 0;
+    } 
+    else if (ri.mCurlCompResponseStatus == -1){
+        Log::debug("[DEBUG][DUP] Curl uninitialized, no duplication, so no comparison.");
+        apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "No Duplication, No Comparison");
+        return 0;
     }
-    if (ri.mCurlCompResponseStatus != CURLE_OK){
+    else if (ri.mCurlCompResponseStatus != CURLE_OK){
         Log::debug("[DEBUG][DUP] Curl error happened the destination is not reached");
         std::string out("NOT REACHED - curl status ");
-        out += std::to_string(ri.mCurlCompResponseStatus);
+        out += curl_easy_strerror(static_cast<CURLcode>(ri.mCurlCompResponseStatus));
         apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", out.c_str());
         return 0;
     }
 
     Log::debug("[DEBUG][DUP] Curl returned OK but there was no comparison.");
-    apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "REACHED DESTINATION - NO COMPARISON");
+    apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "Reached Destination - No Comparison");
     return 0;
 }
 

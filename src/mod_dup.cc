@@ -68,6 +68,16 @@ DupConf::DupConf()
     srand(time(NULL));
 }
 
+const char *
+DupConf::setErrorLogBodyMatch(std::string match) {
+    try {
+        errorLogBodyMatch = boost::regex(match);
+    } catch (boost::bad_expression&) {
+        return "Invalid regular expression in filter definition.";
+    }
+    return nullptr;
+}
+
 void
 DupConf::setCurrentDuplicationType(DuplicationType::eDuplicationType dt) {
     mCurrentDuplicationType = dt;
@@ -282,6 +292,7 @@ setSubstitute(cmd_parms* pParams, void* pCfg, const char *pField, const char* pM
 
 const char*
 setActive(cmd_parms* pParams, void* pCfg) {
+    Log::init();
     struct DupConf *lConf = reinterpret_cast<DupConf *>(pCfg);
     if (!lConf) {
         return "No per_dir conf defined. This should never happen!";
@@ -330,6 +341,13 @@ setDuplicationType(cmd_parms* pParams, void* pCfg, const char* pDupType) {
     return NULL;
 }
 
+const char*
+setErrorLogBodyMatch(cmd_parms* pParams, void* pCfg, const char* pMatch) {  
+    struct DupConf *conf = reinterpret_cast<DupConf *>(pCfg);
+    assert(conf);
+       
+    return conf->setErrorLogBodyMatch(pMatch);
+}
 static const char*
 _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilter, tFilter::eFilterTypes fType) {
     const char *lErrorMsg = setActive(pParams, pCfg);
@@ -501,6 +519,12 @@ command_rec gCmds[] = {
                   0,
                   ACCESS_CONF,
                   ""),
+    AP_INIT_TAKE1("DupErrorLogBodyMatch",
+                  reinterpret_cast<const char *(*)()>(&setErrorLogBodyMatch),
+                  0,
+                  ACCESS_CONF,
+                  "In case of duplication error, "
+                  "log the body starting from this matched regex"),
     AP_INIT_NO_ARGS("DupSync",
                     reinterpret_cast<const char *(*)()>(&setSynchronous),
                     0,

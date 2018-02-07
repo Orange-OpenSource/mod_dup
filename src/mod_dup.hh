@@ -70,8 +70,15 @@ public:
     std::string                                 currentDupDestination;
 
     bool                                        synchronous;
+    
+    /** @brief start logging body at regex match in case of dup error
+     *  if empty (default) or not matched, log the whole body
+     */
+    boost::regex                                 errorLogBodyMatch;
 
     void setCurrentDuplicationType(DuplicationType::eDuplicationType dt);
+    
+    const char * setErrorLogBodyMatch(std::string match);
 
     DuplicationType::eDuplicationType getCurrentDuplicationType() const;
     DuplicationType::eDuplicationType getHighestDuplicationType() const;
