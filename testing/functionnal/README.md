@@ -5,6 +5,6 @@ To run the tests, go in your build folder and launch
 
     make
     sudo make install
-    sudo service apache2 restart
+    sudo make install_all
     make check-functional
 

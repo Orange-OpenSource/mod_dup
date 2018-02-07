@@ -22,3 +22,34 @@ install(FILES dup_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT 
 install(FILES migrate_test.load migrate_test.conf migrate.load DESTINATION /etc/apache2/mods-available COMPONENT mod_migrate)
 install(FILES migrate_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_migrate)
 
+add_custom_target(install_dup
+  COMMAND a2enmod dup
+)
+add_custom_target(install_dup_test
+  COMMAND a2enmod dup_test
+  COMMAND a2ensite dup_test_vhost
+  DEPENDS install_dup install_mock
+)
+
+add_custom_target(install_migrate
+  COMMAND a2enmod migrate rewrite
+)
+add_custom_target(install_migrate_test
+  COMMAND a2enmod migrate migrate_test rewrite
+  COMMAND a2ensite migrate_test_vhost
+  DEPENDS install_migrate
+)
+
+add_custom_target(install_compare
+  COMMAND a2enmod compare
+)
+add_custom_target(install_compare_test
+  COMMAND a2enmod compare_test
+  DEPENDS install_compare
+)
+
+add_custom_target(install_all
+  DEPENDS install_dup install_dup_test install_compare install_compare_test
+  DEPENDS install_migrate install_migrate_test install_mock
+  COMMAND service apache2 restart
+)

@@ -12,3 +12,7 @@ set_target_properties(dup_mock PROPERTIES PREFIX "")
 
 install(TARGETS dup_mock LIBRARY DESTINATION /usr/lib/apache2/modules COMPONENT debug)
 install(FILES dup_mock.load DESTINATION /etc/apache2/mods-available COMPONENT debug)
+
+add_custom_target(install_mock
+  COMMAND a2enmod dup_mock
+)
