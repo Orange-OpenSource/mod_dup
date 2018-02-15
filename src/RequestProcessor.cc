@@ -716,17 +716,24 @@ RequestProcessor::performCurlCall(CURL *curl, const tFilter &matchedFilter, Requ
 
     if (rInfo.mCurlCompResponseStatus == CURLE_OPERATION_TIMEDOUT) {
         __sync_fetch_and_add(&mTimeoutCount, 1);
-    } else if (rInfo.mCurlCompResponseStatus) {
+    }
+    long httpCode = 0;
+    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &httpCode);
+    
+    if (rInfo.mCurlCompResponseStatus || (httpCode != 200)) {
         boost::regex lRegex(matchedFilter.mErrorLogBodyMatch);
         Log::debug("[DUP] matching body %s", matchedFilter.mErrorLogBodyMatch.str().c_str());
         boost::smatch what;
         if ( rInfo.mBody.empty() ) {
-            Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, empty body", rInfo.mCurlCompResponseStatus, uri.c_str());
+            Log::error(403, "[DUP] Sending request failed with curl code: %d, http: %ld, request uri: %s, empty body", 
+                       rInfo.mCurlCompResponseStatus, httpCode, uri.c_str());
         } else if ( (!matchedFilter.mErrorLogBodyMatch.empty()) && boost::regex_search(rInfo.mBody, what, lRegex) ) {
             std::string matchedBody = what[0];
-            Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, matched body: %s", rInfo.mCurlCompResponseStatus, uri.c_str(), matchedBody.c_str());
+            Log::error(403, "[DUP] Sending request failed with curl code: %d, http: %ld, request uri: %s, matched body: %s", 
+                       rInfo.mCurlCompResponseStatus, httpCode, uri.c_str(), matchedBody.c_str());
         } else {
-            Log::error(403, "[DUP] Sending request failed with curl error code: %d, request uri: %s, truncated body: %s", rInfo.mCurlCompResponseStatus, uri.c_str(), rInfo.mBody.c_str());
+            Log::error(403, "[DUP] Sending request failed with curl code: %d, http: %ld, request uri: %s, truncated body: %s", 
+                       rInfo.mCurlCompResponseStatus, httpCode, uri.c_str(), rInfo.mBody.c_str());
         }
     }
     delete content;
@@ -787,6 +794,7 @@ CURL * RequestProcessor::initCurl()
     }
     curl_easy_setopt(lCurl, CURLOPT_USERAGENT, gUserAgent);
     // Activer l'option provoque des timeouts sur des requests avec un fort payload
+    Log::error(402,"Timeout %d", mTimeout);
     curl_easy_setopt(lCurl, CURLOPT_TIMEOUT_MS, mTimeout);
     curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
 

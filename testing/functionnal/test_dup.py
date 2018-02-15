@@ -15,25 +15,33 @@ import re
 import sys
 import urllib
 import time
+import datetime
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     ### self.path self.headers posdup_body => URL HEADERS AND BODY OF MOD_DUP RESPONSE
-    def do_GET(self):
-        posdup_body = ''.join(iter(self.rfile.read, ''))
-        # we need to rstrip the header lines to remove the trailing newline
-        self.server.queue.put((self.path, [line.rstrip() for line in self.headers.headers], posdup_body, self.server.server_port))
-        # FIXME: why is the pipe broken at this point?
-        #self.send_response(200)
-
-    def do_POST(self):
-        posdup_body = ''.join(iter(self.rfile.read, ''))
+    def do_ALL(self):
+        try:
+            length = int(self.headers.getheader('content-length'))
+        except:
+            length = 0
+        posdup_body = self.rfile.read(length)
         if 'SID=DUPSLEEP' in self.path.upper():
             time.sleep(2)
-        # we need to rstrip the header lines to remove the trailing newline
-        self.server.queue.put((self.path, [line.rstrip() for line in self.headers.headers], posdup_body, self.server.server_port))
-        # FIXME: why is the pipe broken at this point?
-        #self.send_response(200)
+            # we need to rstrip the header lines to remove the trailing newline
+            self.server.queue.put((self.path, [line.rstrip() for line in self.headers.headers], posdup_body, self.server.server_port))
+            return
 
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(posdup_body)
+        self.server.queue.put((self.path, [line.rstrip() for line in self.headers.headers], posdup_body, self.server.server_port))
+        return
+
+    def do_GET(self):
+        return self.do_ALL()
+
+    def do_POST(self):
+        return self.do_ALL()
 
 def http_server(q, host, port):
     server = BaseHTTPServer.HTTPServer((host, port), RequestHandler)
@@ -169,7 +177,7 @@ def run_tests(request_files, queue, options):
         elapsedTimeForOriginalRequest = int((time.time() - startReqTime)*1000) # response time in ms (should be around 1500, according to dup_test.conf)
 
         if 'SID=SLEEP' in request.path:
-            assert elapsedTimeForOriginalRequest < 1550 and elapsedTimeForOriginalRequest > 1499, 'Timeout test failed, original request response did not respect the DupTimeout (1500 in current conf)'
+            assert elapsedTimeForOriginalRequest < 1550 and elapsedTimeForOriginalRequest > 1499, 'Timeout test failed, original request response did not respect the DupTimeout (1500 in current conf), effective %d' % elapsedTimeForOriginalRequest 
 
         if (len(request.resp_body)):
             assert request.resp_body == request.response_body.getvalue().rstrip(), '''Response mismatch:
@@ -177,18 +185,17 @@ def run_tests(request_files, queue, options):
    received: %s''' % (request.resp_body, request.response_body.getvalue())
         if not options.curl_only:
             try:
-                try:
-                    path, headers, body, server_port = queue.get(timeout=3)
-                    request.assert_received(path, headers, body, server_port)
-                    if (request.dup_dest == "MULTI"):
-                        # second extraction from the queue
-                        path2, headers2, body2, server_port2 = queue.get(timeout=3)
-                        assert server_port != server_port2, "Multi sent on the same location"
-                        request.assert_received(path2, headers2, body2, server_port2)
+                path, headers, body, server_port = queue.get(timeout=2)
+                request.assert_received(path, headers, body, server_port)
+                if (request.dup_dest == "MULTI"):
+                    # second extraction from the queue
+                    print('get second extract from queue')
+                    path2, headers2, body2, server_port2 = queue.get(timeout=2)
+                    assert server_port != server_port2, "Multi sent on the same location"
+                    request.assert_received(path2, headers2, body2, server_port2)
 
-                except Queue.Empty:
-                    request.assert_not_received()
-
+            except Queue.Empty:
+                request.assert_not_received()
             except AssertionError, err:
                 print "########### RECEIVED ###############"
                 print "Error:", err

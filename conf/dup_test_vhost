@@ -4,7 +4,7 @@ Listen 8042
 <VirtualHost *:8042>
 
     DocumentRoot /var/www/
-
+    CustomLog /var/log/apache2/access.log combined
     <Directory />
         Options FollowSymLinks
         AllowOverride None
