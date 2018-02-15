@@ -366,6 +366,8 @@ _setFilter(cmd_parms* pParams, void* pCfg, const char *pField, const char* pFilt
         gProcessor->addFilter(pField, pFilter, *conf, fType);
     } catch (boost::bad_expression&) {
         return "Invalid regular expression in filter definition.";
+    } catch (std::exception& e) {
+        return "This filter can never match with the current DupApplicationScope, it needs BODY|QUERY_STRING|HEADER";
     }
     return NULL;
 }

@@ -119,7 +119,7 @@ void TestRequestProcessor::testRun()
 
     // This request should be run 3 times (300%) for each push, so 6 times
     proc.addRawFilter("SID>(.*)<", conf, tFilter::eFilterTypes::REGULAR);
-    boost::shared_ptr<RequestInfo> ri(new RequestInfo("42","/toto", "/toto/pws/titi/", "<SID>ID-REQ</SID>"));
+    boost::shared_ptr<RequestInfo> ri(new RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "<SID>ID-REQ</SID>"));
     ri->mConf = &conf;
     queue.push(ri);
     queue.push(ri);
@@ -165,7 +165,7 @@ void TestRequestProcessor::testSubstitution()
     conf.currentApplicationScope = ApplicationScope::QUERY_STRING;
     
     query = "titi=tatae&tutu=tatae";
-    RequestInfo ri = RequestInfo("42", "/toto", "/toto", query);
+    RequestInfo ri = RequestInfo("42", "/toto", "GET", "/toto", query);
     ri.mConf = &conf;
     proc.parseArgs(ri.mParsedArgs, ri.mArgs);
     RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(ri.mConf);
@@ -176,7 +176,7 @@ void TestRequestProcessor::testSubstitution()
     {
         //  Empty fields are preserved
         query = "titi=tatae&tutu";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
@@ -188,7 +188,7 @@ void TestRequestProcessor::testSubstitution()
     {
         //  Header substitution
         query = "titi=tatae&tutu";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         ri.mHeadersIn.push_back(tKeyVal(std::string("H1"), std::string("tAta1,2#")));
         ri.mHeadersIn.push_back(tKeyVal(std::string("H2"), std::string(""))); ;
@@ -209,7 +209,7 @@ void TestRequestProcessor::testSubstitution()
         //  Empty fields can be substituted
         proc.addSubstitution("tutu", "^$", "titi", conf);
         query = "titi=tatae&tutu";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
@@ -221,7 +221,7 @@ void TestRequestProcessor::testSubstitution()
     {
         // Substitutions are case-sensitive
         query = "titi=TATAE&tutu=TATAE";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
@@ -234,7 +234,7 @@ void TestRequestProcessor::testSubstitution()
         // Substitutions on the same path and field are executed in the order they are added
         proc.addSubstitution("titi", "-(.*)-", "T\\1", conf);
         query = "titi=tatae&tutu=tatae";
-        ri = RequestInfo("42", "/toto", "/toto", query);
+        ri = RequestInfo("42", "/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
@@ -247,7 +247,7 @@ void TestRequestProcessor::testSubstitution()
         // Substituions in other field but same path
         proc.addSubstitution("tutu", "ata", "W", conf);
         query = "titi=tatae&tutu=tatae";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(ri.mConf);
@@ -259,7 +259,7 @@ void TestRequestProcessor::testSubstitution()
     {
         // ... doesn't affect previous path
         query = "titi=tatae&tutu=tatae";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
@@ -272,7 +272,7 @@ void TestRequestProcessor::testSubstitution()
         // Substitute escaped characters
         proc.addSubstitution( "titi", ",", "/", conf);
         query = "titi=1%2C2%2C3";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
@@ -284,7 +284,7 @@ void TestRequestProcessor::testSubstitution()
     {
         // Keys should be compared case-insensitively
         query = "TiTI=1%2C2%2C3";
-        ri = RequestInfo("42","/toto", "/toto", query);
+        ri = RequestInfo("42","/toto", "GET", "/toto", query);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         RequestProcessor::tCommandsByDestination &cbd = proc.mCommands.at(&conf);
@@ -304,27 +304,35 @@ void TestRequestProcessor::testFilterBasic()
         // Simple Filter MATCH
         RequestProcessor proc;
         proc.addFilter( "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "INFO=myinfo");
+        RequestInfo ri = RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "INFO=myinfo");
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     }
-
     {
         // Raw Filter MATCH
         RequestProcessor proc;
         proc.addRawFilter("SID>(.*)<", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "<SID>ID-REQ</SID>");
+        RequestInfo ri = RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "<SID>ID-REQ</SID>");
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
     }
-
+    {
+        // Raw Filter MATCH
+        RequestProcessor proc;
+        proc.addRawFilter("PAT(.*)", conf, tFilter::eFilterTypes::REGULAR);
+        RequestInfo ri = RequestInfo("42","/toto", "PATCH", "/toto/pws/notmatched/", "notmatched");
+        ri.mConf = &conf;
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
+    }
+    
     {
         // Simple Filter NO MATCH
         RequestProcessor proc;
         proc.addFilter("INFO", "KIDO", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "INFO=myinfo");
+        RequestInfo ri = RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "INFO=myinfo");
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(proc.processRequest(ri).empty());
@@ -335,18 +343,18 @@ void TestRequestProcessor::testFilterBasic()
         // Filter applied on body only NO MATCH
         RequestProcessor proc;
         proc.addFilter("INFO", "my", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo("42","/toto", "/toto/pws/titi/", "INFO=myinfo");
+        RequestInfo ri = RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "INFO=myinfo");
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
 
-    {
+        {
         // Filter applied on body only MATCH
         RequestProcessor proc;
         proc.addFilter("BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         std::string body = "BODY=hello";
-        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "GET", "/bb/pws/titi/", "INFO=myinfo", &body);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
@@ -358,24 +366,46 @@ void TestRequestProcessor::testFilterBasic()
         proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         proc.addFilter( "STOP", "true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
         std::string body = "BODY=hello&STOP=true";
-        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "GET", "/bb/pws/titi/", "INFO=myinfo", &body);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
 
-    {
+        {
         // Filter applied on body only MATCH stopped by RAW PREVENT filter type on body
         RequestProcessor proc;
         proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawFilter( "STOP=true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
         std::string body = "BODY=hello&STOP=true";
-        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "INFO=myinfo", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "GET", "/bb/pws/titi/", "INFO=myinfo", &body);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
-
+        
+    {
+        // Filter applied on body only MATCH stopped by RAW PREVENT filter type on body
+        conf.currentApplicationScope = ApplicationScope::METHOD;
+        RequestProcessor proc;
+        bool caught = false;
+        // We can't use CPPUNIT_ASSERT_THROW with std::exception, warning
+        try {
+            proc.addFilter( "GET","bla", conf, tFilter::eFilterTypes::REGULAR);
+        } catch(std::exception&e) {
+            caught = true;
+        }
+        CPPUNIT_ASSERT(caught);
+        
+        proc.addRawFilter( "GET", conf, tFilter::eFilterTypes::REGULAR);
+        proc.addRawFilter( "POST", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
+        std::string body = "random body";
+        RequestInfo ri = RequestInfo("42","/bb", "POST", "/bb/pws/titi/", "INFO=myinfo", &body);
+        ri.mConf = &conf;
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(proc.processRequest(ri).empty());
+    }
+        
     {
         // MATCH on body stopped by RAW PREVENT filter type on header
         conf.currentApplicationScope = ApplicationScope::ALL;
@@ -383,30 +413,29 @@ void TestRequestProcessor::testFilterBasic()
         proc.addFilter( "BODY", "hello", conf, tFilter::eFilterTypes::REGULAR);
         proc.addRawFilter( "STOP=true", conf, tFilter::eFilterTypes::PREVENT_DUPLICATION);
         std::string body = "BODY=hello";
-        RequestInfo ri = RequestInfo("42","/bb", "/bb/pws/titi/", "STOP=true", &body);
+        RequestInfo ri = RequestInfo("42","/bb", "GET", "/bb/pws/titi/", "STOP=true", &body);
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(proc.processRequest(ri).empty());
     }
-
 }
 
 
 #define MAKE_REQ_INFO(id, pConfPath, pPath, pArgs, conf, proc) \
-RequestInfo ri = RequestInfo(id, pConfPath, pPath, pArgs);\
+RequestInfo ri = RequestInfo(id, pConfPath, "GET", pPath, pArgs);\
 ri.mConf = &conf;\
 proc.parseArgs(ri.mParsedArgs, ri.mArgs);
 
 #define MAKE_REQ_INFO_BODY(id, pConfPath, pPath, pArgs, conf, proc, body) \
-RequestInfo ri = RequestInfo(id, pConfPath, pPath, pArgs, body);\
+RequestInfo ri = RequestInfo(id, pConfPath, "GET",  pPath, pArgs, body);\
 ri.mConf = &conf;\
 proc.parseArgs(ri.mParsedArgs, ri.mArgs);
 
 
-RequestInfo makeReqInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
+RequestInfo makeReqInfo(std::string id, const std::string &pConfPath, const std::string &pMethod, const std::string &pPath,
                         const std::string &pArgs, DupConf *conf, RequestProcessor &proc, const std::string *body = 0) {
     
-    RequestInfo ri = RequestInfo(id, pConfPath, pPath, pArgs, body);
+    RequestInfo ri = RequestInfo(id, pConfPath, pMethod, pPath, pArgs, body);
     ri.mConf = &conf;
     proc.parseArgs(ri.mParsedArgs, ri.mArgs);
     return ri;
@@ -711,7 +740,7 @@ void TestRequestProcessor::testRawSubstitution()
         query = "arg1=myarg1";
         std::string body = "mybody1test";
         DupConf conf;
-        MAKE_REQ_INFO_BODY("42","/toto", "/toto/titi/", query, conf, proc, &body);
+        MAKE_REQ_INFO_BODY("42","/toto",  "/toto/titi/", query, conf, proc, &body);
         conf.currentApplicationScope = ApplicationScope::ALL;
 
         proc.addRawFilter(".*", conf, tFilter::eFilterTypes::REGULAR);
@@ -765,7 +794,7 @@ void TestRequestProcessor::testDupFormat() {
     RequestProcessor proc;
     std::string query = "theBig=Lebowski";
     std::string body = "mybody1test";
-    RequestInfo ri = RequestInfo("42", "/mypath", "/mypath/wb", query, &body);
+    RequestInfo ri = RequestInfo("42", "/mypath", "GET", "/mypath/wb", query, &body);
     CURL * curl = curl_easy_init();
     struct curl_slist *slist = NULL;
 
@@ -791,7 +820,7 @@ void TestRequestProcessor::testDupFormat() {
 }
 
 void TestRequestProcessor::testRequestInfo() {
-    RequestInfo ri = RequestInfo("42", "/path", "/path", "arg1=value1");
+    RequestInfo ri = RequestInfo("42", "/path", "GET", "/path", "arg1=value1");
     CPPUNIT_ASSERT(!ri.hasBody());
     ri.mBody = "sdf";
     CPPUNIT_ASSERT(ri.hasBody());
@@ -807,7 +836,7 @@ void TestRequestProcessor::testTimeout() {
     conf.currentDupDestination = "Honolulu:8080";
     proc.addFilter("SID", "mySid", conf, tFilter::eFilterTypes::REGULAR);
 
-    boost::shared_ptr<RequestInfo> ri = boost::shared_ptr<RequestInfo>(new RequestInfo("42","/spp/main", "/spp/main", "SID=mySid"));
+    boost::shared_ptr<RequestInfo> ri = boost::shared_ptr<RequestInfo>(new RequestInfo("42","/spp/main", "GET", "/spp/main", "SID=mySid"));
     ri->mConf = &conf;
     queue.push(ri);
     queue.push(POISON_REQUEST);
@@ -826,7 +855,7 @@ void TestRequestProcessor::testKeySubstitutionOnBody()
     proc.addSubstitution( "titi", "value", "replacedValue", conf);
 
     query = "titi=value&tutu=tatae";
-    RequestInfo ri = makeReqInfo("42", "/toto", "/toto", query, &conf, proc);
+    RequestInfo ri = makeReqInfo("42", "/toto", "GET", "/toto", query, &conf, proc);
     ri.mConf = &conf;
     ri.mBody = "key1=what??&titi=value";
 
@@ -926,7 +955,7 @@ void TestRequestProcessor::testPerformCurlCall() {
     std::string lBody = "mybodytest";
 
     RequestProcessor requestProcessor;
-    RequestInfo requestInfo = RequestInfo("42","/test", "/test/path/", lQueryArgs, &lBody);
+    RequestInfo requestInfo = RequestInfo("42","/test", "GET", "/test/path/", lQueryArgs, &lBody);
     tFilter matchedFilter("test", ApplicationScope::ALL,lDestination, DuplicationType::REQUEST_WITH_ANSWER,boost::regex("nomatch"));
 
 

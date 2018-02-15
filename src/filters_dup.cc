@@ -116,6 +116,7 @@ static bool prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
     // Basic
     r.mPoison = false;
     r.mConf = tConf;
+    r.mMethod = pRequest->method;
     r.mPath = pRequest->uri;
     r.mArgs = pRequest->args ? pRequest->args : "";
     return true;

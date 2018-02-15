@@ -23,6 +23,7 @@ install(FILES
   data/dup/www/compare
   data/dup/www/dup
   data/dup/www/enrich
+  data/dup/www/method
   data/dup/www/header_and_body
   data/dup/www/header_only
   data/dup/www/largeresponse

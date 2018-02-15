@@ -10,17 +10,20 @@
 namespace ApplicationScope {
 
 const char* c_ALL = "ALL";
+const char* c_METHOD = "METHOD";
 const char* c_PATH = "PATH";
 const char* c_QUERY_STRING = "QUERY_STRING";
 const char* c_URL = "URL";
 const char* c_URL_AND_HEADERS = "URL_AND_HEADERS";
 const char* c_HEADERS = "HEADERS";
 const char* c_BODY = "BODY";
-const char* c_ERROR_ON_STRING_VALUE = "Invalid ApplicationScope Value. Supported Values: PATH | QUERY_STRING | URL | HEADERS | URL_AND_HEADERS | BODY | ALL" ;
+const char* c_ERROR_ON_STRING_VALUE = "Invalid ApplicationScope Value. Supported Values: METHOD | PATH | QUERY_STRING | URL | HEADERS | URL_AND_HEADERS | BODY | ALL" ;
 
 eApplicationScope stringToEnum(const char *str) throw (std::exception) {
     if (!strcmp(str, c_ALL))
         return ApplicationScope::ALL;
+    if (!strcmp(str, c_METHOD))
+        return ApplicationScope::METHOD;
     if (!strcmp(str, c_PATH))
         return ApplicationScope::PATH;
     if (!strcmp(str, c_QUERY_STRING))
@@ -40,6 +43,8 @@ const char * enumToString(eApplicationScope scope) throw (std::exception) {
     switch (scope) {
         case ApplicationScope::ALL:
             return c_ALL;
+        case ApplicationScope::METHOD:
+            return c_METHOD;
         case ApplicationScope::PATH:
             return c_PATH;
         case ApplicationScope::QUERY_STRING:

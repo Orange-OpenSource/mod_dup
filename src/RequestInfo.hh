@@ -105,6 +105,8 @@ struct RequestInfo {
     bool mPoison;
     /** @brief The query unique ID. */
     std::string mId;
+    /** @brief the http method of the request */
+    std::string mMethod;
     /** @brief The path part of the request. */
     std::string mPath;
     /** @brief The parameters part of the query (query string without leading ?). */
@@ -160,11 +162,12 @@ struct RequestInfo {
      * @brief Constructs the object using the three strings.
      * @param id The query unique ID
      * @param pConfPath The location (in the conf) which matched this query
+     * @param pMethod the http method of the request (PATCH,POST...)
      * @param pPath The path part of the requests
      * @param pArgs The parameters part of the query (without leading ?)
      * @param body The body part of the query
      */
-    RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
+    RequestInfo(std::string id, const std::string &pConfPath, const std::string &pMethod, const std::string &pPath,
             const std::string &pArgs, const std::string *body = 0);
 
     /**

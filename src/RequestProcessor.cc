@@ -143,6 +143,10 @@ void
 RequestProcessor::addFilter(const std::string &pField, const std::string &pFilter,
         const DupConf &pAssociatedConf, tFilter::eFilterTypes fType) {
 
+    if ( (pAssociatedConf.currentApplicationScope & (ApplicationScope::BODY | ApplicationScope::HEADERS | ApplicationScope::QUERY_STRING)) == 0) {
+        Log::error(405, "[DUP] DupFilter %s requires DupApplicationScope BODY|HEADERS|QUERY_STRING, incompatible with %d", pFilter.c_str(),pAssociatedConf.currentApplicationScope);
+        throw std::exception();
+    }
     mCommands[&pAssociatedConf][pAssociatedConf.currentDupDestination].mFilters.insert(std::pair<std::string, tFilter>(boost::to_upper_copy(pField),
             tFilter(pFilter, pAssociatedConf.currentApplicationScope,
                     pAssociatedConf.currentDupDestination, pAssociatedConf.getCurrentDuplicationType(),
@@ -270,31 +274,38 @@ RequestProcessor::matchesFilter(RequestInfo &pRequest, const Commands &pCommands
     // Raw filters prevent analyse
     for (const tFilter &raw : pCommands.mRawFilters) {
         if (raw.mFilterType == tFilter::PREVENT_DUPLICATION) {
+            // Http Method application
+            if (raw.mScope & ApplicationScope::METHOD) {
+                if (boost::regex_search(pRequest.mMethod, raw.mRegex)) {
+                    Log::info(0, "[DUP] Prevent Raw filter (METHOD) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
+                    return NULL;
+                }
+            }
             // Path application
             if (raw.mScope & ApplicationScope::PATH) {
                 if (boost::regex_search(pRequest.mPath, raw.mRegex)) {
-                    Log::info(0, "[DUP] Prevent Raw filter (PATH) matched: %s | %s", pRequest.mPath.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Prevent Raw filter (PATH) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
             // Header applications
             if (raw.mScope & ApplicationScope::QUERY_STRING) {
                 if (boost::regex_search(pRequest.mArgs, raw.mRegex)) {
-                    Log::info(0, "[DUP] Prevent Raw filter (QUERY_STRING) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Prevent Raw filter (QUERY_STRING) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
             // Header applications
             if (raw.mScope & ApplicationScope::HEADERS) {
                 if (boost::regex_search(RequestInfo::flatten(pRequest.mHeadersIn), raw.mRegex)) {
-                    Log::info(0, "[DUP] Prevent Raw filter (HEADER) matched: %s | %s", pRequest.mArgs.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Prevent Raw filter (HEADER) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
             // Body application
             if (raw.mScope & ApplicationScope::BODY) {
                 if (boost::regex_search(pRequest.mBody, raw.mRegex)) {
-                    Log::info(0, "[DUP] Prevent Raw filter (BODY) matched: %s | %s", pRequest.mBody.c_str(), raw.mRegex.str().c_str());
+                    Log::info(0, "[DUP] Prevent Raw filter (BODY) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
                     return NULL;
                 }
             }
@@ -325,8 +336,16 @@ RequestProcessor::matchesFilter(RequestInfo &pRequest, const Commands &pCommands
     for (const tFilter &raw : pCommands.mRawFilters) {
         if (raw.mFilterType != tFilter::PREVENT_DUPLICATION) {
             boost::smatch what;
+            // Http Method application
+            if (raw.mScope & ApplicationScope::METHOD) {
+                if (boost::regex_search(pRequest.mMethod, what, raw.mRegex)) {
+                    raw.mMatch = what[ 0 ];
+                    Log::info(0, "[DUP] Raw filter (PATH) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());
+                    return &raw;
+                }
+            }
             // Path application
-            if (raw.mScope & ApplicationScope::URL) {
+            if (raw.mScope & ApplicationScope::PATH) {
                 if (boost::regex_search(pRequest.mPath, what, raw.mRegex)) {
                     raw.mMatch = what[ 0 ];
                     Log::info(0, "[DUP] Raw filter (PATH) matched: %s | %s", raw.mMatch.c_str(), raw.mRegex.str().c_str());

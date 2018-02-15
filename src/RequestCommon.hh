@@ -16,8 +16,9 @@ enum eApplicationScope{
     URL = 3, // URL is path and query string
     HEADERS = 4,
     BODY = 8,
+    METHOD = 16, // Http method (POST, PATCH, GET)
     URL_AND_HEADERS = 7,
-    ALL = 15,
+    ALL = 31,
 };
 extern const char* c_ALL;
 extern const char* c_PATH;

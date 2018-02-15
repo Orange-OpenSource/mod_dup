@@ -149,7 +149,7 @@ class DupRequest:
         assert self.dup_path and path == self.dup_path ,\
                 '''Path did not match:
                    path: %s
-                   body: %s''' % (path, body)
+                   dup_path: %s''' % (path, self.dup_path)
         assert re.search(self.dup_body, body, re.MULTILINE|re.DOTALL),\
                  '''Body did not match:
                  path: %s
@@ -164,7 +164,8 @@ class DupRequest:
             assert contained,'''Header not found: %s\n\nHeaders sent:\n%s''' % (headerLineExpected, '\n'.join(headers))
 
     def assert_not_received(self):
-        assert not self.dup_path and not self.dup_body, 'Request not duplicated'
+		#if you want not duplicated to be ok, you need DUPURL and DUPBODY empty in your test req
+        assert not self.dup_path and not self.dup_body, 'Request not duplicated where it should!'
 
 def run_tests(request_files, queue, options):
 
@@ -185,17 +186,18 @@ def run_tests(request_files, queue, options):
    received: %s''' % (request.resp_body, request.response_body.getvalue())
         if not options.curl_only:
             try:
-                path, headers, body, server_port = queue.get(timeout=2)
-                request.assert_received(path, headers, body, server_port)
-                if (request.dup_dest == "MULTI"):
-                    # second extraction from the queue
-                    print('get second extract from queue')
-                    path2, headers2, body2, server_port2 = queue.get(timeout=2)
-                    assert server_port != server_port2, "Multi sent on the same location"
-                    request.assert_received(path2, headers2, body2, server_port2)
+                try:
+                    path, headers, body, server_port = queue.get(timeout=2)
+                    request.assert_received(path, headers, body, server_port)
+                    if (request.dup_dest == "MULTI"):
+                        # second extraction from the queue
+                        print('get second extract from queue')
+                        path2, headers2, body2, server_port2 = queue.get(timeout=2)
+                        assert server_port != server_port2, "Multi sent on the same location"
+                        request.assert_received(path2, headers2, body2, server_port2)
 
-            except Queue.Empty:
-                request.assert_not_received()
+                except Queue.Empty:
+                    request.assert_not_received()
             except AssertionError, err:
                 print "########### RECEIVED ###############"
                 print "Error:", err

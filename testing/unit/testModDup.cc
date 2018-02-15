@@ -287,7 +287,7 @@ void TestModDup::testDuplicationPercentage() {
 
 
         {
-            RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=eightyfour");
+            RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "GET", "/spp/main/foo/", "SID=eightyfour");
             ri.mConf = lDoHandle;
             gProcessor->parseArgs(ri.mParsedArgs, ri.mArgs);
             std::list<const tFilter *> ff = gProcessor->processRequest(ri);
@@ -306,7 +306,7 @@ void TestModDup::testDuplicationPercentage() {
         }
 
         {
-            RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "/spp/main/foo/", "SID=fortytwo");
+            RequestInfo ri = RequestInfo(std::string("42"),"/spp/main", "GET", "/spp/main/foo/", "SID=fortytwo");
             ri.mConf = lDoHandle;
             gProcessor->parseArgs(ri.mParsedArgs, ri.mArgs);
             std::list<const tFilter *> ff = gProcessor->processRequest(ri);

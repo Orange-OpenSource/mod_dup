@@ -60,10 +60,11 @@ void RequestInfo::eos_seen(bool valToSet) {
     mEOS = valToSet;
 }
 
-RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std::string &pPath,
+RequestInfo::RequestInfo(std::string id, const std::string &pConfPath, const std::string &pMethod, const std::string &pPath,
                          const std::string &pArgs, const std::string *pBody)
     : mPoison(false),
       mId(id),
+      mMethod(pMethod),
       mPath(pPath),
       mArgs(pArgs),
       mCurlCompResponseStatus(-1),

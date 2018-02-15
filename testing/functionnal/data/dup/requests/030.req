@@ -1,0 +1,11 @@
+==DESC==
+/dup_test/method Duplication of the header only
+==REQURL==
+/dup_test/method?bla=bli
+==REQBODY==
+blabla
+==DUPURL==
+==DUPHEADER==
+==DUPBODY==
+==RESPBODY==
+==DUPDESTPORT==
