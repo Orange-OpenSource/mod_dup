@@ -204,11 +204,11 @@ RequestProcessor::parseArgs(std::list<tKeyVal> &pParsedArgs, const std::string &
 }
 
 const tFilter *
-RequestProcessor::keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const tKeyValList &pParsedArgs,
+RequestProcessor::keyFilterMatch(const tFiltersMap &pFilters, const tKeyValList &pParsedArgs,
         ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes fType){
 
     BOOST_FOREACH (const tKeyVal &lKeyVal, pParsedArgs) {
-        // Key Iteration
+        // Key Iteration, case insensitive, because headers are and query string params can be
         const auto & lFilterIter = pFilters.equal_range(lKeyVal.first);
         // FilterIteration
         for (auto it = lFilterIter.first; it != lFilterIter.second; ++it) {
@@ -241,7 +241,7 @@ const tFilter *
 RequestProcessor::matchesFilter(RequestInfo &pRequest, const Commands &pCommands) {
 
     const tFilter *matched = NULL;
-    const std::multimap<std::string, tFilter> &pFilters = pCommands.mFilters;
+    const tFiltersMap &pFilters = pCommands.mFilters;
 
     // Key filter type deection
     int keyFilterOnHeader = 0;

@@ -110,7 +110,27 @@ public:
 /** @brief Maps a path to a substitution. Not a multimap because order matters. */
 typedef std::map<std::string, std::list<tSubstitute> > tFieldSubstitutionMap;
 
+struct ci_less
+{
+    // case-independent (ci) compare_less binary function
+    struct nocase_compare
+    {
+        bool operator() (const unsigned char& c1, const unsigned char& c2) const {
+            return tolower (c1) < tolower (c2); 
+        }
+    };
+    bool operator() (const std::string & s1, const std::string & s2) const {
+        return std::lexicographical_compare 
+        (s1.begin (), s1.end (),   // source range
+         s2.begin (), s2.end (),   // dest range
+         nocase_compare ());  // comparison
+    }
+};
 
+/** @brief maps the key on which they apply to the filter for the value
+ * search for the key is case insensitive
+ */
+typedef std::multimap<std::string, tFilter, ci_less> tFiltersMap;
 
 /** @brief A container for the operations */
 class Commands {
@@ -125,7 +145,7 @@ public:
     /** @brief The list of filter commands
      * Indexed by the field on which they apply
      */
-    std::multimap<std::string, tFilter> mFilters;
+    tFiltersMap mFilters;
 
     /** @brief The Raw filter list */
     std::list<tFilter> mRawFilters;
@@ -347,7 +367,7 @@ private:
     substituteRequest(RequestInfo &pRequest, Commands &pCommands);
 
     const tFilter *
-    keyFilterMatch(const std::multimap<std::string, tFilter> &pFilters, const tKeyValList &pParsedArgs,
+    keyFilterMatch(const tFiltersMap &pFilters, const tKeyValList &pParsedArgs,
             ApplicationScope::eApplicationScope scope, tFilter::eFilterTypes eType);
 
     bool

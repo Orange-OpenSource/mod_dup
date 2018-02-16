@@ -301,10 +301,20 @@ void TestRequestProcessor::testFilterBasic()
     conf.currentDupDestination = "Honolulu:8080";
 
     {
-        // Simple Filter MATCH
+        // Simple Filter MATCH insensitively in query string
         RequestProcessor proc;
         proc.addFilter( "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
-        RequestInfo ri = RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "INFO=myinfo");
+        RequestInfo ri = RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "InFO=myinfo");
+        ri.mConf = &conf;
+        proc.parseArgs(ri.mParsedArgs, ri.mArgs);
+        CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
+    }
+    {
+        // Simple Filter MATCH insensitively in header
+        RequestProcessor proc;
+        proc.addFilter( "INFO", "[my]+", conf, tFilter::eFilterTypes::REGULAR);
+        RequestInfo ri = RequestInfo("42","/toto", "GET", "/toto/pws/titi/", "doesnot=match");
+        ri.mHeadersIn.push_back(std::make_pair("InFo","myinfo"));
         ri.mConf = &conf;
         proc.parseArgs(ri.mParsedArgs, ri.mArgs);
         CPPUNIT_ASSERT(!proc.processRequest(ri).empty());
