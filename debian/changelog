@@ -1,3 +1,11 @@
+pns-mod-dup (2.5.0) precise; urgency=medium
+
+  * Support for DupApplicationScope METHOD - you can now DupRawFilter or DupRawPreventFilter on the http method
+  * DupErrorLogBodyMatch is a new directive that allows extracting a subpart of the body for error logging
+  * Non-regression improvements
+
+ -- Emmanuel Courreges <emmanuel.courreges@orange.com>  Wed, 21 Feb 2018 21:11:06 +0100
+
 pns-mod-dup (2.4.0) precise; urgency=low
 
   * Allow duplication up to 1000% per destination (10 times): for performance/amplification testing
