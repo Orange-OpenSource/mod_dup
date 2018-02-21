@@ -61,31 +61,31 @@ static int checkCurlResponseCompareStatus(const RequestInfo &ri, request_rec *pR
         return 0;
     }
     if (ri.mCurlCompResponseHeader.count("X-COMP-STATUS")) {
-        Log::debug("[DEBUG][DUP] header contains the X-COMP-STATUS");
+        Log::debug("[DUP] header contains the X-COMP-STATUS");
         apr_table_set( pRequest->headers_out,"X-COMP-STATUS", ri.mCurlCompResponseHeader.at("X-COMP-STATUS").c_str());
         return 0;
     } 
     else if (ri.mCurlCompResponseStatus == -1){
-        Log::debug("[DEBUG][DUP] Curl uninitialized, no duplication, so no comparison.");
+        Log::debug("[DUP] Curl uninitialized, no duplication, so no comparison.");
         apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "No Duplication, No Comparison");
         return 0;
     }
     else if (ri.mCurlCompResponseStatus != CURLE_OK){
-        Log::debug("[DEBUG][DUP] Curl error happened the destination is not reached");
+        Log::debug("[DUP] Curl error happened the destination is not reached");
         std::string out("NOT REACHED - curl status ");
         out += curl_easy_strerror(static_cast<CURLcode>(ri.mCurlCompResponseStatus));
         apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", out.c_str());
         return 0;
     }
 
-    Log::debug("[DEBUG][DUP] Curl returned OK but there was no comparison.");
+    Log::debug("[DUP] Curl returned OK but there was no comparison.");
     apr_table_set( pRequest->headers_out,"X-COMPARE-STATUS", "Reached Destination - No Comparison");
     return 0;
 }
 
 static bool prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInfo &r)
 {
-    Log::debug("[DUP] Pepare request info");
+    Log::debug("[DUP] Prepare request info");
     // Add the HTTP Status Code Header
     r.mHeadersIn.push_front(std::make_pair("X_DUP_HTTP_STATUS", boost::lexical_cast<std::string>(pRequest->status)));
     // Add the HTTP Request Method

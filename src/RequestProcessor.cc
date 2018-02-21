@@ -693,6 +693,7 @@ void RequestProcessor::addValidationHeadersDup(RequestInfo &rInfo, const std::li
     } else {
         xDupLog << "The request is not duplicated, having found " << numDestinations << " DupDestination(s) and attempted to match " << numFiltersAttempted << " DupFilter or DupRawFilter";
     }
+    Log::debug("[DUP] %s", xDupLog.str().c_str());
     rInfo.mHeadersOut.push_back(std::pair<std::string, std::string>("X_DUP_LOG", xDupLog.str()));
 }
 
@@ -813,7 +814,6 @@ CURL * RequestProcessor::initCurl()
     }
     curl_easy_setopt(lCurl, CURLOPT_USERAGENT, gUserAgent);
     // Activer l'option provoque des timeouts sur des requests avec un fort payload
-    Log::error(402,"Timeout %d", mTimeout);
     curl_easy_setopt(lCurl, CURLOPT_TIMEOUT_MS, mTimeout);
     curl_easy_setopt(lCurl, CURLOPT_NOSIGNAL, 1);
 
