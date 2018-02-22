@@ -28,7 +28,10 @@ set(PROJECT_VERSION ${${CMAKE_PROJECT_NAME}_VERSION})
 #-----------------------------------------------------------------------------
 # CMake variables
 #-----------------------------------------------------------------------------
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
+message("CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
+
+
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build unit tests")
 set(BUILD_COVERAGE OFF CACHE BOOL "Build with coverage testing")
 set(BUILD_TOOLS ON CACHE BOOL "Build mod_dup tools")
