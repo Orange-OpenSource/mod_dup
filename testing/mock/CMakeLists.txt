@@ -1,7 +1,6 @@
 
 ## Web service mock
-
-include(${CMAKE_SOURCE_DIR}/cmake/Include.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/Include.cmake)
 
 file( GLOB dup_mock_src_files
   dup_mock.cc

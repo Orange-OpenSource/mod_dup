@@ -17,22 +17,22 @@
 install(FILES compare_test.load compare_test.conf compare.load DESTINATION /etc/apache2/mods-available COMPONENT mod_compare)
 
 install(FILES dup_test.load dup_test.conf dup.load DESTINATION /etc/apache2/mods-available COMPONENT mod_dup)
-install(FILES dup_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_dup)
+install(FILES dup_test_vhost.conf DESTINATION /etc/apache2/sites-available COMPONENT mod_dup)
 
 install(FILES migrate_test.load migrate_test.conf migrate.load DESTINATION /etc/apache2/mods-available COMPONENT mod_migrate)
-install(FILES migrate_test_vhost DESTINATION /etc/apache2/sites-available COMPONENT mod_migrate)
+install(FILES migrate_test_vhost.conf DESTINATION /etc/apache2/sites-available COMPONENT mod_migrate)
 
 add_custom_target(install_dup
   COMMAND a2enmod dup
 )
 add_custom_target(install_dup_test
-  COMMAND a2enmod dup_test
+  COMMAND a2enmod dup_test cgid
   COMMAND a2ensite dup_test_vhost
   DEPENDS install_dup install_mock
 )
 
 add_custom_target(install_migrate
-  COMMAND a2enmod migrate rewrite
+  COMMAND a2enmod migrate rewrite proxy proxy_http
 )
 add_custom_target(install_migrate_test
   COMMAND a2enmod migrate migrate_test rewrite

@@ -28,14 +28,14 @@ set(PROJECT_VERSION ${${CMAKE_PROJECT_NAME}_VERSION})
 #-----------------------------------------------------------------------------
 # CMake variables
 #-----------------------------------------------------------------------------
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 message("CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
 
 
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build unit tests")
 set(BUILD_COVERAGE OFF CACHE BOOL "Build with coverage testing")
 set(BUILD_TOOLS ON CACHE BOOL "Build mod_dup tools")
-set(INPUT_CMAKE_DIR ${CMAKE_SOURCE_DIR}/cmake)
+set(INPUT_CMAKE_DIR ${PROJECT_SOURCE_DIR}/cmake)
 set(OUTPUT_CMAKE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
 #-----------------------------------------------------------------------------
@@ -177,5 +177,5 @@ add_custom_target(metrics
 COMMAND mkdir -p ${CMAKE_BINARY_DIR}/measures/complexity
 COMMAND pmccabe -vc ${mod_keyring_metrics} 2>/dev/null > ${CMAKE_BINARY_DIR}/measures/complexity/metrics.details.csv;
 COMMAND pmccabe -vTF ${mod_keyring_metrics} 2>/dev/null > ${CMAKE_BINARY_DIR}/measures/complexity/metrics.glob.csv;
-COMMENT "Calculating McCabe Cyclomatic Complexity\nwritten to ${CMAKE_SOURCE_DIR}/measures/complexity/"
+COMMENT "Calculating McCabe Cyclomatic Complexity\nwritten to ${PROJECT_SOURCE_DIR}/measures/complexity/"
 )

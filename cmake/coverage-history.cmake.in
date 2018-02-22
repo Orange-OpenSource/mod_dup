@@ -22,7 +22,7 @@ set(GEN_COVERAGE_HISTORY_FILE ${COVERAGE_HISTORY_FILE}.${CURRENT_DATE})
 set(RELEASE_TEMP_TXT @TEMP_DIR@/release.tmp.txt)
 execute_process(
     COMMAND ${LCOV} --list @COVERAGE_INFO_FILE@
-    COMMAND ${SED} -e s?@CMAKE_SOURCE_DIR@/src/??
+    COMMAND ${SED} -e s?@CMAKE_CURRENT_SOURCE_DIR@/src/??
     COMMAND ${SORT}
     COMMAND ${AWK} "{printf(\"%s%.2f\\n\",$1,100*$2/$4)}"
     OUTPUT_VARIABLE RELEASE_TEMP_VAR)

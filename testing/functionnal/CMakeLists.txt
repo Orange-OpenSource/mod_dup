@@ -44,15 +44,15 @@ install(FILES
 ## Runs dup functional tests
 add_custom_target(check-functional-dup
    ## Launching the tests script
-    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/requests/
+    COMMAND ${PROJECT_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${PROJECT_SOURCE_DIR}/testing/functionnal/data/dup/requests/
 )
 
 add_custom_target(check-functional-dup-describe
-    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${CMAKE_SOURCE_DIR}/testing/functionnal/data/dup/requests/ --desc=true
+    COMMAND ${PROJECT_SOURCE_DIR}/testing/functionnal/test_dup.py --path=${PROJECT_SOURCE_DIR}/testing/functionnal/data/dup/requests/ --desc=true
 )
 
 add_custom_target(check-functional-compare
-    COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_compare.sh ${CMAKE_SOURCE_DIR}/testing/functionnal/data/compare/
+    COMMAND ${PROJECT_SOURCE_DIR}/testing/functionnal/test_compare.sh ${PROJECT_SOURCE_DIR}/testing/functionnal/data/compare/
 )
 
 add_custom_target(check-functional-migrate
@@ -60,7 +60,7 @@ add_custom_target(check-functional-migrate
   COMMAND echo "Starting JMeter test..."
 
   # backup restore handled in the script
-  COMMAND ${CMAKE_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${CMAKE_SOURCE_DIR}/testing/functionnal
+  COMMAND ${PROJECT_SOURCE_DIR}/testing/functionnal/test_migrate.sh ${PROJECT_SOURCE_DIR}/testing/functionnal
 )
 
 # Global testing target
