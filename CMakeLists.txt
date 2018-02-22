@@ -29,9 +29,6 @@ set(PROJECT_VERSION ${${CMAKE_PROJECT_NAME}_VERSION})
 # CMake variables
 #-----------------------------------------------------------------------------
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
-message("CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
-
-
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build unit tests")
 set(BUILD_COVERAGE OFF CACHE BOOL "Build with coverage testing")
 set(BUILD_TOOLS ON CACHE BOOL "Build mod_dup tools")
@@ -65,8 +62,6 @@ endif()
 ## Unit test rule definition
 if(BUILD_UNIT_TESTS)
   enable_testing()
-  add_custom_target(check make -j4 all
-    COMMAND make test ARGS='-V')
 endif()
 
 if(BUILD_COVERAGE)
