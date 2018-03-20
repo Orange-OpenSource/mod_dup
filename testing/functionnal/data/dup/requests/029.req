@@ -6,6 +6,7 @@
 ==DUPURL==
 /dup_test/method?bla=bli
 ==DUPHEADER==
+X-HTTP-METHOD-OVERRIDE: GET
 ==DUPBODY==
 .*
 ==RESPBODY==
