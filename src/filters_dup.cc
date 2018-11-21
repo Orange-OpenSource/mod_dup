@@ -89,8 +89,16 @@ static bool prepareRequestInfo(DupConf *tConf, request_rec *pRequest, RequestInf
     // Add the HTTP Status Code Header
     r.mHeadersIn.push_front(std::make_pair("X_DUP_HTTP_STATUS", boost::lexical_cast<std::string>(pRequest->status)));
     // Add the HTTP Request Method
-    r.mHeadersIn.push_front(std::make_pair("X_DUP_METHOD", pRequest->method));
-    r.mHeadersIn.push_front(std::make_pair("X-HTTP-METHOD-OVERRIDE", pRequest->method));
+    const char* inOverride = apr_table_get(pRequest->headers_in, "X-HTTP-METHOD-OVERRIDE");
+    if(inOverride) {
+        //take the X-HTTP-METHOD-OVERRIDE for input request over the basic method
+        r.mHeadersIn.push_front(std::make_pair("X_DUP_METHOD", inOverride));
+        r.mHeadersIn.push_front(std::make_pair("X-HTTP-METHOD-OVERRIDE", inOverride));
+    }
+    else {
+        r.mHeadersIn.push_front(std::make_pair("X_DUP_METHOD", pRequest->method));
+        r.mHeadersIn.push_front(std::make_pair("X-HTTP-METHOD-OVERRIDE", pRequest->method));
+    }
     // Add the HTTP Content Type
     const char* contentType = apr_table_get(pRequest->headers_in,"Content-Type");
     if (contentType) r.mHeadersIn.push_front(std::make_pair("X_DUP_CONTENT_TYPE", contentType));
