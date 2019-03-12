@@ -114,15 +114,21 @@ Dependencies
 Build time
 ----------
 
-	cmake
-	libcurl4-openssl-dev
-	libboost-thread-dev
-	libboost-regex1.40-dev
-	libboost-dev
-	libapr1-dev
-	libaprutil1-dev
-	apache2-threaded-dev OR apache2-prefork-dev
+On ubuntu (compatible with Precise 12.04 LTS, Trusty 14.04 LTS, Xenial 16.04 LTS, Bionic 18.04 LTS):
+sudo apt install \
+	cmake \
+	libcurl4-openssl-dev \
+	libboost-thread-dev \
+	libboost-regex-dev \
+	libboost-dev \
+	libapr1-dev \
+	libaprutil1-dev \
+	apache2-dev
+
+        OR apache2-threaded-dev
+        OR apache2-prefork-dev
 	gcc (>= 4.4.3)
+
 
 Run time
 --------

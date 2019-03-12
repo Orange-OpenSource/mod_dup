@@ -42,6 +42,7 @@ add_custom_target(install_migrate_test
 
 add_custom_target(install_compare
   COMMAND a2enmod compare
+  COMMAND ldconfig
 )
 add_custom_target(install_compare_test
   COMMAND a2enmod compare_test

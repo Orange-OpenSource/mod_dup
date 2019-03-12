@@ -1,0 +1,24 @@
+@startuml
+title "Run a duplication test - Sequence Diagram"
+
+actor test_dup.py as TD #red
+control run_test as RT
+control apache_with_dup as AD
+control py_http_server as HS
+entity DupRequest as DR
+boundary queue as Q
+
+
+TD->RT: call
+RT->HS: run on port 8043
+RT->DR: create for test 001
+DR->DR: parse file 001.req
+RT->AD: curl with REQURL and REQBODY of 001.req
+AD->RT: return body from static files and conf in dup_test.conf
+RT->RT: check body received from apache_with_dup is RESP_BODY
+AD->HS: dup to dup_test.conf:DupDestination localhost:8043
+HS->Q: push path, headers, body received to queue
+HS->AD: answer 200 OK
+RT->Q: get request from queue
+RT->RT: assert_received: check that DUP_HEADERS\n and DUP_BODY are in the request from queue 
+@enduml
