@@ -261,15 +261,15 @@ void TestModDup::testDuplicationPercentage() {
         CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "JeNeSuisPasUnNombre"));
 
         // Out of range
-        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "1001"));
-        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "6666"));
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "10001"));
+        CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "66666"));
         CPPUNIT_ASSERT(setDestination(lParms, (void *) lDoHandle, "localhost", "-1"));
         
         // Nominal test
         CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost", "0"));
         CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost", "1"));
         CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost", "120"));
-        CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost", "1000"));
+        CPPUNIT_ASSERT(!setDestination(lParms, (void *) lDoHandle, "localhost", "10000"));
     }
 
     {

@@ -66,6 +66,8 @@ then run cmake & make:
 
 Unit Tests
 ==========
+Note that for the test "testLibCompare" to pass, you need to use a modified libjsoncpp which preserves json objects key sorting.
+
 build with unit tests:
 
 	cmake -DBUILD_UNIT_TESTS=ON ..

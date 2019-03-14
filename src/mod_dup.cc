@@ -164,8 +164,8 @@ setDestination(cmd_parms* pParams, void* pCfg, const char* pDestination, const c
     if (duplicationPercentage) {
          try {
             perc = boost::lexical_cast<unsigned int>(duplicationPercentage);
-            if (perc > 1000) {
-                return "Duplication percentage value not valid: must be an integer between 0 and 1000";
+            if (perc > 10000) {
+                return "Duplication percentage value not valid: must be an integer between 0 and 10000";
             }
         } catch (boost::bad_lexical_cast&) {
             std::string msg = "Duplication percentage value not valid: ";
@@ -480,7 +480,7 @@ command_rec gCmds[] = {
                   reinterpret_cast<const char *(*)()>(&setDestination),
                   0,
                   ACCESS_CONF,
-                  "Set the destination for the duplicated requests. Format: host[:port] [percentage (0 to 1000)]"),
+                  "Set the destination for the duplicated requests. Format: host[:port] [percentage (0 to 10000)]"),
     AP_INIT_TAKE1("DupApplicationScope",
                   reinterpret_cast<const char *(*)()>(&setApplicationScope),
                   0,

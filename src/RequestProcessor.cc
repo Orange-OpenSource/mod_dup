@@ -777,7 +777,7 @@ RequestProcessor::runOne(RequestInfo &reqInfo, CURL * pCurl,const bool & stillRu
             tCommandsByDestination &cbd = mCommands.at(reqInfo.mConf);
             Commands &c = cbd.at(it->mDestination);
 
-            // How many times do we duplicate this request? (0-10 i.e. 0-1000% in conf)
+            // How many times do we duplicate this request? (0-10 i.e. 0-10000% in conf)
             unsigned int numDups = c.toDuplicateInt();
             if (numDups == 0) {
                 Log::debug("dup dropped for DupDestination %s", it->mDestination.c_str());
