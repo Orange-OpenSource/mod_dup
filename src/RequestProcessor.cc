@@ -312,15 +312,15 @@ RequestProcessor::matchesFilter(RequestInfo &pRequest, const Commands &pCommands
         }
     }
 
-    // Key filters on header
-    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pRequest.mHeadersIn, ApplicationScope::HEADERS, tFilter::REGULAR))){
-        Log::info(0, "[DUP] Filter on HEADERS match");
-        return matched;
-    }
-
     // Key filters on query string
     if (keyFilterOnQS && (matched = keyFilterMatch(pFilters, pRequest.mParsedArgs, ApplicationScope::QUERY_STRING, tFilter::REGULAR))){
         Log::info(0, "[DUP] Filter on QUERY_STRING match");
+        return matched;
+    }
+
+    // Key filters on header
+    if (keyFilterOnHeader && (matched = keyFilterMatch(pFilters, pRequest.mHeadersIn, ApplicationScope::HEADERS, tFilter::REGULAR))){
+        Log::info(0, "[DUP] Filter on HEADERS match");
         return matched;
     }
     
